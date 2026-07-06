@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#22224C">
+<title>FD Scanner v1.0</title>
+<style>
+  :root {
+    --pink:  #FF4B7B;
+    --navy:  #22224C;
+    --light: #F2B2E5;
+    --white: #FFFFFF;
+    --orange:#FF6036;
+    --yellow:#FFEC00;
+    --bg:    #F5F5F7;
+    --card:  #FFFFFF;
+    --text:  #22224C;
+    --muted: #888899;
+    --border:#E0E0EE;
+    --radius:12px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* ── LOGIN SCREEN ── */
+  #login-screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    gap: 32px;
+  }
+
+  .login-logo {
+    width: 120px;
+    opacity: .95;
+  }
+
+  .login-title {
+    color: var(--white);
+    font-size: 28px;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: -.5px;
+    line-height: 1.2;
+  }
+
+  .login-title span { color: var(--pink); }
+
+  .login-sub {
+    color: rgba(255,255,255,.5);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .login-fields {
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .login-fields input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    border: 1.5px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.07);
+    color: var(--white);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .2s;
+  }
+
+  .login-fields input::placeholder { color: rgba(255,255,255,.3); }
+  .login-fields input:focus { border-color: var(--pink); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 15px;
+    background: var(--pink);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+
+  .btn-primary:active { opacity: .85; }
+
+  .login-version {
+    color: rgba(255,255,255,.2);
+    font-size: 11px;
+  }
+
+  /* ── EVENT SELECTOR ── */
+  #event-screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .event-header {
+    padding: 60px 24px 24px;
+    background: var(--navy);
+  }
+
+  .event-header h1 {
+    color: var(--white);
+    font-size: 24px;
+    font-weight: 800;
+  }
+
+  .event-header p {
+    color: rgba(255,255,255,.5);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .event-list {
+    flex: 1;
+    padding: 8px 16px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+  }
+
+  .event-card {
+    background: rgba(255,255,255,.07);
+    border: 1.5px solid rgba(255,255,255,.1);
+    border-radius: 14px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .event-card:active { background: rgba(255,255,255,.12); }
+
+  .event-card.selected {
+    background: rgba(255,75,123,.15);
+    border-color: var(--pink);
+  }
+
+  .event-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--muted);
+  }
+
+  .event-info { flex: 1; }
+
+  .event-name {
+    color: var(--white);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .event-date {
+    color: rgba(255,255,255,.45);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .event-chevron {
+    color: rgba(255,255,255,.3);
+    font-size: 18px;
+  }
+
+  .btn-select-event {
+    margin: 0 16px 32px;
+    padding: 16px;
+    background: var(--pink);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    opacity: .4;
+    transition: opacity .2s;
+  }
+
+  .btn-select-event.active { opacity: 1; }
+
+  /* ── MAIN APP SHELL ── */
+  #app-screen { display: none; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+
+  /* Top nav bar */
+  .top-bar {
+    background: var(--navy);
+    padding: 52px 20px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .top-bar-event {
+    color: var(--white);
+    font-size: 15px;
+    font-weight: 700;
+    flex: 1;
+  }
+
+  .top-bar-sub {
+    color: rgba(255,255,255,.45);
+    font-size: 11px;
+    margin-top: 1px;
+  }
+
+  .top-bar-version {
+    color: rgba(255,255,255,.25);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .05em;
+  }
+
+  /* Page content */
+  .page {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .page.active { display: flex; }
+
+  /* Bottom tab bar */
+  .tab-bar {
+    background: var(--navy);
+    border-top: 1px solid rgba(255,255,255,.08);
+    display: flex;
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0 12px;
+    cursor: pointer;
+    gap: 4px;
+    opacity: .4;
+    transition: opacity .15s;
+    border: none;
+    background: none;
+    color: var(--white);
+    font-family: inherit;
+  }
+
+  .tab.active { opacity: 1; }
+  .tab.active .tab-icon { color: var(--pink); }
+
+  .tab-icon { font-size: 22px; line-height: 1; }
+  .tab-label { font-size: 10px; font-weight: 600; letter-spacing: .03em; }
+
+  /* ── SCAN PAGE ── */
+  #scan-page {
+    background: #000;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #camera-container {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #camera-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .scan-frame {
+    width: 240px;
+    height: 240px;
+    position: relative;
+  }
+
+  .scan-frame::before, .scan-frame::after,
+  .scan-frame .corner-br, .scan-frame .corner-bl {
+    content: '';
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-color: var(--pink);
+    border-style: solid;
+  }
+
+  .scan-frame::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+  .scan-frame::after  { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+  .scan-frame .corner-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+  .scan-frame .corner-bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+
+  .scan-line {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--pink), transparent);
+    animation: scan-sweep 2s ease-in-out infinite;
+  }
+
+  @keyframes scan-sweep {
+    0%   { top: 0%; opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  .scan-hint {
+    color: rgba(255,255,255,.7);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    background: rgba(0,0,0,.4);
+    padding: 8px 16px;
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+  }
+
+  /* Result overlay */
+  #scan-result {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--card);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 24px 32px;
+    transform: translateY(100%);
+    transition: transform .35s cubic-bezier(.4,0,.2,1);
+    z-index: 10;
+    max-height: 65vh;
+    overflow-y: auto;
+  }
+
+  #scan-result.show { transform: translateY(0); }
+
+  .result-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+
+  .result-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .result-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .result-icon.ok   { background: #E8FFF0; color: #00C875; }
+  .result-icon.warn { background: #FFF8E8; color: #FF9500; }
+  .result-icon.err  { background: #FFF0F0; color: #D0000A; }
+  .result-icon.pink { background: #FFF0F5; color: var(--pink); }
+  .result-icon.blue { background: #F0F4FF; color: #0050B3; }
+
+  .result-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .result-detail {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .result-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .chip {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .chip.vip    { background: #FFF8E8; color: #B36A00; }
+  .chip.drinks { background: #FFF0F5; color: #B3003B; }
+  .chip.food   { background: #F0FFF5; color: #006B3B; }
+  .chip.warn   { background: #FFF0F0; color: #D0000A; }
+
+  .wristband-banner {
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .wristband-swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .wristband-label {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .wristband-note {
+    font-size: 12px;
+    opacity: .7;
+    margin-top: 2px;
+  }
+
+  .btn-dismiss {
+    width: 100%;
+    padding: 14px;
+    background: var(--bg);
+    color: var(--text);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  /* Flash overlay */
+  #scan-flash {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 20;
+  }
+
+  @keyframes flash-ok   { 0%{opacity:.85} 100%{opacity:0} }
+  @keyframes flash-err  { 0%{opacity:.9} 50%{opacity:.7} 100%{opacity:0} }
+  @keyframes flash-warn { 0%{opacity:.8} 50%{opacity:.5} 100%{opacity:0} }
+
+  #scan-flash.ok   { background:#00C875; animation:flash-ok   .45s ease-out forwards; }
+  #scan-flash.err  { background:#D0000A; animation:flash-err  .6s ease-out forwards; }
+  #scan-flash.warn { background:#FF9500; animation:flash-warn 1.2s ease-out forwards; }
+  #scan-flash.pink { background:var(--pink); animation:flash-ok .45s ease-out forwards; }
+  #scan-flash.blue { background:#0050B3; animation:flash-ok .45s ease-out forwards; }
+
+  /* Loading state */
+  .scan-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+    backdrop-filter: blur(4px);
+  }
+
+  .scan-loading.show { display: flex; }
+
+  .spin {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(255,255,255,.2);
+    border-top-color: var(--pink);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── GUESTS PAGE ── */
+  #guests-page { background: var(--bg); overflow-y: auto; }
+
+  .search-bar {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    padding: 12px 16px;
+    z-index: 10;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 12px 16px 12px 40px;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text);
+    outline: none;
+    position: relative;
+  }
+
+  .search-wrap { position: relative; }
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 16px;
+    pointer-events: none;
+  }
+
+  .guest-filters {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .guest-filters::-webkit-scrollbar { display: none; }
+
+  .filter-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    font-family: inherit;
+    transition: all .15s;
+  }
+
+  .filter-pill.active {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: var(--white);
+  }
+
+  .guest-list { padding: 0 16px 100px; }
+
+  .guest-item {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+
+  .guest-item:active { opacity: .7; }
+
+  .guest-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--white);
+    flex-shrink: 0;
+    background: var(--navy);
+  }
+
+  .guest-info { flex: 1; min-width: 0; }
+
+  .guest-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .guest-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .guest-status {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .guest-status.in { background: #00C875; }
+
+  /* ── SETTINGS PAGE ── */
+  #settings-page { background: var(--bg); overflow-y: auto; padding: 16px 16px 100px; }
+
+  .settings-section {
+    background: var(--card);
+    border-radius: 14px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .settings-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 14px 16px 6px;
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    padding: 13px 16px;
+    gap: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .settings-row:first-of-type { border-top: none; }
+
+  .settings-row-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .settings-row-label { flex: 1; font-size: 15px; font-weight: 500; }
+  .settings-row-value { font-size: 13px; color: var(--muted); }
+
+  .settings-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    margin: 0 16px 12px;
+    width: calc(100% - 32px);
+  }
+
+  .settings-input:focus { border-color: var(--pink); }
+
+  .btn-save {
+    margin: 0 16px 12px;
+    width: calc(100% - 32px);
+    padding: 12px;
+    background: var(--pink);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .status-badge.ok  { background: #E8FFF0; color: #006B3B; }
+  .status-badge.err { background: #FFF0F0; color: #D0000A; }
+
+  /* ── LOADING SCREEN ── */
+  #loading-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    z-index: 1000;
+  }
+
+  .loading-logo { width: 80px; opacity: .9; }
+
+  .loading-bar-wrap {
+    width: 200px;
+    height: 3px;
+    background: rgba(255,255,255,.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .loading-bar {
+    height: 100%;
+    background: var(--pink);
+    border-radius: 2px;
+    width: 0%;
+    transition: width .4s ease;
+  }
+
+  .loading-text {
+    color: rgba(255,255,255,.5);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* Hidden utility */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div id="loading-screen">
+  <div class="loading-logo">🎪</div>
+  <div class="loading-bar-wrap">
+    <div class="loading-bar" id="loading-bar"></div>
+  </div>
+  <div class="loading-text" id="loading-text">Starting up...</div>
+</div>
+
+<!-- Login screen -->
+<div id="login-screen" class="hidden">
+  <div style="font-size:48px">🎪</div>
+  <div>
+    <div class="login-title">FD <span>Scanner</span></div>
+    <div class="login-sub" style="margin-top:6px">Funky Dory Event Management</div>
+  </div>
+  <div class="login-fields">
+    <input type="url" id="cfg-site" placeholder="Site URL (https://...)" autocapitalize="none" autocorrect="off">
+    <input type="text" id="cfg-key" placeholder="WooCommerce Key (ck_...)" autocapitalize="none" autocorrect="off">
+    <input type="text" id="cfg-secret" placeholder="WooCommerce Secret (cs_...)" autocapitalize="none" autocorrect="off">
+    <input type="text" id="cfg-meta" placeholder="Reset Key" autocapitalize="none" autocorrect="off">
+    <input type="text" id="cfg-sheet" placeholder="Google Sheet ID" autocapitalize="none" autocorrect="off">
+    <button class="btn-primary" onclick="saveCredentials()">Connect</button>
+  </div>
+  <div class="login-version">FD Scanner v1.0</div>
+</div>
+
+<!-- Event selector screen -->
+<div id="event-screen" class="hidden">
+  <div class="event-header">
+    <h1>Select Event</h1>
+    <p>Choose the event you are working today</p>
+  </div>
+  <div class="event-list" id="event-list">
+    <div style="color:rgba(255,255,255,.3);text-align:center;padding:40px 0;font-size:14px">Loading events...</div>
+  </div>
+  <button class="btn-select-event" id="btn-select-event" onclick="confirmEventSelection()">Open Scanner →</button>
+</div>
+
+<!-- Main app -->
+<div id="app-screen">
+  <!-- Top bar -->
+  <div class="top-bar">
+    <div>
+      <div class="top-bar-event" id="top-bar-event">—</div>
+      <div class="top-bar-sub" id="top-bar-sub">FD Scanner</div>
+    </div>
+    <div class="top-bar-version">v1.0</div>
+  </div>
+
+  <!-- Pages -->
+
+  <!-- Scan page -->
+  <div class="page active" id="scan-page">
+    <div id="camera-container">
+      <video id="camera-video" playsinline autoplay muted></video>
+    </div>
+    <div class="scan-overlay">
+      <div class="scan-frame">
+        <div class="scan-line"></div>
+        <div class="corner-br"></div>
+        <div class="corner-bl"></div>
+      </div>
+      <div class="scan-hint" id="scan-hint">Point camera at QR code</div>
+    </div>
+    <div id="scan-flash"></div>
+    <div class="scan-loading" id="scan-loading"><div class="spin"></div></div>
+    <div id="scan-result">
+      <div class="result-handle"></div>
+      <div class="result-status">
+        <div class="result-icon ok" id="result-icon">✓</div>
+        <div>
+          <div class="result-name" id="result-name">—</div>
+          <div class="result-detail" id="result-detail">—</div>
+        </div>
+      </div>
+      <div class="result-chips" id="result-chips"></div>
+      <div class="wristband-banner" id="wristband-banner" style="display:none">
+        <div class="wristband-swatch" id="wb-swatch"></div>
+        <div>
+          <div class="wristband-label" id="wb-label">—</div>
+          <div class="wristband-note" id="wb-note">—</div>
+        </div>
+      </div>
+      <button class="btn-dismiss" onclick="dismissResult()">Continue Scanning</button>
+    </div>
+  </div>
+
+  <!-- Guests page -->
+  <div class="page" id="guests-page">
+    <div class="search-bar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="search" class="search-input" id="guest-search" placeholder="Search guests..." oninput="filterGuests()">
+      </div>
+    </div>
+    <div class="guest-filters" id="guest-filters">
+      <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-pill" onclick="setFilter('in',this)">✓ Checked In</button>
+      <button class="filter-pill" onclick="setFilter('out',this)">⏳ Not Yet</button>
+      <button class="filter-pill" onclick="setFilter('vip',this)">⭐ VIP</button>
+    </div>
+    <div class="guest-list" id="guest-list">
+      <div style="color:var(--muted);text-align:center;padding:40px 0;font-size:14px">Loading guests...</div>
+    </div>
+  </div>
+
+  <!-- Settings page -->
+  <div class="page" id="settings-page">
+    <div class="settings-section-title" style="padding:16px 0 8px">Connection</div>
+    <div class="settings-section">
+      <div class="settings-row">
+        <div class="settings-row-icon">🌐</div>
+        <div class="settings-row-label">Site</div>
+        <div class="settings-row-value" id="st-site">—</div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-icon">🔑</div>
+        <div class="settings-row-label">API Status</div>
+        <div id="st-api"><span class="status-badge err">Not connected</span></div>
+      </div>
+    </div>
+    <div class="settings-section-title" style="padding:8px 0">Device</div>
+    <div class="settings-section">
+      <div class="settings-row">
+        <div class="settings-row-icon">📍</div>
+        <div class="settings-row-label">Door Position</div>
+        <div class="settings-row-value" id="st-door">Not set</div>
+      </div>
+      <input type="text" class="settings-input" id="door-position-input" placeholder="e.g. Main Gate, VIP Entrance...">
+      <button class="btn-save" onclick="saveDoorPosition()">Save Position</button>
+    </div>
+    <div class="settings-section-title" style="padding:8px 0">Event</div>
+    <div class="settings-section">
+      <div class="settings-row">
+        <div class="settings-row-icon">📅</div>
+        <div class="settings-row-label">Selected Event</div>
+        <div class="settings-row-value" id="st-event">—</div>
+      </div>
+      <div class="settings-row" style="cursor:pointer" onclick="changeEvent()">
+        <div class="settings-row-icon">🔄</div>
+        <div class="settings-row-label">Change Event</div>
+        <div class="settings-row-value">›</div>
+      </div>
+    </div>
+    <div class="settings-section-title" style="padding:8px 0">Actions</div>
+    <div class="settings-section">
+      <div class="settings-row" style="cursor:pointer" onclick="refreshData()">
+        <div class="settings-row-icon">↻</div>
+        <div class="settings-row-label">Refresh Guest Data</div>
+      </div>
+      <div class="settings-row" style="cursor:pointer" onclick="clearCredentials()">
+        <div class="settings-row-icon">🚪</div>
+        <div class="settings-row-label" style="color:#D0000A">Sign Out</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('scan')" id="tab-scan">
+      <span class="tab-icon">⬡</span>
+      <span class="tab-label">SCAN</span>
+    </button>
+    <button class="tab" onclick="switchTab('guests')" id="tab-guests">
+      <span class="tab-icon">👥</span>
+      <span class="tab-label">GUESTS</span>
+    </button>
+    <button class="tab" onclick="switchTab('settings')" id="tab-settings">
+      <span class="tab-icon">⚙</span>
+      <span class="tab-label">SETTINGS</span>
+    </button>
+  </div>
+</div>
+
+<script>
+const APP_VERSION = '1.0.0';
+const FB_URL = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
+
+// State
+let cfg = null;
+let selectedEvent = null;
+let bookingMap = {};
+let eventConfig = {};
+let activeFilter = 'all';
+let scanActive = false;
+let cameraStream = null;
+let barcodeDetector = null;
+
+// ── INIT ──
+window.addEventListener('load', async () => {
+  setLoading(10, 'Checking credentials...');
+
+  // Check for ?fd= auto-login param
+  const params = new URLSearchParams(window.location.search);
+  const fd = params.get('fd');
+  if (fd) {
+    try {
+      const b64 = decodeURIComponent(fd).replace(/-/g, '+').replace(/_/g, '/');
+      const padded = b64 + '=='.slice(0, (4 - b64.length % 4) % 4);
+      const decoded = JSON.parse(atob(padded));
+      if (decoded.u && decoded.k && decoded.s) {
+        localStorage.setItem('fd_cfg', JSON.stringify(decoded));
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    } catch(e) { console.warn('fd param parse failed:', e); }
+  }
+
+  const stored = localStorage.getItem('fd_cfg');
+  if (!stored) {
+    hideLoading();
+    showScreen('login');
+    return;
+  }
+
+  try {
+    cfg = JSON.parse(stored);
+    setLoading(30, 'Loading events...');
+    await loadEvents();
+    setLoading(60, 'Ready');
+    hideLoading();
+    showScreen('event');
+  } catch(e) {
+    hideLoading();
+    showScreen('login');
+  }
+});
+
+function setLoading(pct, text) {
+  document.getElementById('loading-bar').style.width = pct + '%';
+  document.getElementById('loading-text').textContent = text;
+}
+
+function hideLoading() {
+  document.getElementById('loading-screen').style.display = 'none';
+}
+
+function showScreen(name) {
+  ['login','event','app'].forEach(s => {
+    const el = document.getElementById(s + '-screen');
+    if (s === name) { el.classList.remove('hidden'); el.style.display = ''; }
+    else el.classList.add('hidden');
+  });
+  if (name === 'app') {
+    document.getElementById('app-screen').style.display = 'flex';
+    initCamera();
+  }
+}
+
+// ── CREDENTIALS ──
+function saveCredentials() {
+  const site   = document.getElementById('cfg-site').value.trim().replace(/\/$/, '');
+  const key    = document.getElementById('cfg-key').value.trim();
+  const secret = document.getElementById('cfg-secret').value.trim();
+  const meta   = document.getElementById('cfg-meta').value.trim();
+  const sheet  = document.getElementById('cfg-sheet').value.trim();
+  if (!site || !key || !secret) { alert('Please fill in site URL, key and secret.'); return; }
+  cfg = { u: site, k: key, s: secret, m: meta, sheet };
+  localStorage.setItem('fd_cfg', JSON.stringify(cfg));
+  loadEvents().then(() => showScreen('event'));
+}
+
+function clearCredentials() {
+  if (!confirm('Sign out? You will need to scan the login QR code again.')) return;
+  localStorage.removeItem('fd_cfg');
+  localStorage.removeItem('fd_event');
+  sessionStorage.clear();
+  location.reload();
+}
+
+// ── EVENTS ──
+let events = [];
+
+async function loadEvents() {
+  // Load from MEC via bulk2 to get event list
+  // For now, load from stored event config or fallback
+  const stored = localStorage.getItem('fd_event');
+  if (stored) {
+    selectedEvent = JSON.parse(stored);
+  }
+  // TODO: load from Google Sheet EVENTS tab
+  // Placeholder events for testing
+  events = JSON.parse(sessionStorage.getItem('fd_events') || '[]');
+  renderEventList();
+}
+
+function renderEventList() {
+  const el = document.getElementById('event-list');
+  if (!events.length) {
+    el.innerHTML = '<div style="color:rgba(255,255,255,.3);text-align:center;padding:40px 0;font-size:14px">No upcoming events found.<br><br>Check your Google Sheet EVENTS tab.</div>';
+    return;
+  }
+  el.innerHTML = events.map((ev, i) => `
+    <div class="event-card ${selectedEvent && selectedEvent.id === ev.id ? 'selected' : ''}" onclick="selectEvent(${i})">
+      <div class="event-dot" style="background:${ev.color || '#888'}"></div>
+      <div class="event-info">
+        <div class="event-name">${ev.name}</div>
+        <div class="event-date">${ev.date} · ${ev.venue || ''}</div>
+      </div>
+      <div class="event-chevron">›</div>
+    </div>
+  `).join('');
+}
+
+function selectEvent(idx) {
+  selectedEvent = events[idx];
+  document.querySelectorAll('.event-card').forEach((c, i) => c.classList.toggle('selected', i === idx));
+  document.getElementById('btn-select-event').classList.add('active');
+}
+
+function confirmEventSelection() {
+  if (!selectedEvent) return;
+  localStorage.setItem('fd_event', JSON.stringify(selectedEvent));
+  document.getElementById('top-bar-event').textContent = selectedEvent.name;
+  document.getElementById('top-bar-sub').textContent = selectedEvent.date;
+  document.getElementById('st-event').textContent = selectedEvent.name;
+  showScreen('app');
+  loadEventData();
+}
+
+function changeEvent() {
+  showScreen('event');
+}
+
+// ── DATA LOADING ──
+async function loadEventData() {
+  if (!selectedEvent || !cfg) return;
+  // TODO: load bulk2, sheet guests, firebase checkins
+  // Placeholder
+  console.log('Loading data for', selectedEvent.name);
+}
+
+async function refreshData() {
+  await loadEventData();
+  alert('Guest data refreshed.');
+}
+
+// ── CAMERA & SCANNING ──
+async function initCamera() {
+  if (cameraStream) return;
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    const video = document.getElementById('camera-video');
+    video.srcObject = cameraStream;
+    await video.play();
+
+    // Use BarcodeDetector if available
+    if ('BarcodeDetector' in window) {
+      barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+      startScanLoop();
+    } else {
+      document.getElementById('scan-hint').textContent = 'Camera ready — BarcodeDetector not supported on this browser';
+    }
+  } catch(e) {
+    document.getElementById('scan-hint').textContent = 'Camera access denied. Check permissions.';
+  }
+}
+
+function startScanLoop() {
+  const video = document.getElementById('camera-video');
+  const loop = async () => {
+    if (!scanActive && video.readyState === video.HAVE_ENOUGH_DATA) {
+      try {
+        const codes = await barcodeDetector.detect(video);
+        if (codes.length > 0) {
+          const code = codes[0].rawValue;
+          handleScan(code);
+        }
+      } catch(e) {}
+    }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+
+async function handleScan(code) {
+  if (scanActive) return;
+  scanActive = true;
+  document.getElementById('scan-loading').classList.add('show');
+
+  try {
+    // Vibrate on scan
+    if (navigator.vibrate) navigator.vibrate(30);
+
+    // TODO: lookup in bookingMap, then MEC, then sheet
+    // Placeholder response for testing
+    await new Promise(r => setTimeout(r, 800));
+
+    showResult({
+      type: 'ok',
+      name: 'Test Guest',
+      detail: 'VIP Full Day · Ibiza White Party',
+      chips: ['⭐ VIP'],
+      wristband: { color: '#FFD700', label: 'VIP Wristband', note: 'Issue gold wristband + 2 food tokens' }
+    });
+
+  } catch(e) {
+    showResult({ type: 'err', name: 'Not Found', detail: code });
+  } finally {
+    document.getElementById('scan-loading').classList.remove('show');
+  }
+}
+
+function showResult(result) {
+  const iconEl   = document.getElementById('result-icon');
+  const nameEl   = document.getElementById('result-name');
+  const detailEl = document.getElementById('result-detail');
+  const chipsEl  = document.getElementById('result-chips');
+  const wbEl     = document.getElementById('wristband-banner');
+  const flashEl  = document.getElementById('scan-flash');
+
+  // Flash
+  flashEl.className = result.type;
+  void flashEl.offsetWidth;
+
+  // Icon
+  const icons = { ok:'✓', warn:'!', err:'✕', pink:'✓', blue:'✓' };
+  iconEl.className = `result-icon ${result.type}`;
+  iconEl.textContent = icons[result.type] || '?';
+
+  nameEl.textContent   = result.name;
+  detailEl.textContent = result.detail || '';
+
+  // Chips
+  chipsEl.innerHTML = (result.chips || []).map(c => `<span class="chip">${c}</span>`).join('');
+
+  // Wristband
+  if (result.wristband) {
+    wbEl.style.display = 'flex';
+    wbEl.style.background = result.wristband.color + '22';
+    document.getElementById('wb-swatch').style.background = result.wristband.color;
+    document.getElementById('wb-label').textContent = result.wristband.label;
+    document.getElementById('wb-note').textContent  = result.wristband.note || '';
+  } else {
+    wbEl.style.display = 'none';
+  }
+
+  document.getElementById('scan-result').classList.add('show');
+
+  // Vibrate
+  if (navigator.vibrate) {
+    if (result.type === 'ok' || result.type === 'pink' || result.type === 'blue') navigator.vibrate([50, 30, 80]);
+    else if (result.type === 'warn') navigator.vibrate([200, 80, 200]);
+    else navigator.vibrate([500]);
+  }
+}
+
+function dismissResult() {
+  document.getElementById('scan-result').classList.remove('show');
+  setTimeout(() => { scanActive = false; }, 500);
+}
+
+// ── GUESTS ──
+function filterGuests() {
+  const q = document.getElementById('guest-search').value.toLowerCase();
+  // TODO: filter bookingMap and render
+  renderGuests(q);
+}
+
+function setFilter(filter, el) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  filterGuests();
+}
+
+function renderGuests(q) {
+  const el = document.getElementById('guest-list');
+  const guests = Object.values(bookingMap);
+  let filtered = guests;
+  if (q) filtered = filtered.filter(g => g.name && g.name.toLowerCase().includes(q));
+  if (activeFilter === 'in')  filtered = filtered.filter(g => g.checkedIn);
+  if (activeFilter === 'out') filtered = filtered.filter(g => !g.checkedIn);
+  if (activeFilter === 'vip') filtered = filtered.filter(g => g.isVip || (g.entryType || '').toUpperCase() === 'VIP');
+
+  if (!filtered.length) {
+    el.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px 0;font-size:14px">${q ? 'No guests matching "' + q + '"' : 'No guests found'}</div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.slice(0, 100).map(g => {
+    const initials = (g.name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    return `<div class="guest-item">
+      <div class="guest-avatar">${initials}</div>
+      <div class="guest-info">
+        <div class="guest-name">${g.name || 'Unknown'}</div>
+        <div class="guest-meta">${g.entryType || 'GE'} · ${g.source || ''}</div>
+      </div>
+      <div class="guest-status ${g.checkedIn ? 'in' : ''}"></div>
+    </div>`;
+  }).join('');
+}
+
+// ── SETTINGS ──
+function saveDoorPosition() {
+  const pos = document.getElementById('door-position-input').value.trim();
+  if (!pos) return;
+  localStorage.setItem('fd_door', pos);
+  document.getElementById('st-door').textContent = pos;
+  alert('Door position saved: ' + pos);
+}
+
+// ── TABS ──
+function switchTab(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(name + '-page').classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+
+  if (name === 'scan') initCamera();
+  if (name === 'guests') filterGuests();
+  if (name === 'settings') {
+    document.getElementById('st-site').textContent = cfg ? cfg.u : '—';
+    const door = localStorage.getItem('fd_door');
+    if (door) {
+      document.getElementById('st-door').textContent = door;
+      document.getElementById('door-position-input').value = door;
+    }
+  }
+}
+</script>
+</body>
+</html>
