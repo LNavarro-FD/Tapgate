@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#22224C">
+<title>Tapgate · Stats</title>
+<style>
+:root{
+  --pink:#FF4B7B;--navy:#22224C;--white:#FFFFFF;
+  --bg:#F5F5F7;--card:#FFFFFF;--text:#22224C;--muted:#888899;--border:#E0E0EE;
+  --r:12px;--safe-b:env(safe-area-inset-bottom,16px);--safe-t:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh}
+
+.topbar{background:var(--navy);padding:calc(var(--safe-t)+48px) 20px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{color:var(--white);font-size:16px;font-weight:800}
+.topbar-sub{color:rgba(255,255,255,.4);font-size:11px;margin-top:2px}
+.topbar-back{color:var(--pink);font-size:14px;font-weight:600;text-decoration:none;padding:8px 0}
+.topbar-ver{color:rgba(255,255,255,.2);font-size:10px;font-weight:600}
+
+.wrap{padding:14px 14px calc(var(--safe-b)+80px)}
+
+/* Event selector pill */
+.evt-pill-wrap{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.evt-pill-wrap::-webkit-scrollbar{display:none}
+.evt-pill{padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--muted);font-family:inherit;transition:all .15s}
+.evt-pill.on{background:var(--navy);border-color:var(--navy);color:var(--white)}
+
+/* Stat cards */
+.stat-card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:10px}
+.stat-card-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+
+/* Big numbers */
+.stat-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.stat-hero-item{background:var(--card);border-radius:14px;padding:14px 10px;text-align:center}
+.stat-hero-num{font-size:28px;font-weight:900;color:var(--navy);line-height:1}
+.stat-hero-num.pink{color:var(--pink)}
+.stat-hero-lbl{font-size:11px;color:var(--muted);margin-top:4px;font-weight:600}
+
+/* Progress bar */
+.prog-wrap{background:var(--border);border-radius:4px;height:8px;overflow:hidden;margin:10px 0 4px}
+.prog-bar{height:100%;background:var(--pink);border-radius:4px;transition:width .6s ease}
+
+/* Table rows */
+.trow{display:flex;align-items:center;padding:9px 0;border-top:1px solid var(--border)}
+.trow:first-of-type{border-top:none}
+.trow-key{flex:1;font-size:14px;color:var(--muted)}
+.trow-bar{flex:2;margin:0 10px}
+.trow-bar-inner{height:6px;border-radius:3px;background:var(--pink);transition:width .5s}
+.trow-val{font-size:14px;font-weight:700;min-width:40px;text-align:right}
+
+/* Timeline */
+.timeline{display:flex;align-items:flex-end;gap:4px;height:80px;padding-top:8px}
+.tl-bar{flex:1;background:var(--pink);border-radius:3px 3px 0 0;opacity:.7;position:relative;cursor:pointer;transition:opacity .15s}
+.tl-bar:hover{opacity:1}
+.tl-bar.peak{opacity:1;background:var(--pink)}
+.tl-label{display:flex;justify-content:space-between;margin-top:6px}
+.tl-lbl{font-size:10px;color:var(--muted)}
+
+/* Action buttons */
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.btn-action{padding:13px;border-radius:var(--r);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:opacity .15s}
+.btn-action:active{opacity:.8}
+.btn-dl{background:#E8F5FF;color:#0050B3}
+.btn-arch{background:#FFF0F0;color:#D0000A}
+.btn-full{width:100%;padding:14px;border-radius:var(--r);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;border:none;margin-bottom:10px}
+.btn-pink-full{background:var(--pink);color:var(--white)}
+
+/* Archive history */
+.arch-item{background:var(--card);border-radius:12px;padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.arch-icon{width:36px;height:36px;border-radius:9px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.arch-info{flex:1}
+.arch-name{font-size:14px;font-weight:700}
+.arch-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.arch-pct{font-size:16px;font-weight:900;color:var(--pink)}
+
+/* Loading */
+.loading-wrap{text-align:center;padding:40px 0;color:var(--muted);font-size:14px}
+.spin{display:inline-block;width:24px;height:24px;border:2.5px solid var(--border);border-top-color:var(--pink);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Section label */
+.section-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;padding-left:2px}
+
+.empty{color:var(--muted);text-align:center;padding:30px 0;font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <a class="topbar-back" href="index.html">← Scanner</a>
+  </div>
+  <div style="text-align:right">
+    <div class="topbar-title">Stats & Reports</div>
+    <div class="topbar-sub" id="tb-sub">Tapgate v1.0</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Event selector -->
+  <div class="section-lbl">Select Event</div>
+  <div class="evt-pill-wrap" id="evt-pills">
+    <div class="empty">Loading events...</div>
+  </div>
+
+  <!-- Loading state -->
+  <div class="loading-wrap" id="loading">
+    <div class="spin"></div><br>Loading stats...
+  </div>
+
+  <!-- Stats content -->
+  <div id="stats-content" style="display:none">
+
+    <!-- Hero numbers -->
+    <div class="stat-hero" id="hero-nums"></div>
+
+    <!-- Progress -->
+    <div class="stat-card" id="card-progress">
+      <div class="stat-card-title">Admission Progress</div>
+      <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+        <span id="prog-in">0 in</span><span id="prog-pct">0%</span><span id="prog-rem">0 remaining</span>
+      </div>
+    </div>
+
+    <!-- By entry type -->
+    <div class="stat-card" id="card-types">
+      <div class="stat-card-title">By Entry Type</div>
+      <div id="type-rows"></div>
+    </div>
+
+    <!-- By source -->
+    <div class="stat-card" id="card-sources">
+      <div class="stat-card-title">By Source</div>
+      <div id="source-rows"></div>
+    </div>
+
+    <!-- Hourly timeline -->
+    <div class="stat-card" id="card-timeline">
+      <div class="stat-card-title">
+        <span>Arrivals by Hour</span>
+        <span id="peak-label" style="font-size:11px;color:var(--pink);font-weight:700"></span>
+      </div>
+      <div class="timeline" id="timeline"></div>
+      <div class="tl-label"><span class="tl-lbl" id="tl-start"></span><span class="tl-lbl" id="tl-end"></span></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="section-lbl">Export & Archive</div>
+    <div class="action-row">
+      <button class="btn-action btn-dl"   onclick="downloadCSV()">⬇ Download CSV</button>
+      <button class="btn-action btn-arch" onclick="archiveEvent()">📦 Archive Event</button>
+    </div>
+
+  </div>
+
+  <!-- Archive history -->
+  <div class="section-lbl">Historical Events</div>
+  <div id="archive-list"><div class="empty">No archived events yet</div></div>
+
+</div>
+
+<script>
+'use strict';
+
+const FB_URL  = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
+const SHEET_ID_DEFAULT = '1qy9_HFxFZg9L3M2UzV_cSMesZp6UdYJZmlR-k9d3OCc';
+
+let cfg         = null;
+let events      = [];
+let activeEvent = null;
+let checkins    = {};
+let bookingMap  = {};
+let eventConfig = {};
+
+// ── INIT ──
+window.addEventListener('load', async () => {
+  cfg = JSON.parse(localStorage.getItem('tg_cfg') || 'null');
+  if (!cfg) { document.getElementById('loading').innerHTML = '<div class="empty">Not logged in — <a href="index.html" style="color:var(--pink)">open scanner first</a></div>'; return; }
+
+  // Load events from sessionStorage
+  events = JSON.parse(sessionStorage.getItem('tg_events') || '[]');
+
+  // Check if an event is active
+  const stored = localStorage.getItem('tg_event');
+  if (stored) {
+    activeEvent = JSON.parse(stored);
+    document.getElementById('tb-sub').textContent = activeEvent.name;
+  }
+
+  renderEventPills();
+  await loadArchiveHistory();
+
+  if (activeEvent) {
+    await loadStats(activeEvent);
+  } else {
+    document.getElementById('loading').style.display = 'none';
+  }
+});
+
+function renderEventPills() {
+  const el = document.getElementById('evt-pills');
+  if (!events.length && !activeEvent) { el.innerHTML = '<div class="empty">No events — open scanner to select one first</div>'; return; }
+  const list = events.length ? events : (activeEvent ? [activeEvent] : []);
+  el.innerHTML = list.map((ev, i) => `
+    <button class="evt-pill ${activeEvent && activeEvent.id === ev.id ? 'on' : ''}" onclick="switchEvent(${i})">${ev.short || ev.name}</button>
+  `).join('');
+}
+
+function switchEvent(i) {
+  activeEvent = events[i];
+  document.getElementById('tb-sub').textContent = activeEvent.name;
+  document.querySelectorAll('.evt-pill').forEach((p,j) => p.classList.toggle('on', j===i));
+  loadStats(activeEvent);
+}
+
+// ── LOAD STATS ──
+async function loadStats(ev) {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('stats-content').style.display = 'none';
+  checkins = {};
+  bookingMap = {};
+
+  try {
+    // Load Firebase checkins
+    const fc = await fbGet(`checkins/${ev.id}`);
+    if (fc) {
+      if (fc.mec)   Object.assign(checkins, fc.mec);
+      if (fc.sheet) Object.assign(checkins, fc.sheet);
+    }
+
+    // Load bookingMap from sessionStorage if available
+    const cached = sessionStorage.getItem('tg_bookingmap');
+    if (cached) bookingMap = JSON.parse(cached);
+
+    // Load event config
+    await loadEventConfig(ev);
+
+    renderStats();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('stats-content').style.display = 'block';
+  } catch(e) {
+    document.getElementById('loading').innerHTML = `<div class="empty">Error loading stats: ${e.message}</div>`;
+  }
+}
+
+async function loadEventConfig(ev) {
+  eventConfig = {};
+  const sheetId = cfg.sheet || SHEET_ID_DEFAULT;
+  const gids = ['2','3'];
+  for (const gid of gids) {
+    try {
+      const r = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&t=${Date.now()}`);
+      if (!r.ok) continue;
+      const rows = parseCSV(await r.text());
+      if (!rows.length) continue;
+      const h = rows[0].map(x => x.trim().toLowerCase());
+      const ci = h.findIndex(x => x.includes('entry_code'));
+      if (ci === -1) continue;
+      rows.slice(1).forEach(r => {
+        const evId = r[h.findIndex(x=>x.includes('event_id'))] || '';
+        if (evId && evId !== ev.id) return;
+        const code = r[ci]; if (!code) return;
+        const get = keys => { for (const k of keys) { const i=h.findIndex(x=>x.includes(k)); if(i>-1) return r[i]||''; } return ''; };
+        eventConfig[code] = {
+          label: get(['entry_label','label']),
+          wristband_colour: get(['wristband_colour','colour']),
+          flash_colour: get(['flash_colour']),
+          food_tokens: parseInt(get(['food_tokens','food']))||0,
+          drinks_package: get(['drinks_package']).toLowerCase()==='yes',
+          seated: get(['seated']).toLowerCase()==='yes',
+          door_note: get(['door_note']),
+        };
+      });
+      if (Object.keys(eventConfig).length) break;
+    } catch(e) { continue; }
+  }
+}
+
+// ── RENDER STATS ──
+function renderStats() {
+  const allCheckins = Object.values(checkins);
+  const checkedIn   = allCheckins.filter(c => c.checkedIn);
+  const total       = Math.max(Object.keys(bookingMap).length, allCheckins.length);
+  const inCount     = checkedIn.length;
+  const pct         = total > 0 ? Math.round(inCount/total*100) : 0;
+
+  // Hero
+  document.getElementById('hero-nums').innerHTML = `
+    <div class="stat-hero-item"><div class="stat-hero-num pink">${inCount}</div><div class="stat-hero-lbl">Checked In</div></div>
+    <div class="stat-hero-item"><div class="stat-hero-num">${total - inCount}</div><div class="stat-hero-lbl">Remaining</div></div>
+    <div class="stat-hero-item"><div class="stat-hero-num">${pct}%</div><div class="stat-hero-lbl">Admitted</div></div>`;
+
+  // Progress
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('prog-in').textContent  = `${inCount} in`;
+  document.getElementById('prog-pct').textContent  = `${pct}%`;
+  document.getElementById('prog-rem').textContent  = `${total-inCount} remaining`;
+
+  // By entry type
+  const typeCounts = {};
+  checkedIn.forEach(c => {
+    const et = resolveET(c);
+    typeCounts[et] = (typeCounts[et]||0) + 1;
+  });
+  const maxType = Math.max(...Object.values(typeCounts), 1);
+  document.getElementById('type-rows').innerHTML = Object.entries(typeCounts)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([k,v]) => `
+    <div class="trow">
+      <div class="trow-key">${(eventConfig[k]||{}).label || k}</div>
+      <div class="trow-bar"><div class="trow-bar-inner" style="width:${Math.round(v/maxType*100)}%"></div></div>
+      <div class="trow-val">${v}</div>
+    </div>`).join('') || '<div class="empty">No data yet</div>';
+
+  // By source
+  const srcCounts = {};
+  allCheckins.forEach(c => {
+    const src = c.source || (c.door ? 'door' : 'mec');
+    srcCounts[src] = (srcCounts[src]||0) + 1;
+  });
+  const srcLabels = { mec:'MEC Tickets', sheet:'Guest List', door:'Door Sales', rf:'Remenham Farm', eb:'Eventbrite' };
+  const maxSrc = Math.max(...Object.values(srcCounts), 1);
+  document.getElementById('source-rows').innerHTML = Object.entries(srcCounts)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([k,v]) => `
+    <div class="trow">
+      <div class="trow-key">${srcLabels[k]||k}</div>
+      <div class="trow-bar"><div class="trow-bar-inner" style="width:${Math.round(v/maxSrc*100)}%"></div></div>
+      <div class="trow-val">${v}</div>
+    </div>`).join('') || '<div class="empty">No checkins yet</div>';
+
+  // Hourly timeline
+  const hours = {};
+  checkedIn.forEach(c => {
+    if (!c.time) return;
+    const h = new Date(c.time).getHours();
+    hours[h] = (hours[h]||0) + 1;
+  });
+  if (Object.keys(hours).length > 0) {
+    const minH = Math.min(...Object.keys(hours).map(Number));
+    const maxH = Math.max(...Object.keys(hours).map(Number));
+    const maxV = Math.max(...Object.values(hours), 1);
+    const peakH = Object.entries(hours).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('peak-label').textContent = peakH ? `Peak: ${peakH[0]}:00 (${peakH[1]})` : '';
+    document.getElementById('tl-start').textContent = `${minH}:00`;
+    document.getElementById('tl-end').textContent   = `${maxH}:00`;
+    let bars = '';
+    for (let h = minH; h <= maxH; h++) {
+      const v   = hours[h] || 0;
+      const pct = Math.round(v/maxV*100);
+      const isPeak = peakH && parseInt(peakH[0]) === h;
+      bars += `<div class="tl-bar ${isPeak?'peak':''}" style="height:${Math.max(pct,2)}%" title="${h}:00 — ${v} arrivals"></div>`;
+    }
+    document.getElementById('timeline').innerHTML = bars;
+  } else {
+    document.getElementById('timeline').innerHTML = '<div class="empty" style="width:100%;font-size:12px">No arrivals recorded yet</div>';
+  }
+}
+
+function resolveET(c) {
+  const et = (c.entryType || c.entry_type || '').toUpperCase();
+  if (et.includes('VIP')) return et;
+  if (et === 'GE' || et === 'GENERAL') return 'GE';
+  if (et === 'EVE' || et === 'EVENING') return 'EVE';
+  return et || 'GE';
+}
+
+// ── DOWNLOAD CSV ──
+function downloadCSV() {
+  if (!activeEvent) { alert('No event selected'); return; }
+  const rows = [['Name','Entry Type','Source','Checked In','Check-in Time','Door Position','Event']];
+  Object.entries(checkins).forEach(([key, c]) => {
+    rows.push([
+      c.name || key,
+      c.entryType || c.entry_type || '',
+      c.source || 'mec',
+      c.checkedIn ? 'Yes' : 'No',
+      c.time ? new Date(c.time).toLocaleString('en-GB') : '',
+      c.door || '',
+      activeEvent.name,
+    ]);
+  });
+
+  // Also include unchecked-in from bookingMap
+  Object.values(bookingMap).forEach(b => {
+    if (!checkins[b._mecInvoice||b.key]) {
+      rows.push([b.name, b.entryType||'GE', b.source, 'No', '', '', activeEvent.name]);
+    }
+  });
+
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `Tapgate_${activeEvent.name.replace(/[^a-z0-9]/gi,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── ARCHIVE ──
+async function archiveEvent() {
+  if (!activeEvent) { alert('No event selected'); return; }
+  if (!confirm(`Archive "${activeEvent.name}"?\n\nThis will:\n• Save a permanent copy of all checkin data\n• Clear live checkins from Firebase\n• Mark event as archived\n\nThis cannot be undone.`)) return;
+
+  try {
+    const allC = Object.values(checkins);
+    const inC  = allC.filter(c => c.checkedIn);
+    const total = Math.max(Object.keys(bookingMap).length, allC.length);
+
+    // Build summary
+    const summary = {
+      event_name:       activeEvent.name,
+      event_date:       activeEvent.date,
+      event_id:         activeEvent.id,
+      total_capacity:   total,
+      total_checked_in: inC.length,
+      archived_date:    new Date().toISOString(),
+      sources: {},
+    };
+
+    // Count by source
+    allC.forEach(c => {
+      const src = c.source || 'mec';
+      summary.sources[src] = (summary.sources[src]||0) + 1;
+    });
+
+    // Count by entry type
+    summary.by_entry_type = {};
+    inC.forEach(c => {
+      const et = resolveET(c);
+      summary.by_entry_type[et] = (summary.by_entry_type[et]||0) + 1;
+    });
+
+    // Write to archive
+    await fbSet(`archive/${activeEvent.id}/summary`, summary);
+    await fbSet(`archive/${activeEvent.id}/checkins`, checkins);
+
+    // Clear live checkins
+    await fbSet(`checkins/${activeEvent.id}`, null);
+
+    alert(`✅ "${activeEvent.name}" archived successfully.\n${inC.length} checkins saved to archive.`);
+    await loadArchiveHistory();
+    document.getElementById('stats-content').style.display = 'none';
+    document.getElementById('loading').innerHTML = '<div class="empty">Event archived. Select another event above.</div>';
+    document.getElementById('loading').style.display = 'block';
+  } catch(e) {
+    alert('Archive failed: ' + e.message);
+  }
+}
+
+// ── ARCHIVE HISTORY ──
+async function loadArchiveHistory() {
+  try {
+    const data = await fbGet('archive');
+    const el   = document.getElementById('archive-list');
+    if (!data) { el.innerHTML = '<div class="empty">No archived events yet</div>'; return; }
+
+    const items = Object.entries(data)
+      .filter(([k,v]) => v && v.summary)
+      .map(([k,v]) => v.summary)
+      .sort((a,b) => new Date(b.archived_date) - new Date(a.archived_date));
+
+    if (!items.length) { el.innerHTML = '<div class="empty">No archived events yet</div>'; return; }
+
+    el.innerHTML = items.map(s => {
+      const pct = s.total_capacity > 0 ? Math.round(s.total_checked_in/s.total_capacity*100) : 0;
+      const archived = new Date(s.archived_date).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+      return `<div class="arch-item">
+        <div class="arch-icon">🗂</div>
+        <div class="arch-info">
+          <div class="arch-name">${s.event_name}</div>
+          <div class="arch-meta">${s.event_date} · Archived ${archived} · ${s.total_checked_in} checked in</div>
+        </div>
+        <div class="arch-pct">${pct}%</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('archive-list').innerHTML = '<div class="empty">Could not load archive</div>';
+  }
+}
+
+// ── FIREBASE ──
+async function fbGet(path) {
+  const r = await fetch(`${FB_URL}/${path}.json`);
+  if (!r.ok) throw new Error('FB read failed');
+  return r.json();
+}
+async function fbSet(path, data) {
+  const r = await fetch(`${FB_URL}/${path}.json`, { method:'PUT', body: JSON.stringify(data) });
+  if (!r.ok) throw new Error('FB write failed');
+  return r.json();
+}
+
+// ── CSV PARSER ──
+function parseCSV(text) {
+  const rows=[]; let row=[]; let cell=''; let inQ=false;
+  for (let i=0; i<text.length; i++) {
+    const ch=text[i];
+    if (inQ) { if(ch==='"' && text[i+1]==='"'){cell+='"';i++;} else if(ch==='"'){inQ=false;} else cell+=ch; }
+    else { if(ch==='"'){inQ=true;} else if(ch===','){row.push(cell.trim());cell='';} else if(ch==='\n'){row.push(cell.trim());if(row.some(c=>c))rows.push(row);row=[];cell='';} else if(ch==='\r'){} else cell+=ch; }
+  }
+  if(cell||row.length){row.push(cell.trim());if(row.some(c=>c))rows.push(row);}
+  return rows;
+}
+</script>
+</body>
+</html>
