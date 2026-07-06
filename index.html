@@ -5,1307 +5,1094 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tapgate">
 <meta name="theme-color" content="#22224C">
-<title>Tapgate v1.0</title>
+<link rel="manifest" href="manifest.json">
+<title>Tapgate</title>
 <style>
-  :root {
-    --pink:  #FF4B7B;
-    --navy:  #22224C;
-    --light: #F2B2E5;
-    --white: #FFFFFF;
-    --orange:#FF6036;
-    --yellow:#FFEC00;
-    --bg:    #F5F5F7;
-    --card:  #FFFFFF;
-    --text:  #22224C;
-    --muted: #888899;
-    --border:#E0E0EE;
-    --radius:12px;
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  body {
-    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-
-  /* ── LOGIN SCREEN ── */
-  #login-screen {
-    min-height: 100vh;
-    min-height: 100dvh;
-    background: var(--navy);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 24px;
-    gap: 32px;
-  }
-
-  .login-logo {
-    width: 120px;
-    opacity: .95;
-  }
-
-  .login-title {
-    color: var(--white);
-    font-size: 28px;
-    font-weight: 800;
-    text-align: center;
-    letter-spacing: -.5px;
-    line-height: 1.2;
-  }
-
-  .login-title span { color: var(--pink); }
-
-  .login-sub {
-    color: rgba(255,255,255,.5);
-    font-size: 14px;
-    text-align: center;
-  }
-
-  .login-fields {
-    width: 100%;
-    max-width: 360px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .login-fields input {
-    width: 100%;
-    padding: 14px 16px;
-    border-radius: var(--radius);
-    border: 1.5px solid rgba(255,255,255,.12);
-    background: rgba(255,255,255,.07);
-    color: var(--white);
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
-    transition: border-color .2s;
-  }
-
-  .login-fields input::placeholder { color: rgba(255,255,255,.3); }
-  .login-fields input:focus { border-color: var(--pink); }
-
-  .btn-primary {
-    width: 100%;
-    padding: 15px;
-    background: var(--pink);
-    color: var(--white);
-    border: none;
-    border-radius: var(--radius);
-    font-size: 15px;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    transition: opacity .15s;
-  }
-
-  .btn-primary:active { opacity: .85; }
-
-  .login-version {
-    color: rgba(255,255,255,.2);
-    font-size: 11px;
-  }
-
-  /* ── EVENT SELECTOR ── */
-  #event-screen {
-    min-height: 100vh;
-    min-height: 100dvh;
-    background: var(--navy);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .event-header {
-    padding: 60px 24px 24px;
-    background: var(--navy);
-  }
-
-  .event-header h1 {
-    color: var(--white);
-    font-size: 24px;
-    font-weight: 800;
-  }
-
-  .event-header p {
-    color: rgba(255,255,255,.5);
-    font-size: 13px;
-    margin-top: 4px;
-  }
-
-  .event-list {
-    flex: 1;
-    padding: 8px 16px 32px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-  }
-
-  .event-card {
-    background: rgba(255,255,255,.07);
-    border: 1.5px solid rgba(255,255,255,.1);
-    border-radius: 14px;
-    padding: 18px 20px;
-    cursor: pointer;
-    transition: background .15s, border-color .15s;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .event-card:active { background: rgba(255,255,255,.12); }
-
-  .event-card.selected {
-    background: rgba(255,75,123,.15);
-    border-color: var(--pink);
-  }
-
-  .event-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: var(--muted);
-  }
-
-  .event-info { flex: 1; }
-
-  .event-name {
-    color: var(--white);
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  .event-date {
-    color: rgba(255,255,255,.45);
-    font-size: 12px;
-    margin-top: 2px;
-  }
-
-  .event-chevron {
-    color: rgba(255,255,255,.3);
-    font-size: 18px;
-  }
-
-  .btn-select-event {
-    margin: 0 16px 32px;
-    padding: 16px;
-    background: var(--pink);
-    color: var(--white);
-    border: none;
-    border-radius: var(--radius);
-    font-size: 15px;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    opacity: .4;
-    transition: opacity .2s;
-  }
-
-  .btn-select-event.active { opacity: 1; }
-
-  /* ── MAIN APP SHELL ── */
-  #app-screen { display: none; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
-
-  /* Top nav bar */
-  .top-bar {
-    background: var(--navy);
-    padding: 52px 20px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .top-bar-event {
-    color: var(--white);
-    font-size: 15px;
-    font-weight: 700;
-    flex: 1;
-  }
-
-  .top-bar-sub {
-    color: rgba(255,255,255,.45);
-    font-size: 11px;
-    margin-top: 1px;
-  }
-
-  .top-bar-version {
-    color: rgba(255,255,255,.25);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: .05em;
-  }
-
-  /* Page content */
-  .page {
-    flex: 1;
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .page.active { display: flex; }
-
-  /* Bottom tab bar */
-  .tab-bar {
-    background: var(--navy);
-    border-top: 1px solid rgba(255,255,255,.08);
-    display: flex;
-    padding-bottom: var(--safe-bottom);
-  }
-
-  .tab {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px 0 12px;
-    cursor: pointer;
-    gap: 4px;
-    opacity: .4;
-    transition: opacity .15s;
-    border: none;
-    background: none;
-    color: var(--white);
-    font-family: inherit;
-  }
-
-  .tab.active { opacity: 1; }
-  .tab.active .tab-icon { color: var(--pink); }
-
-  .tab-icon { font-size: 22px; line-height: 1; }
-  .tab-label { font-size: 10px; font-weight: 600; letter-spacing: .03em; }
-
-  /* ── SCAN PAGE ── */
-  #scan-page {
-    background: #000;
-    position: relative;
-    overflow: hidden;
-  }
-
-  #camera-container {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #camera-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .scan-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-  }
-
-  .scan-frame {
-    width: 240px;
-    height: 240px;
-    position: relative;
-  }
-
-  .scan-frame::before, .scan-frame::after,
-  .scan-frame .corner-br, .scan-frame .corner-bl {
-    content: '';
-    position: absolute;
-    width: 32px;
-    height: 32px;
-    border-color: var(--pink);
-    border-style: solid;
-  }
-
-  .scan-frame::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-  .scan-frame::after  { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-  .scan-frame .corner-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
-  .scan-frame .corner-bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-
-  .scan-line {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--pink), transparent);
-    animation: scan-sweep 2s ease-in-out infinite;
-  }
-
-  @keyframes scan-sweep {
-    0%   { top: 0%; opacity: 0; }
-    10%  { opacity: 1; }
-    90%  { opacity: 1; }
-    100% { top: 100%; opacity: 0; }
-  }
-
-  .scan-hint {
-    color: rgba(255,255,255,.7);
-    font-size: 13px;
-    font-weight: 500;
-    text-align: center;
-    background: rgba(0,0,0,.4);
-    padding: 8px 16px;
-    border-radius: 20px;
-    backdrop-filter: blur(8px);
-  }
-
-  /* Result overlay */
-  #scan-result {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: var(--card);
-    border-radius: 20px 20px 0 0;
-    padding: 20px 24px 32px;
-    transform: translateY(100%);
-    transition: transform .35s cubic-bezier(.4,0,.2,1);
-    z-index: 10;
-    max-height: 65vh;
-    overflow-y: auto;
-  }
-
-  #scan-result.show { transform: translateY(0); }
-
-  .result-handle {
-    width: 36px;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin: 0 auto 16px;
-  }
-
-  .result-status {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  .result-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    flex-shrink: 0;
-  }
-
-  .result-icon.ok   { background: #E8FFF0; color: #00C875; }
-  .result-icon.warn { background: #FFF8E8; color: #FF9500; }
-  .result-icon.err  { background: #FFF0F0; color: #D0000A; }
-  .result-icon.pink { background: #FFF0F5; color: var(--pink); }
-  .result-icon.blue { background: #F0F4FF; color: #0050B3; }
-
-  .result-name {
-    font-size: 20px;
-    font-weight: 800;
-    color: var(--text);
-    line-height: 1.2;
-  }
-
-  .result-detail {
-    font-size: 13px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  .result-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 16px;
-  }
-
-  .chip {
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    background: var(--bg);
-    color: var(--text);
-  }
-
-  .chip.vip    { background: #FFF8E8; color: #B36A00; }
-  .chip.drinks { background: #FFF0F5; color: #B3003B; }
-  .chip.food   { background: #F0FFF5; color: #006B3B; }
-  .chip.warn   { background: #FFF0F0; color: #D0000A; }
-
-  .wristband-banner {
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  .wristband-swatch {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    flex-shrink: 0;
-  }
-
-  .wristband-label {
-    font-size: 14px;
-    font-weight: 700;
-  }
-
-  .wristband-note {
-    font-size: 12px;
-    opacity: .7;
-    margin-top: 2px;
-  }
-
-  .btn-dismiss {
-    width: 100%;
-    padding: 14px;
-    background: var(--bg);
-    color: var(--text);
-    border: none;
-    border-radius: var(--radius);
-    font-size: 15px;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    margin-top: 8px;
-  }
-
-  /* Flash overlay */
-  #scan-flash {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 20;
-  }
-
-  @keyframes flash-ok   { 0%{opacity:.85} 100%{opacity:0} }
-  @keyframes flash-err  { 0%{opacity:.9} 50%{opacity:.7} 100%{opacity:0} }
-  @keyframes flash-warn { 0%{opacity:.8} 50%{opacity:.5} 100%{opacity:0} }
-
-  #scan-flash.ok   { background:#00C875; animation:flash-ok   .45s ease-out forwards; }
-  #scan-flash.err  { background:#D0000A; animation:flash-err  .6s ease-out forwards; }
-  #scan-flash.warn { background:#FF9500; animation:flash-warn 1.2s ease-out forwards; }
-  #scan-flash.pink { background:var(--pink); animation:flash-ok .45s ease-out forwards; }
-  #scan-flash.blue { background:#0050B3; animation:flash-ok .45s ease-out forwards; }
-
-  /* Loading state */
-  .scan-loading {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,.6);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 15;
-    backdrop-filter: blur(4px);
-  }
-
-  .scan-loading.show { display: flex; }
-
-  .spin {
-    width: 48px;
-    height: 48px;
-    border: 3px solid rgba(255,255,255,.2);
-    border-top-color: var(--pink);
-    border-radius: 50%;
-    animation: spin .8s linear infinite;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── GUESTS PAGE ── */
-  #guests-page { background: var(--bg); overflow-y: auto; }
-
-  .search-bar {
-    position: sticky;
-    top: 0;
-    background: var(--bg);
-    padding: 12px 16px;
-    z-index: 10;
-  }
-
-  .search-input {
-    width: 100%;
-    padding: 12px 16px 12px 40px;
-    background: var(--card);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    font-size: 15px;
-    font-family: inherit;
-    color: var(--text);
-    outline: none;
-    position: relative;
-  }
-
-  .search-wrap { position: relative; }
-
-  .search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--muted);
-    font-size: 16px;
-    pointer-events: none;
-  }
-
-  .guest-filters {
-    display: flex;
-    gap: 8px;
-    padding: 0 16px 12px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .guest-filters::-webkit-scrollbar { display: none; }
-
-  .filter-pill {
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-    cursor: pointer;
-    border: 1.5px solid var(--border);
-    background: var(--card);
-    color: var(--muted);
-    font-family: inherit;
-    transition: all .15s;
-  }
-
-  .filter-pill.active {
-    background: var(--navy);
-    border-color: var(--navy);
-    color: var(--white);
-  }
-
-  .guest-list { padding: 0 16px 100px; }
-
-  .guest-item {
-    background: var(--card);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    cursor: pointer;
-    transition: opacity .15s;
-  }
-
-  .guest-item:active { opacity: .7; }
-
-  .guest-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--white);
-    flex-shrink: 0;
-    background: var(--navy);
-  }
-
-  .guest-info { flex: 1; min-width: 0; }
-
-  .guest-name {
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .guest-meta {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  .guest-status {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--border);
-    flex-shrink: 0;
-  }
-
-  .guest-status.in { background: #00C875; }
-
-  /* ── SETTINGS PAGE ── */
-  #settings-page { background: var(--bg); overflow-y: auto; padding: 16px 16px 100px; }
-
-  .settings-section {
-    background: var(--card);
-    border-radius: 14px;
-    margin-bottom: 16px;
-    overflow: hidden;
-  }
-
-  .settings-section-title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 14px 16px 6px;
-  }
-
-  .settings-row {
-    display: flex;
-    align-items: center;
-    padding: 13px 16px;
-    gap: 12px;
-    border-top: 1px solid var(--border);
-  }
-
-  .settings-row:first-of-type { border-top: none; }
-
-  .settings-row-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-
-  .settings-row-label { flex: 1; font-size: 15px; font-weight: 500; }
-  .settings-row-value { font-size: 13px; color: var(--muted); }
-
-  .settings-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    font-size: 14px;
-    font-family: inherit;
-    color: var(--text);
-    background: var(--bg);
-    outline: none;
-    margin: 0 16px 12px;
-    width: calc(100% - 32px);
-  }
-
-  .settings-input:focus { border-color: var(--pink); }
-
-  .btn-save {
-    margin: 0 16px 12px;
-    width: calc(100% - 32px);
-    padding: 12px;
-    background: var(--pink);
-    color: var(--white);
-    border: none;
-    border-radius: var(--radius);
-    font-size: 14px;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-  }
-
-  .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-  }
-
-  .status-badge.ok  { background: #E8FFF0; color: #006B3B; }
-  .status-badge.err { background: #FFF0F0; color: #D0000A; }
-
-  /* ── LOADING SCREEN ── */
-  #loading-screen {
-    position: fixed;
-    inset: 0;
-    background: var(--navy);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    z-index: 1000;
-  }
-
-  .loading-logo { width: 80px; opacity: .9; }
-
-  .loading-bar-wrap {
-    width: 200px;
-    height: 3px;
-    background: rgba(255,255,255,.1);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .loading-bar {
-    height: 100%;
-    background: var(--pink);
-    border-radius: 2px;
-    width: 0%;
-    transition: width .4s ease;
-  }
-
-  .loading-text {
-    color: rgba(255,255,255,.5);
-    font-size: 13px;
-    font-weight: 500;
-  }
-
-  /* Hidden utility */
-  .hidden { display: none !important; }
+:root {
+  --pink:   #FF4B7B;
+  --navy:   #22224C;
+  --lpink:  #F2B2E5;
+  --white:  #FFFFFF;
+  --orange: #FF6036;
+  --bg:     #F5F5F7;
+  --card:   #FFFFFF;
+  --text:   #22224C;
+  --muted:  #888899;
+  --border: #E0E0EE;
+  --r:      12px;
+  --safe-b: env(safe-area-inset-bottom, 16px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(--navy);color:var(--text);min-height:100dvh;overflow:hidden}
+
+/* SCREENS */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;transition:opacity .25s,transform .25s}
+.screen.hidden{opacity:0;pointer-events:none;transform:translateY(8px)}
+
+/* ── SPLASH ── */
+#splash{background:var(--navy);align-items:center;justify-content:center;gap:24px;z-index:100}
+.splash-icon{font-size:56px}
+.splash-title{color:var(--white);font-size:32px;font-weight:900;letter-spacing:-1px}
+.splash-title span{color:var(--pink)}
+.splash-bar-wrap{width:180px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.splash-bar{height:100%;background:var(--pink);border-radius:2px;width:0%;transition:width .3s ease}
+.splash-msg{color:rgba(255,255,255,.4);font-size:13px}
+
+/* ── LOGIN ── */
+#login{background:var(--navy);align-items:center;justify-content:center;padding:40px 24px;gap:28px}
+.login-logo{font-size:48px}
+.login-title{color:var(--white);font-size:26px;font-weight:900;text-align:center;letter-spacing:-.5px}
+.login-title span{color:var(--pink)}
+.login-sub{color:rgba(255,255,255,.4);font-size:13px;text-align:center;margin-top:-16px}
+.login-fields{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px}
+.field{padding:13px 16px;border-radius:var(--r);border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:var(--white);font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;width:100%}
+.field::placeholder{color:rgba(255,255,255,.25)}
+.field:focus{border-color:var(--pink)}
+.btn-pink{padding:15px;background:var(--pink);color:var(--white);border:none;border-radius:var(--r);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;width:100%;transition:opacity .15s}
+.btn-pink:active{opacity:.8}
+.login-ver{color:rgba(255,255,255,.15);font-size:11px}
+
+/* ── EVENT SELECT ── */
+#evtsel{background:var(--navy);padding-top:calc(var(--safe-t) + 48px)}
+.evtsel-head{padding:0 24px 20px}
+.evtsel-head h1{color:var(--white);font-size:24px;font-weight:900}
+.evtsel-head p{color:rgba(255,255,255,.4);font-size:13px;margin-top:4px}
+.evtsel-list{flex:1;overflow-y:auto;padding:0 16px;display:flex;flex-direction:column;gap:10px}
+.evt-card{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 18px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:background .15s,border-color .15s}
+.evt-card:active{background:rgba(255,255,255,.12)}
+.evt-card.sel{background:rgba(255,75,123,.15);border-color:var(--pink)}
+.evt-dot{width:12px;height:12px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.evt-info{flex:1}
+.evt-name{color:var(--white);font-size:16px;font-weight:700}
+.evt-date{color:rgba(255,255,255,.4);font-size:12px;margin-top:2px}
+.evt-chev{color:rgba(255,255,255,.25);font-size:20px;font-weight:300}
+.evtsel-foot{padding:16px 16px calc(var(--safe-b) + 16px)}
+.btn-navy{padding:15px;background:rgba(255,255,255,.1);color:var(--white);border:1.5px solid rgba(255,255,255,.15);border-radius:var(--r);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;width:100%;transition:all .15s}
+.btn-navy.ready{background:var(--pink);border-color:var(--pink)}
+.btn-navy:active{opacity:.8}
+
+/* ── MAIN APP ── */
+#app{background:var(--bg);display:none;flex-direction:column}
+#app.show{display:flex}
+
+.topbar{background:var(--navy);padding:calc(var(--safe-t) + 48px) 20px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-evt{color:var(--white);font-size:15px;font-weight:700}
+.topbar-sub{color:rgba(255,255,255,.4);font-size:11px;margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-ver{color:rgba(255,255,255,.2);font-size:10px;font-weight:600;letter-spacing:.05em}
+.topbar-loading{width:16px;height:16px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--pink);border-radius:50%;animation:spin .7s linear infinite;display:none}
+.topbar-loading.show{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.pages{flex:1;position:relative;overflow:hidden}
+.page{position:absolute;inset:0;display:none;flex-direction:column;overflow-y:auto}
+.page.active{display:flex}
+
+/* ── SCAN PAGE ── */
+#pg-scan{background:#000;overflow:hidden}
+#cam-wrap{position:absolute;inset:0}
+#cam-video{width:100%;height:100%;object-fit:cover}
+.scan-ui{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.scan-frame{width:220px;height:220px;position:relative}
+.sf-c{position:absolute;width:28px;height:28px;border-color:var(--pink);border-style:solid}
+.sf-tl{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.sf-tr{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+.sf-br{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+.sf-bl{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+.scan-line{position:absolute;top:0;left:4px;right:4px;height:2px;background:linear-gradient(90deg,transparent,var(--pink),transparent);animation:sweep 2s ease-in-out infinite}
+@keyframes sweep{0%{top:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:100%;opacity:0}}
+.scan-hint{color:rgba(255,255,255,.75);font-size:13px;font-weight:500;background:rgba(0,0,0,.45);padding:8px 18px;border-radius:20px;backdrop-filter:blur(8px);text-align:center}
+#scan-flash{position:absolute;inset:0;opacity:0;pointer-events:none;z-index:20}
+@keyframes f-ok  {0%{opacity:.8}100%{opacity:0}}
+@keyframes f-err {0%{opacity:.9}50%{opacity:.7}100%{opacity:0}}
+@keyframes f-warn{0%{opacity:.75}50%{opacity:.5}100%{opacity:0}}
+#scan-flash.ok  {background:#00C875;animation:f-ok  .4s ease-out forwards}
+#scan-flash.err {background:#D0000A;animation:f-err .6s ease-out forwards}
+#scan-flash.warn{background:#FF9500;animation:f-warn 1.2s ease-out forwards}
+#scan-flash.pink{background:var(--pink);animation:f-ok .4s ease-out forwards}
+#scan-flash.blue{background:#0050B3;animation:f-ok .4s ease-out forwards}
+.scan-spinner{position:absolute;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:15;backdrop-filter:blur(4px)}
+.scan-spinner.show{display:flex}
+.spin-ring{width:44px;height:44px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--pink);border-radius:50%;animation:spin .7s linear infinite}
+
+/* Result sheet */
+#result-sheet{position:absolute;bottom:0;left:0;right:0;background:var(--card);border-radius:20px 20px 0 0;padding:16px 20px calc(var(--safe-b) + 20px);transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:30;max-height:70vh;overflow-y:auto}
+#result-sheet.show{transform:translateY(0)}
+.sheet-handle{width:32px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+.rs-top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.rs-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.rs-icon.ok  {background:#e8fff0;color:#00a355}
+.rs-icon.err {background:#fff0f0;color:#d0000a}
+.rs-icon.warn{background:#fff8e8;color:#cc7700}
+.rs-icon.pink{background:#fff0f5;color:var(--pink)}
+.rs-icon.blue{background:#f0f4ff;color:#0050b3}
+.rs-name{font-size:20px;font-weight:800;line-height:1.2}
+.rs-detail{font-size:13px;color:var(--muted);margin-top:3px}
+.rs-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{padding:5px 11px;border-radius:20px;font-size:12px;font-weight:700;background:var(--bg);color:var(--text)}
+.chip.vip {background:#fff8e8;color:#9a5c00}
+.chip.drk {background:#fff0f5;color:#b3003b}
+.chip.food{background:#f0fff5;color:#006b3b}
+.chip.err {background:#fff0f0;color:#d0000a}
+.wb-banner{border-radius:var(--r);padding:13px 15px;display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.wb-swatch{width:34px;height:34px;border-radius:8px;flex-shrink:0;border:1px solid rgba(0,0,0,.08)}
+.wb-label{font-size:14px;font-weight:700}
+.wb-note{font-size:12px;opacity:.65;margin-top:2px}
+.btn-dismiss{width:100%;padding:14px;background:var(--bg);color:var(--text);border:none;border-radius:var(--r);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px}
+
+/* ── GUESTS PAGE ── */
+#pg-guests{background:var(--bg)}
+.search-wrap{position:sticky;top:0;background:var(--bg);padding:10px 14px;z-index:5;display:flex;gap:8px}
+.search-inner{flex:1;position:relative}
+.search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none}
+.search-inp{width:100%;padding:11px 14px 11px 36px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;color:var(--text);outline:none;-webkit-appearance:none}
+.search-inp:focus{border-color:var(--pink)}
+.filter-row{display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.fpill{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--muted);font-family:inherit;transition:all .15s}
+.fpill.on{background:var(--navy);border-color:var(--navy);color:var(--white)}
+.guest-list-wrap{padding:0 14px calc(var(--safe-b) + 70px)}
+.guest-row{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:7px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.guest-row:active{opacity:.7}
+.gav{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--white);flex-shrink:0}
+.ginfo{flex:1;min-width:0}
+.gname{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gmeta{font-size:12px;color:var(--muted);margin-top:1px}
+.gstatus{width:9px;height:9px;border-radius:50%;background:var(--border);flex-shrink:0}
+.gstatus.in{background:#00C875}
+
+/* Stats & Settings pages */
+#pg-stats,#pg-settings{background:var(--bg);padding:14px 14px calc(var(--safe-b) + 70px)}
+.stat-card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:10px}
+.stat-card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)}
+.stat-row:first-of-type{border-top:none}
+.stat-key{font-size:14px;color:var(--muted)}
+.stat-val{font-size:15px;font-weight:700}
+.sset-sec{background:var(--card);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.sset-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 14px 4px}
+.sset-row{display:flex;align-items:center;padding:12px 14px;gap:10px;border-top:1px solid var(--border)}
+.sset-row:first-of-type{border-top:none}
+.sset-ico{width:30px;height:30px;border-radius:7px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.sset-lbl{flex:1;font-size:14px;font-weight:500}
+.sset-val{font-size:12px;color:var(--muted)}
+.sset-inp{width:calc(100% - 28px);margin:0 14px 10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);outline:none}
+.sset-inp:focus{border-color:var(--pink)}
+.sset-btn{margin:0 14px 12px;width:calc(100% - 28px);padding:11px;background:var(--pink);color:var(--white);border:none;border-radius:var(--r);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
+.sbadge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.sbadge.ok{background:#e8fff0;color:#005c2e}
+.sbadge.err{background:#fff0f0;color:#d0000a}
+
+/* ── TAB BAR ── */
+.tabbar{background:var(--navy);border-top:1px solid rgba(255,255,255,.07);display:flex;padding-bottom:var(--safe-b);flex-shrink:0;position:sticky;bottom:0;z-index:50}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 0 4px;cursor:pointer;gap:3px;opacity:.38;transition:opacity .15s;border:none;background:none;color:var(--white);font-family:inherit}
+.tab.on{opacity:1}
+.tab.on .tabi{color:var(--pink)}
+.tabi{font-size:21px;line-height:1}
+.tabl{font-size:10px;font-weight:600;letter-spacing:.04em}
 </style>
 </head>
 <body>
 
-<!-- Loading screen -->
-<div id="loading-screen">
-  <div class="loading-logo">🎪</div>
-  <div class="loading-bar-wrap">
-    <div class="loading-bar" id="loading-bar"></div>
-  </div>
-  <div class="loading-text" id="loading-text">Starting up...</div>
+<!-- SPLASH -->
+<div class="screen" id="splash">
+  <div class="splash-icon">🎪</div>
+  <div class="splash-title">Tap<span>gate</span></div>
+  <div class="splash-bar-wrap"><div class="splash-bar" id="sbar"></div></div>
+  <div class="splash-msg" id="smsg">Starting...</div>
 </div>
 
-<!-- Login screen -->
-<div id="login-screen" class="hidden">
-  <div style="font-size:48px">🎪</div>
+<!-- LOGIN -->
+<div class="screen hidden" id="login">
+  <div class="login-logo">🎪</div>
   <div>
     <div class="login-title">Tap<span>gate</span></div>
-    <div class="login-sub" style="margin-top:6px">Event access, simplified</div>
+    <div class="login-sub">Event access management</div>
   </div>
   <div class="login-fields">
-    <input type="url" id="cfg-site" placeholder="Site URL (https://...)" autocapitalize="none" autocorrect="off">
-    <input type="text" id="cfg-key" placeholder="WooCommerce Key (ck_...)" autocapitalize="none" autocorrect="off">
-    <input type="text" id="cfg-secret" placeholder="WooCommerce Secret (cs_...)" autocapitalize="none" autocorrect="off">
-    <input type="text" id="cfg-meta" placeholder="Reset Key" autocapitalize="none" autocorrect="off">
-    <input type="text" id="cfg-sheet" placeholder="Google Sheet ID" autocapitalize="none" autocorrect="off">
-    <button class="btn-primary" onclick="saveCredentials()">Connect</button>
+    <input class="field" id="f-url"    type="url"  placeholder="WordPress URL (https://...)"      autocapitalize="none" autocorrect="off" spellcheck="false">
+    <input class="field" id="f-key"    type="text" placeholder="WooCommerce Key (ck_...)"          autocapitalize="none" autocorrect="off" spellcheck="false">
+    <input class="field" id="f-secret" type="text" placeholder="WooCommerce Secret (cs_...)"       autocapitalize="none" autocorrect="off" spellcheck="false">
+    <input class="field" id="f-meta"   type="text" placeholder="Reset Key (optional)"              autocapitalize="none" autocorrect="off" spellcheck="false">
+    <input class="field" id="f-sheet"  type="text" placeholder="Google Sheet ID (optional)"        autocapitalize="none" autocorrect="off" spellcheck="false">
+    <button class="btn-pink" onclick="doLogin()">Connect →</button>
   </div>
-  <div class="login-version">Tapgate v1.0</div>
+  <div class="login-ver">Tapgate v1.0</div>
 </div>
 
-<!-- Event selector screen -->
-<div id="event-screen" class="hidden">
-  <div class="event-header">
+<!-- EVENT SELECT -->
+<div class="screen hidden" id="evtsel">
+  <div class="evtsel-head">
     <h1>Select Event</h1>
-    <p>Choose the event you are working today</p>
+    <p id="evtsel-sub">Choose today's event to begin scanning</p>
   </div>
-  <div class="event-list" id="event-list">
-    <div style="color:rgba(255,255,255,.3);text-align:center;padding:40px 0;font-size:14px">Loading events...</div>
+  <div class="evtsel-list" id="evtsel-list"></div>
+  <div class="evtsel-foot">
+    <button class="btn-navy" id="btn-open" onclick="openEvent()" disabled>Select an event to continue</button>
   </div>
-  <button class="btn-select-event" id="btn-select-event" onclick="confirmEventSelection()">Open Scanner →</button>
 </div>
 
-<!-- Main app -->
-<div id="app-screen">
+<!-- MAIN APP -->
+<div class="screen hidden" id="app">
+
   <!-- Top bar -->
-  <div class="top-bar">
+  <div class="topbar">
     <div>
-      <div class="top-bar-event" id="top-bar-event">—</div>
-      <div class="top-bar-sub" id="top-bar-sub">Tapgate</div>
+      <div class="topbar-evt" id="tb-evt">—</div>
+      <div class="topbar-sub" id="tb-sub">Tapgate</div>
     </div>
-    <div class="top-bar-version">v1.0</div>
+    <div class="topbar-right">
+      <div class="topbar-loading" id="tb-spin"></div>
+      <div class="topbar-ver">v1.0</div>
+    </div>
   </div>
 
   <!-- Pages -->
+  <div class="pages">
 
-  <!-- Scan page -->
-  <div class="page active" id="scan-page">
-    <div id="camera-container">
-      <video id="camera-video" playsinline autoplay muted></video>
-    </div>
-    <div class="scan-overlay">
-      <div class="scan-frame">
-        <div class="scan-line"></div>
-        <div class="corner-br"></div>
-        <div class="corner-bl"></div>
+    <!-- SCAN -->
+    <div class="page active" id="pg-scan">
+      <div id="cam-wrap">
+        <video id="cam-video" playsinline autoplay muted></video>
       </div>
-      <div class="scan-hint" id="scan-hint">Point camera at QR code</div>
-    </div>
-    <div id="scan-flash"></div>
-    <div class="scan-loading" id="scan-loading"><div class="spin"></div></div>
-    <div id="scan-result">
-      <div class="result-handle"></div>
-      <div class="result-status">
-        <div class="result-icon ok" id="result-icon">✓</div>
-        <div>
-          <div class="result-name" id="result-name">—</div>
-          <div class="result-detail" id="result-detail">—</div>
+      <div class="scan-ui">
+        <div class="scan-frame">
+          <div class="sf-c sf-tl"></div>
+          <div class="sf-c sf-tr"></div>
+          <div class="sf-c sf-br"></div>
+          <div class="sf-c sf-bl"></div>
+          <div class="scan-line"></div>
         </div>
+        <div class="scan-hint" id="scan-hint">Loading guest data...</div>
       </div>
-      <div class="result-chips" id="result-chips"></div>
-      <div class="wristband-banner" id="wristband-banner" style="display:none">
-        <div class="wristband-swatch" id="wb-swatch"></div>
-        <div>
-          <div class="wristband-label" id="wb-label">—</div>
-          <div class="wristband-note" id="wb-note">—</div>
+      <div id="scan-flash"></div>
+      <div class="scan-spinner" id="scan-spin"><div class="spin-ring"></div></div>
+      <div id="result-sheet">
+        <div class="sheet-handle"></div>
+        <div class="rs-top">
+          <div class="rs-icon ok" id="rs-icon">✓</div>
+          <div>
+            <div class="rs-name" id="rs-name">—</div>
+            <div class="rs-detail" id="rs-detail">—</div>
+          </div>
         </div>
+        <div class="rs-chips" id="rs-chips"></div>
+        <div class="wb-banner" id="wb-banner" style="display:none">
+          <div class="wb-swatch" id="wb-swatch"></div>
+          <div>
+            <div class="wb-label" id="wb-label">—</div>
+            <div class="wb-note"  id="wb-note">—</div>
+          </div>
+        </div>
+        <button class="btn-dismiss" onclick="dismissResult()">Continue Scanning</button>
       </div>
-      <button class="btn-dismiss" onclick="dismissResult()">Continue Scanning</button>
     </div>
-  </div>
 
-  <!-- Guests page -->
-  <div class="page" id="guests-page">
-    <div class="search-bar">
+    <!-- GUESTS -->
+    <div class="page" id="pg-guests">
       <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input type="search" class="search-input" id="guest-search" placeholder="Search guests..." oninput="filterGuests()">
+        <div class="search-inner">
+          <span class="search-ico">🔍</span>
+          <input class="search-inp" id="g-search" type="search" placeholder="Search guests..." oninput="renderGuests()">
+        </div>
       </div>
+      <div class="filter-row" id="filter-row">
+        <button class="fpill on" data-f="all"  onclick="setFilter(this)">All</button>
+        <button class="fpill"    data-f="out"  onclick="setFilter(this)">⏳ Not In</button>
+        <button class="fpill"    data-f="in"   onclick="setFilter(this)">✅ Checked In</button>
+        <button class="fpill"    data-f="vip"  onclick="setFilter(this)">⭐ VIP</button>
+        <button class="fpill"    data-f="mec"  onclick="setFilter(this)">🎟 Tickets</button>
+        <button class="fpill"    data-f="sheet"onclick="setFilter(this)">📋 Guest List</button>
+      </div>
+      <div class="guest-list-wrap" id="g-list"></div>
     </div>
-    <div class="guest-filters" id="guest-filters">
-      <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
-      <button class="filter-pill" onclick="setFilter('in',this)">✓ Checked In</button>
-      <button class="filter-pill" onclick="setFilter('out',this)">⏳ Not Yet</button>
-      <button class="filter-pill" onclick="setFilter('vip',this)">⭐ VIP</button>
-    </div>
-    <div class="guest-list" id="guest-list">
-      <div style="color:var(--muted);text-align:center;padding:40px 0;font-size:14px">Loading guests...</div>
-    </div>
-  </div>
 
-  <!-- Settings page -->
-  <div class="page" id="settings-page">
-    <div class="settings-section-title" style="padding:16px 0 8px">Connection</div>
-    <div class="settings-section">
-      <div class="settings-row">
-        <div class="settings-row-icon">🌐</div>
-        <div class="settings-row-label">Site</div>
-        <div class="settings-row-value" id="st-site">—</div>
+    <!-- STATS -->
+    <div class="page" id="pg-stats">
+      <div id="stats-content"><div style="color:var(--muted);text-align:center;padding:40px 0">Loading stats...</div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="pg-settings">
+      <div class="sset-title" style="padding-top:0">Connection</div>
+      <div class="sset-sec">
+        <div class="sset-row"><div class="sset-ico">🌐</div><div class="sset-lbl">Site</div><div class="sset-val" id="ss-site">—</div></div>
+        <div class="sset-row"><div class="sset-ico">🔑</div><div class="sset-lbl">API</div><div id="ss-api"><span class="sbadge err">Not connected</span></div></div>
+        <div class="sset-row"><div class="sset-ico">📊</div><div class="sset-lbl">Guests loaded</div><div class="sset-val" id="ss-guests">0</div></div>
       </div>
-      <div class="settings-row">
-        <div class="settings-row-icon">🔑</div>
-        <div class="settings-row-label">API Status</div>
-        <div id="st-api"><span class="status-badge err">Not connected</span></div>
+      <div class="sset-title">Door Position</div>
+      <div class="sset-sec">
+        <div class="sset-row"><div class="sset-ico">📍</div><div class="sset-lbl">Position</div><div class="sset-val" id="ss-door">Not set</div></div>
+        <input class="sset-inp" id="door-inp" type="text" placeholder="e.g. Main Gate, VIP Entrance...">
+        <button class="sset-btn" onclick="saveDoor()">Save Position</button>
+      </div>
+      <div class="sset-title">Event</div>
+      <div class="sset-sec">
+        <div class="sset-row"><div class="sset-ico">📅</div><div class="sset-lbl">Active Event</div><div class="sset-val" id="ss-evt">—</div></div>
+        <div class="sset-row" style="cursor:pointer" onclick="changeEvent()"><div class="sset-ico">🔄</div><div class="sset-lbl">Change Event</div><div class="sset-val">›</div></div>
+      </div>
+      <div class="sset-title">Data</div>
+      <div class="sset-sec">
+        <div class="sset-row" style="cursor:pointer" onclick="reloadData()"><div class="sset-ico">↻</div><div class="sset-lbl">Refresh All Data</div></div>
+        <div class="sset-row" style="cursor:pointer" onclick="signOut()"><div class="sset-ico">🚪</div><div class="sset-lbl" style="color:#d0000a">Sign Out</div></div>
       </div>
     </div>
-    <div class="settings-section-title" style="padding:8px 0">Device</div>
-    <div class="settings-section">
-      <div class="settings-row">
-        <div class="settings-row-icon">📍</div>
-        <div class="settings-row-label">Door Position</div>
-        <div class="settings-row-value" id="st-door">Not set</div>
-      </div>
-      <input type="text" class="settings-input" id="door-position-input" placeholder="e.g. Main Gate, VIP Entrance...">
-      <button class="btn-save" onclick="saveDoorPosition()">Save Position</button>
-    </div>
-    <div class="settings-section-title" style="padding:8px 0">Event</div>
-    <div class="settings-section">
-      <div class="settings-row">
-        <div class="settings-row-icon">📅</div>
-        <div class="settings-row-label">Selected Event</div>
-        <div class="settings-row-value" id="st-event">—</div>
-      </div>
-      <div class="settings-row" style="cursor:pointer" onclick="changeEvent()">
-        <div class="settings-row-icon">🔄</div>
-        <div class="settings-row-label">Change Event</div>
-        <div class="settings-row-value">›</div>
-      </div>
-    </div>
-    <div class="settings-section-title" style="padding:8px 0">Actions</div>
-    <div class="settings-section">
-      <div class="settings-row" style="cursor:pointer" onclick="refreshData()">
-        <div class="settings-row-icon">↻</div>
-        <div class="settings-row-label">Refresh Guest Data</div>
-      </div>
-      <div class="settings-row" style="cursor:pointer" onclick="clearCredentials()">
-        <div class="settings-row-icon">🚪</div>
-        <div class="settings-row-label" style="color:#D0000A">Sign Out</div>
-      </div>
-    </div>
+
   </div>
 
   <!-- Tab bar -->
-  <div class="tab-bar">
-    <button class="tab active" onclick="switchTab('scan')" id="tab-scan">
-      <span class="tab-icon">⬡</span>
-      <span class="tab-label">SCAN</span>
-    </button>
-    <button class="tab" onclick="switchTab('guests')" id="tab-guests">
-      <span class="tab-icon">👥</span>
-      <span class="tab-label">GUESTS</span>
-    </button>
-    <button class="tab" onclick="switchTab('settings')" id="tab-settings">
-      <span class="tab-icon">⚙</span>
-      <span class="tab-label">SETTINGS</span>
-    </button>
+  <div class="tabbar">
+    <button class="tab on" data-p="scan"     onclick="setPage(this)"><span class="tabi">⬡</span><span class="tabl">SCAN</span></button>
+    <button class="tab"    data-p="guests"   onclick="setPage(this)"><span class="tabi">👥</span><span class="tabl">GUESTS</span></button>
+    <button class="tab"    data-p="stats"    onclick="setPage(this)"><span class="tabi">📊</span><span class="tabl">STATS</span></button>
+    <button class="tab"    data-p="settings" onclick="setPage(this)"><span class="tabi">⚙</span><span class="tabl">SETTINGS</span></button>
   </div>
-</div>
+
+</div><!-- /app -->
 
 <script>
-const APP_VERSION = '1.0.0';
-const FB_URL = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
+'use strict';
 
-// State
-let cfg = null;
-let selectedEvent = null;
-let bookingMap = {};
-let eventConfig = {};
+// ── CONSTANTS ──
+const APP_VER  = '1.0.0';
+const FB_URL   = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
+const SHEET_ID_DEFAULT = '1qy9_HFxFZg9L3M2UzV_cSMesZp6UdYJZmlR-k9d3OCc';
+
+// ── STATE ──
+let cfg          = null;   // { u, k, s, m, sheet }
+let activeEvent  = null;   // { id, mec_id, name, date, venue, color }
+let eventConfig  = {};     // entry_code → { label, wristband_colour, flash_colour, food_tokens, drinks_package, seated, door_note }
+let bookingMap   = {};     // key → booking object
+let fbCheckins   = {};     // invoice_id / item_key → { checkedIn, time, door }
 let activeFilter = 'all';
-let scanActive = false;
-let cameraStream = null;
-let barcodeDetector = null;
+let scanBusy     = false;
+let camStream    = null;
+let detector     = null;
+let dataLoaded   = false;
 
 // ── INIT ──
 window.addEventListener('load', async () => {
-  setLoading(10, 'Checking credentials...');
+  splash(10, 'Checking login...');
 
-  // Check for ?fd= auto-login param
+  // Auto-login from QR ?tg=base64
   const params = new URLSearchParams(window.location.search);
-  const fd = params.get('fd');
-  if (fd) {
+  const tg = params.get('tg') || params.get('fd');
+  if (tg) {
     try {
-      const b64 = decodeURIComponent(fd).replace(/-/g, '+').replace(/_/g, '/');
+      const b64    = decodeURIComponent(tg).replace(/-/g,'+').replace(/_/,'/');
       const padded = b64 + '=='.slice(0, (4 - b64.length % 4) % 4);
-      const decoded = JSON.parse(atob(padded));
-      if (decoded.u && decoded.k && decoded.s) {
-        localStorage.setItem('fd_cfg', JSON.stringify(decoded));
+      const parsed = JSON.parse(atob(padded));
+      if (parsed.u && parsed.k && parsed.s) {
+        localStorage.setItem('tg_cfg', JSON.stringify(parsed));
         window.history.replaceState({}, '', window.location.pathname);
       }
-    } catch(e) { console.warn('fd param parse failed:', e); }
+    } catch(e) { console.warn('QR parse failed', e); }
   }
 
-  const stored = localStorage.getItem('fd_cfg');
-  if (!stored) {
-    hideLoading();
-    showScreen('login');
-    return;
-  }
+  const stored = localStorage.getItem('tg_cfg');
+  if (!stored) { splash(100, 'Ready'); await delay(300); show('login'); return; }
 
+  cfg = JSON.parse(stored);
+  splash(40, 'Loading events...');
   try {
-    cfg = JSON.parse(stored);
-    setLoading(30, 'Loading events...');
-    await loadEvents();
-    setLoading(60, 'Ready');
-    hideLoading();
-    showScreen('event');
+    await loadEventList();
+    splash(80, 'Ready');
+    await delay(300);
+    show('evtsel');
   } catch(e) {
-    hideLoading();
-    showScreen('login');
+    console.error('Init error', e);
+    splash(100, 'Error — please sign in again');
+    await delay(1000);
+    show('login');
   }
 });
 
-function setLoading(pct, text) {
-  document.getElementById('loading-bar').style.width = pct + '%';
-  document.getElementById('loading-text').textContent = text;
+// ── HELPERS ──
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+function splash(pct, msg) {
+  document.getElementById('sbar').style.width  = pct + '%';
+  document.getElementById('smsg').textContent  = msg;
 }
 
-function hideLoading() {
-  document.getElementById('loading-screen').style.display = 'none';
-}
-
-function showScreen(name) {
-  ['login','event','app'].forEach(s => {
-    const el = document.getElementById(s + '-screen');
-    if (s === name) { el.classList.remove('hidden'); el.style.display = ''; }
-    else el.classList.add('hidden');
+function show(id) {
+  ['splash','login','evtsel','app'].forEach(s => {
+    const el = document.getElementById(s);
+    if (s === id) { el.classList.remove('hidden'); if (s==='app') el.style.display='flex'; }
+    else           { el.classList.add('hidden');    if (s==='app') el.style.display='none'; }
   });
-  if (name === 'app') {
-    document.getElementById('app-screen').style.display = 'flex';
-    initCamera();
+}
+
+function setLoading(on) { document.getElementById('tb-spin').classList.toggle('show', on); }
+
+async function fbGet(path) {
+  const r = await fetch(`${FB_URL}/${path}.json`);
+  if (!r.ok) throw new Error('FB read failed');
+  return r.json();
+}
+
+async function fbSet(path, data) {
+  const r = await fetch(`${FB_URL}/${path}.json`, { method:'PUT', body: JSON.stringify(data) });
+  if (!r.ok) throw new Error('FB write failed');
+  return r.json();
+}
+
+async function fbPatch(path, data) {
+  const r = await fetch(`${FB_URL}/${path}.json`, { method:'PATCH', body: JSON.stringify(data) });
+  if (!r.ok) throw new Error('FB patch failed');
+  return r.json();
+}
+
+function vib(pattern) { try { navigator.vibrate && navigator.vibrate(pattern); } catch(e){} }
+
+// ── LOGIN ──
+async function doLogin() {
+  const url    = document.getElementById('f-url').value.trim().replace(/\/$/,'');
+  const key    = document.getElementById('f-key').value.trim();
+  const secret = document.getElementById('f-secret').value.trim();
+  const meta   = document.getElementById('f-meta').value.trim();
+  const sheet  = document.getElementById('f-sheet').value.trim() || SHEET_ID_DEFAULT;
+  if (!url || !key || !secret) { alert('Please fill in URL, key and secret'); return; }
+  cfg = { u:url, k:key, s:secret, m:meta, sheet };
+  localStorage.setItem('tg_cfg', JSON.stringify(cfg));
+  show('splash'); splash(30, 'Connecting...');
+  try {
+    await loadEventList();
+    splash(80, 'Connected!'); await delay(400); show('evtsel');
+  } catch(e) {
+    splash(100, 'Connection failed — check credentials'); await delay(1500); show('login');
   }
 }
 
-// ── CREDENTIALS ──
-function saveCredentials() {
-  const site   = document.getElementById('cfg-site').value.trim().replace(/\/$/, '');
-  const key    = document.getElementById('cfg-key').value.trim();
-  const secret = document.getElementById('cfg-secret').value.trim();
-  const meta   = document.getElementById('cfg-meta').value.trim();
-  const sheet  = document.getElementById('cfg-sheet').value.trim();
-  if (!site || !key || !secret) { alert('Please fill in site URL, key and secret.'); return; }
-  cfg = { u: site, k: key, s: secret, m: meta, sheet };
-  localStorage.setItem('fd_cfg', JSON.stringify(cfg));
-  loadEvents().then(() => showScreen('event'));
+function signOut() {
+  if (!confirm('Sign out? You will need to scan the login QR again.')) return;
+  localStorage.clear(); sessionStorage.clear(); location.reload();
 }
 
-function clearCredentials() {
-  if (!confirm('Sign out? You will need to scan the login QR code again.')) return;
-  localStorage.removeItem('fd_cfg');
-  localStorage.removeItem('fd_event');
-  sessionStorage.clear();
-  location.reload();
-}
-
-// ── EVENTS ──
+// ── EVENT LIST ──
 let events = [];
 
-async function loadEvents() {
-  // Load from MEC via bulk2 to get event list
-  // For now, load from stored event config or fallback
-  const stored = localStorage.getItem('fd_event');
-  if (stored) {
-    selectedEvent = JSON.parse(stored);
+async function loadEventList() {
+  events = [];
+  // Load from Google Sheet EVENTS tab
+  const sheetId = cfg.sheet || SHEET_ID_DEFAULT;
+  // Try known GIDs for EVENTS tab
+  const gids = ['0', '1627244189', '630690329', '1'];
+  let loaded = false;
+  for (const gid of gids) {
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&t=${Date.now()}`;
+      const r   = await fetch(url);
+      if (!r.ok) continue;
+      const text = await r.text();
+      const rows = parseCSV(text);
+      if (!rows.length || !rows[0].some(h => h.toLowerCase().includes('event'))) continue;
+      const headers = rows[0].map(h => h.trim().toLowerCase());
+      const nameIdx = headers.findIndex(h => h.includes('event_name') || h.includes('name'));
+      if (nameIdx === -1) continue;
+      events = rows.slice(1).filter(r => r[nameIdx]).map(r => {
+        const get = (keys) => { for (const k of keys) { const i = headers.findIndex(h=>h.includes(k)); if(i>-1) return r[i]||''} return ''; };
+        return {
+          id:      get(['event_id','id']),
+          mec_id:  get(['mec_event_id','mec_id']),
+          name:    get(['event_name','name']),
+          short:   get(['event_short','short']),
+          date:    get(['event_date','date']),
+          venue:   get(['venue']),
+          color:   get(['color','colour']) || '#FF4B7B',
+          active:  get(['active']),
+        };
+      }).filter(e => e.name && e.active.toLowerCase() !== 'no');
+      if (events.length) { loaded = true; break; }
+    } catch(e) { continue; }
   }
-  // TODO: load from Google Sheet EVENTS tab
-  // Placeholder events for testing
-  events = JSON.parse(sessionStorage.getItem('fd_events') || '[]');
+
+  // Fallback: load from sessionStorage cache
+  if (!loaded) {
+    const cached = sessionStorage.getItem('tg_events');
+    if (cached) events = JSON.parse(cached);
+  } else {
+    sessionStorage.setItem('tg_events', JSON.stringify(events));
+  }
+
   renderEventList();
 }
 
 function renderEventList() {
-  const el = document.getElementById('event-list');
+  const el = document.getElementById('evtsel-list');
   if (!events.length) {
-    el.innerHTML = '<div style="color:rgba(255,255,255,.3);text-align:center;padding:40px 0;font-size:14px">No upcoming events found.<br><br>Check your Google Sheet EVENTS tab.</div>';
+    el.innerHTML = '<div style="color:rgba(255,255,255,.3);text-align:center;padding:40px 0;font-size:14px">No active events found in your Google Sheet.<br><br>Check the EVENTS tab has rows with Active = Yes.</div>';
     return;
   }
   el.innerHTML = events.map((ev, i) => `
-    <div class="event-card ${selectedEvent && selectedEvent.id === ev.id ? 'selected' : ''}" onclick="selectEvent(${i})">
-      <div class="event-dot" style="background:${ev.color || '#888'}"></div>
-      <div class="event-info">
-        <div class="event-name">${ev.name}</div>
-        <div class="event-date">${ev.date} · ${ev.venue || ''}</div>
+    <div class="evt-card" id="evc-${i}" onclick="selectEvent(${i})">
+      <div class="evt-dot" style="background:${ev.color}"></div>
+      <div class="evt-info">
+        <div class="evt-name">${ev.name}</div>
+        <div class="evt-date">${ev.date}${ev.venue ? ' · ' + ev.venue : ''}</div>
       </div>
-      <div class="event-chevron">›</div>
-    </div>
-  `).join('');
+      <div class="evt-chev">›</div>
+    </div>`).join('');
+  document.getElementById('evtsel-sub').textContent = `${events.length} event${events.length!==1?'s':''} available`;
 }
 
-function selectEvent(idx) {
-  selectedEvent = events[idx];
-  document.querySelectorAll('.event-card').forEach((c, i) => c.classList.toggle('selected', i === idx));
-  document.getElementById('btn-select-event').classList.add('active');
+let selectedIdx = -1;
+function selectEvent(i) {
+  selectedIdx = i;
+  document.querySelectorAll('.evt-card').forEach((c,j) => c.classList.toggle('sel', j===i));
+  const btn = document.getElementById('btn-open');
+  btn.disabled = false;
+  btn.textContent = `Open ${events[i].name} →`;
+  btn.classList.add('ready');
 }
 
-function confirmEventSelection() {
-  if (!selectedEvent) return;
-  localStorage.setItem('fd_event', JSON.stringify(selectedEvent));
-  document.getElementById('top-bar-event').textContent = selectedEvent.name;
-  document.getElementById('top-bar-sub').textContent = selectedEvent.date;
-  document.getElementById('st-event').textContent = selectedEvent.name;
-  showScreen('app');
-  loadEventData();
+async function openEvent() {
+  if (selectedIdx < 0) return;
+  activeEvent = events[selectedIdx];
+  localStorage.setItem('tg_event', JSON.stringify(activeEvent));
+  document.getElementById('tb-evt').textContent = activeEvent.name;
+  document.getElementById('tb-sub').textContent = activeEvent.date;
+  document.getElementById('ss-evt').textContent = activeEvent.name;
+  show('app');
+  initCamera();
+  loadAllData();
 }
 
-function changeEvent() {
-  showScreen('event');
-}
+function changeEvent() { show('evtsel'); renderEventList(); }
 
 // ── DATA LOADING ──
-async function loadEventData() {
-  if (!selectedEvent || !cfg) return;
-  // TODO: load bulk2, sheet guests, firebase checkins
-  // Placeholder
-  console.log('Loading data for', selectedEvent.name);
-}
+async function loadAllData() {
+  if (!activeEvent || !cfg) return;
+  setLoading(true);
+  dataLoaded = false;
+  bookingMap = {};
+  fbCheckins = {};
+  document.getElementById('scan-hint').textContent = 'Loading guest data...';
 
-async function refreshData() {
-  await loadEventData();
-  alert('Guest data refreshed.');
-}
-
-// ── CAMERA & SCANNING ──
-async function initCamera() {
-  if (cameraStream) return;
   try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
-    const video = document.getElementById('camera-video');
-    video.srcObject = cameraStream;
-    await video.play();
+    // 1. Load Firebase checkins first (fast)
+    try {
+      const fc = await fbGet(`checkins/${activeEvent.id}`);
+      if (fc) {
+        if (fc.mec)   Object.assign(fbCheckins, fc.mec);
+        if (fc.sheet) Object.assign(fbCheckins, fc.sheet);
+      }
+    } catch(e) { console.warn('FB checkins load failed', e); }
 
-    // Use BarcodeDetector if available
-    if ('BarcodeDetector' in window) {
-      barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-      startScanLoop();
-    } else {
-      document.getElementById('scan-hint').textContent = 'Camera ready — BarcodeDetector not supported on this browser';
+    // 2. Load MEC bookings via bulk2
+    if (activeEvent.mec_id && cfg.u && cfg.k && cfg.s) {
+      try {
+        await loadBulk2();
+      } catch(e) { console.warn('bulk2 failed', e); }
     }
+
+    // 3. Load Google Sheet guests
+    try {
+      await loadSheetGuests();
+    } catch(e) { console.warn('Sheet guests failed', e); }
+
+    // 4. Load EVENT_CONFIG
+    try {
+      await loadEventConfig();
+    } catch(e) { console.warn('Event config failed', e); }
+
+    // Apply Firebase checkin state to bookingMap
+    applyCheckinState();
+
+    dataLoaded = true;
+    const total = Object.keys(bookingMap).length;
+    document.getElementById('scan-hint').textContent = `Ready · ${total} guests loaded`;
+    document.getElementById('ss-guests').textContent = total;
+    document.getElementById('ss-site').textContent = cfg.u.replace('https://','');
+    document.getElementById('ss-api').innerHTML = '<span class="sbadge ok">✓ Connected</span>';
+    renderGuests();
+    renderStats();
   } catch(e) {
-    document.getElementById('scan-hint').textContent = 'Camera access denied. Check permissions.';
+    console.error('loadAllData error', e);
+    document.getElementById('scan-hint').textContent = 'Error loading data — tap Settings to retry';
+  } finally {
+    setLoading(false);
   }
 }
 
-function startScanLoop() {
-  const video = document.getElementById('camera-video');
-  const loop = async () => {
-    if (!scanActive && video.readyState === video.HAVE_ENOUGH_DATA) {
+async function reloadData() { await loadAllData(); }
+
+async function loadBulk2() {
+  const auth = btoa(`${cfg.k}:${cfg.s}`);
+  const url  = `${cfg.u}/wp-json/fd2/v1/bulk2?event_id=${activeEvent.mec_id}&per_page=500`;
+  const r    = await fetch(url, { headers: { 'Authorization': `Basic ${auth}` }, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error(`bulk2 ${r.status}`);
+  const bookings = await r.json();
+  bookings.forEach(b => {
+    const key = b.invoice_id || b.id || b.key;
+    if (!key) return;
+    bookingMap[key] = {
+      key,
+      source:      'mec',
+      name:        b.name || b.attendee_name || 'Unknown',
+      email:       b.email || '',
+      tickets:     b.tickets || [],
+      isVip:       b.is_vip || false,
+      entryType:   b.entry_type || 'GE',
+      ticketName:  b.ticket_name || 'MEC Ticket',
+      checkedIn:   false,
+      _mecInvoice: key,
+    };
+  });
+  console.log(`bulk2: loaded ${bookings.length} bookings`);
+}
+
+async function loadSheetGuests() {
+  const sheetId = cfg.sheet || SHEET_ID_DEFAULT;
+  // Try GUESTS tab GIDs
+  const guestGids = ['1', '2', '1627244189'];
+  for (const gid of guestGids) {
+    try {
+      const url  = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&t=${Date.now()}`;
+      const r    = await fetch(url);
+      if (!r.ok) continue;
+      const text = await r.text();
+      const rows = parseCSV(text);
+      if (!rows.length) continue;
+      const headers = rows[0].map(h => h.trim().toLowerCase());
+      const nameIdx = headers.findIndex(h => h.includes('first_name') || h === 'name' || h.includes('first'));
+      if (nameIdx === -1) continue;
+      let count = 0;
+      rows.slice(1).forEach((r, i) => {
+        const get = (keys) => { for (const k of keys) { const idx = headers.findIndex(h=>h.includes(k)); if(idx>-1) return r[idx]||''} return ''; };
+        const evId     = get(['event_id','event']);
+        if (evId && evId !== activeEvent.id && evId !== activeEvent.name) return;
+        const firstName = get(['first_name','name']);
+        const lastName  = get(['last_name','surname']);
+        const name      = [firstName, lastName].filter(Boolean).join(' ');
+        if (!name) return;
+        const key = `sheet_${gid}_${i}`;
+        bookingMap[key] = {
+          key,
+          source:    'sheet',
+          name,
+          email:     get(['email']),
+          entryType: get(['entry_code','entry_type','type']),
+          category:  get(['category']),
+          guestOf:   get(['guest_of']),
+          isVip:     get(['entry_code','type']).toUpperCase().includes('VIP'),
+          checkedIn: false,
+        };
+        count++;
+      });
+      if (count > 0) { console.log(`Sheet guests: loaded ${count}`); break; }
+    } catch(e) { continue; }
+  }
+}
+
+async function loadEventConfig() {
+  eventConfig = {};
+  const sheetId = cfg.sheet || SHEET_ID_DEFAULT;
+  const configGids = ['2', '3'];
+  for (const gid of configGids) {
+    try {
+      const url  = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&t=${Date.now()}`;
+      const r    = await fetch(url);
+      if (!r.ok) continue;
+      const text = await r.text();
+      const rows = parseCSV(text);
+      if (!rows.length) continue;
+      const headers = rows[0].map(h => h.trim().toLowerCase());
+      const codeIdx = headers.findIndex(h => h.includes('entry_code'));
+      if (codeIdx === -1) continue;
+      rows.slice(1).forEach(r => {
+        const evId = r[headers.findIndex(h=>h.includes('event_id'))] || '';
+        if (evId && evId !== activeEvent.id) return;
+        const code = r[codeIdx];
+        if (!code) return;
+        const get = (keys) => { for (const k of keys) { const i = headers.findIndex(h=>h.includes(k)); if(i>-1) return r[i]||''} return ''; };
+        eventConfig[code] = {
+          label:           get(['entry_label','label']),
+          wristband_colour:get(['wristband_colour','wristband_color','colour']),
+          flash_colour:    get(['flash_colour','flash_color']),
+          food_tokens:     parseInt(get(['food_tokens','food'])) || 0,
+          drinks_package:  get(['drinks_package','drinks']).toLowerCase() === 'yes',
+          seated:          get(['seated']).toLowerCase() === 'yes',
+          door_note:       get(['door_note','note']),
+        };
+      });
+      if (Object.keys(eventConfig).length > 0) { console.log('Event config loaded:', Object.keys(eventConfig)); break; }
+    } catch(e) { continue; }
+  }
+}
+
+function applyCheckinState() {
+  Object.values(bookingMap).forEach(b => {
+    const key = b._mecInvoice || b.key;
+    if (fbCheckins[key]) {
+      b.checkedIn   = fbCheckins[key].checkedIn || false;
+      b.checkedInAt = fbCheckins[key].time;
+    }
+  });
+}
+
+// ── SCANNING ──
+async function initCamera() {
+  if (camStream) return;
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }
+    });
+    const v = document.getElementById('cam-video');
+    v.srcObject = camStream;
+    await v.play();
+    if ('BarcodeDetector' in window) {
+      detector = new BarcodeDetector({ formats:['qr_code'] });
+      scanLoop();
+    } else {
+      document.getElementById('scan-hint').textContent = 'Camera ready — QR detection not supported on this browser';
+    }
+  } catch(e) {
+    document.getElementById('scan-hint').textContent = 'Camera access denied — check permissions';
+  }
+}
+
+function scanLoop() {
+  const v = document.getElementById('cam-video');
+  const tick = async () => {
+    if (!scanBusy && v.readyState >= 2) {
       try {
-        const codes = await barcodeDetector.detect(video);
-        if (codes.length > 0) {
-          const code = codes[0].rawValue;
-          handleScan(code);
-        }
+        const codes = await detector.detect(v);
+        if (codes.length > 0) handleScan(codes[0].rawValue);
       } catch(e) {}
     }
-    requestAnimationFrame(loop);
+    requestAnimationFrame(tick);
   };
-  requestAnimationFrame(loop);
+  requestAnimationFrame(tick);
 }
 
-async function handleScan(code) {
-  if (scanActive) return;
-  scanActive = true;
-  document.getElementById('scan-loading').classList.add('show');
+async function handleScan(raw) {
+  if (scanBusy) return;
+  scanBusy = true;
+  vib(30);
+  document.getElementById('scan-spin').classList.add('show');
 
   try {
-    // Vibrate on scan
-    if (navigator.vibrate) navigator.vibrate(30);
-
-    // TODO: lookup in bookingMap, then MEC, then sheet
-    // Placeholder response for testing
-    await new Promise(r => setTimeout(r, 800));
-
-    showResult({
-      type: 'ok',
-      name: 'Test Guest',
-      detail: 'VIP Full Day · Ibiza White Party',
-      chips: ['⭐ VIP'],
-      wristband: { color: '#FFD700', label: 'VIP Wristband', note: 'Issue gold wristband + 2 food tokens' }
-    });
-
+    const result = await lookup(raw);
+    showResult(result);
   } catch(e) {
-    showResult({ type: 'err', name: 'Not Found', detail: code });
+    showResult({ type:'err', name:'Error', detail: e.message });
   } finally {
-    document.getElementById('scan-loading').classList.remove('show');
+    document.getElementById('scan-spin').classList.remove('show');
   }
 }
 
+async function lookup(raw) {
+  // Normalise code - strip URLs, extract key
+  let code = raw.trim();
+
+  // Strip known URL prefixes
+  code = code
+    .replace(/.*[?&]rf=/, '')
+    .replace(/.*\/invoice\//, '')
+    .replace(/.*tapgate\.io\//, '')
+    .replace(/.*github\.io\/[^?]+[?&]?/, '')
+    .trim();
+
+  // 1. Check bookingMap directly
+  if (bookingMap[code]) return admitBooking(bookingMap[code]);
+
+  // 2. Search by MEC invoice number
+  const byInvoice = Object.values(bookingMap).find(b => b._mecInvoice === code || b.key === code);
+  if (byInvoice) return admitBooking(byInvoice);
+
+  // 3. Try MEC short URL resolve
+  if (raw.includes('/invoice/') || raw.includes('woo') || raw.length < 30) {
+    try {
+      const auth = btoa(`${cfg.k}:${cfg.s}`);
+      const r    = await fetch(`${cfg.u}/wp-json/fd2/v1/resolve?code=${encodeURIComponent(raw)}`, {
+        headers: { 'Authorization': `Basic ${auth}` },
+        signal:  AbortSignal.timeout(8000)
+      });
+      if (r.ok) {
+        const data = await r.json();
+        const inv  = data.mec_invoice_id || data.invoice_id;
+        if (inv && bookingMap[inv]) return admitBooking(bookingMap[inv]);
+        if (inv) {
+          // Try live MEC lookup
+          const b = await mecLiveLookup(inv);
+          if (b) return admitBooking(b);
+        }
+      }
+    } catch(e) { console.warn('resolve failed', e); }
+  }
+
+  // 4. Door sale QR
+  if (code.startsWith('FD-DOOR-') || code.includes('-DOOR-')) {
+    return handleDoorSale(code);
+  }
+
+  // 5. Not found
+  return { type:'err', name:'Not Found', detail: `No booking found for: ${code.slice(0,40)}` };
+}
+
+async function mecLiveLookup(invoiceId) {
+  try {
+    const auth = btoa(`${cfg.k}:${cfg.s}`);
+    const r    = await fetch(`${cfg.u}/wp-json/fd2/v1/bulk2?invoice_id=${invoiceId}`, {
+      headers: { 'Authorization': `Basic ${auth}` },
+      signal:  AbortSignal.timeout(8000)
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data || !data.length) return null;
+    const b = data[0];
+    const key = b.invoice_id || invoiceId;
+    bookingMap[key] = { key, source:'mec', name:b.name||'Unknown', email:b.email||'', tickets:b.tickets||[], isVip:b.is_vip||false, entryType:b.entry_type||'GE', ticketName:b.ticket_name||'MEC Ticket', checkedIn:false, _mecInvoice:key };
+    return bookingMap[key];
+  } catch(e) { return null; }
+}
+
+async function handleDoorSale(code) {
+  // Get door count from Firebase
+  try {
+    const data = await fbGet(`doorCounts/${activeEvent.id}/${code}`);
+    const count = (data && data.count) || 0;
+    const limit = (data && data.limit) || 500;
+    if (count >= limit) return { type:'err', name:'Limit Reached', detail:`${code} has reached its limit of ${limit} scans` };
+    // Increment
+    await fbPatch(`doorCounts/${activeEvent.id}/${code}`, { count: count+1, limit, lastScan: new Date().toISOString() });
+    const entCode = code.includes('COMP') ? 'COMP' : code.includes('EVE') ? 'EVE' : 'GE';
+    const ec = eventConfig[entCode] || {};
+    return {
+      type:   'ok',
+      name:   'Door Sale',
+      detail: `${ec.label || entCode} · Scan ${count+1} of ${limit}`,
+      wristband: ec.wristband_colour ? { color: ec.wristband_colour, label: ec.label||entCode, note: ec.door_note||''} : null,
+    };
+  } catch(e) {
+    return { type:'err', name:'Door Sale Error', detail: e.message };
+  }
+}
+
+async function admitBooking(b) {
+  // Check if already checked in
+  if (b.checkedIn) {
+    const at = b.checkedInAt ? new Date(b.checkedInAt).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : 'earlier';
+    return { type:'warn', name: b.name, detail:`Already checked in at ${at}`, duplicate:true };
+  }
+
+  // Determine entry type
+  const et     = resolveEntryType(b);
+  const ec     = eventConfig[et] || {};
+  const isVip  = et.toUpperCase().includes('VIP');
+  const flashType = ec.flash_colour ? 'ok' :
+                    (et === 'VIP-No Food' || et === 'VIP-NF') ? 'pink' :
+                    (et === 'VIP-1 Token' || et === 'VIP-1T') ? 'blue' : 'ok';
+
+  // Write checkin to Firebase
+  const fbPath = b.source === 'mec'
+    ? `checkins/${activeEvent.id}/mec/${b._mecInvoice||b.key}`
+    : `checkins/${activeEvent.id}/sheet/${b.key}`;
+  try {
+    const door = localStorage.getItem('tg_door') || 'Main Gate';
+    await fbSet(fbPath, { name:b.name, checkedIn:true, time:new Date().toISOString(), door });
+  } catch(e) { console.warn('FB write failed', e); }
+
+  // Write to WP if MEC
+  if (b.source === 'mec' && cfg) {
+    const auth = btoa(`${cfg.k}:${cfg.s}`);
+    fetch(`${cfg.u}/wp-json/fd2/v1/checkin`, {
+      method:'POST',
+      headers:{ 'Authorization':`Basic ${auth}`, 'Content-Type':'application/json' },
+      body: JSON.stringify({ invoice_id: b._mecInvoice||b.key }),
+    }).catch(e => console.warn('WP checkin write failed', e));
+  }
+
+  // Update local state
+  b.checkedIn   = true;
+  b.checkedInAt = new Date().toISOString();
+  fbCheckins[b._mecInvoice||b.key] = { checkedIn:true, time:b.checkedInAt };
+
+  // Build chips
+  const chips = [];
+  if (isVip) chips.push({ label:'⭐ VIP', cls:'vip' });
+  if (ec.drinks_package) chips.push({ label:'🍾 Drinks Package', cls:'drk' });
+  if (ec.food_tokens > 0) chips.push({ label:`🍽 ${ec.food_tokens} Food Token${ec.food_tokens>1?'s':''}`, cls:'food' });
+  if (ec.food_tokens === 0 && isVip) chips.push({ label:'🚫 No Food Tokens', cls:'err' });
+  if (ec.seated) chips.push({ label:'💺 Seated', cls:'vip' });
+
+  const ticketLabel = b.ticketName && b.ticketName !== 'MEC Ticket' ? b.ticketName : (ec.label || et);
+  const now = new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+
+  return {
+    type: flashType,
+    name: b.name,
+    detail: `${ticketLabel} · ${now}`,
+    chips,
+    wristband: ec.wristband_colour ? { color: ec.wristband_colour, label: ec.label||et, note: ec.door_note||'' } : null,
+  };
+}
+
+function resolveEntryType(b) {
+  const et = (b.entryType || '').toUpperCase();
+  const tn = (b.ticketName || '').toLowerCase();
+  if (et === 'VIP-NO FOOD' || et === 'VIP-NF') return 'VIP-No Food';
+  if (et === 'VIP-1 TOKEN' || et === 'VIP-1T') return 'VIP-1 Token';
+  if (et === 'VIP' || b.isVip || tn.includes('vip')) return 'VIP';
+  if (et === 'EVE' || et === 'EVENING' || tn.includes('evening')) return 'EVE';
+  if (et === 'GE' || et === 'GENERAL') return 'GE';
+  if (tn.includes('general') || tn.includes('admission')) return 'GE';
+  return et || 'GE';
+}
+
+// ── RESULT DISPLAY ──
 function showResult(result) {
-  const iconEl   = document.getElementById('result-icon');
-  const nameEl   = document.getElementById('result-name');
-  const detailEl = document.getElementById('result-detail');
-  const chipsEl  = document.getElementById('result-chips');
-  const wbEl     = document.getElementById('wristband-banner');
-  const flashEl  = document.getElementById('scan-flash');
+  const flash = document.getElementById('scan-flash');
+  flash.className = ''; void flash.offsetWidth; flash.className = result.type;
 
-  // Flash
-  flashEl.className = result.type;
-  void flashEl.offsetWidth;
+  const iconMap = { ok:'✓', err:'✕', warn:'!', pink:'✓', blue:'✓' };
+  document.getElementById('rs-icon').className = `rs-icon ${result.type}`;
+  document.getElementById('rs-icon').textContent = iconMap[result.type] || '?';
+  document.getElementById('rs-name').textContent = result.name || '—';
+  document.getElementById('rs-detail').textContent = result.detail || '';
 
-  // Icon
-  const icons = { ok:'✓', warn:'!', err:'✕', pink:'✓', blue:'✓' };
-  iconEl.className = `result-icon ${result.type}`;
-  iconEl.textContent = icons[result.type] || '?';
+  document.getElementById('rs-chips').innerHTML = (result.chips||[]).map(c =>
+    `<span class="chip ${c.cls||''}">${c.label}</span>`).join('');
 
-  nameEl.textContent   = result.name;
-  detailEl.textContent = result.detail || '';
-
-  // Chips
-  chipsEl.innerHTML = (result.chips || []).map(c => `<span class="chip">${c}</span>`).join('');
-
-  // Wristband
+  const wb = document.getElementById('wb-banner');
   if (result.wristband) {
-    wbEl.style.display = 'flex';
-    wbEl.style.background = result.wristband.color + '22';
+    wb.style.display = 'flex';
+    wb.style.background = result.wristband.color + '22';
     document.getElementById('wb-swatch').style.background = result.wristband.color;
     document.getElementById('wb-label').textContent = result.wristband.label;
     document.getElementById('wb-note').textContent  = result.wristband.note || '';
   } else {
-    wbEl.style.display = 'none';
+    wb.style.display = 'none';
   }
 
-  document.getElementById('scan-result').classList.add('show');
-
-  // Vibrate
-  if (navigator.vibrate) {
-    if (result.type === 'ok' || result.type === 'pink' || result.type === 'blue') navigator.vibrate([50, 30, 80]);
-    else if (result.type === 'warn') navigator.vibrate([200, 80, 200]);
-    else navigator.vibrate([500]);
-  }
+  document.getElementById('result-sheet').classList.add('show');
+  vib(result.type==='ok'||result.type==='pink'||result.type==='blue' ? [50,30,80] : result.type==='warn' ? [200,80,200] : [500]);
+  renderGuests();
 }
 
 function dismissResult() {
-  document.getElementById('scan-result').classList.remove('show');
-  setTimeout(() => { scanActive = false; }, 500);
+  document.getElementById('result-sheet').classList.remove('show');
+  setTimeout(() => { scanBusy = false; }, 500);
 }
 
 // ── GUESTS ──
-function filterGuests() {
-  const q = document.getElementById('guest-search').value.toLowerCase();
-  // TODO: filter bookingMap and render
-  renderGuests(q);
-}
+function renderGuests() {
+  const q   = (document.getElementById('g-search').value || '').toLowerCase();
+  const f   = activeFilter;
+  let list  = Object.values(bookingMap);
 
-function setFilter(filter, el) {
-  activeFilter = filter;
-  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  filterGuests();
-}
+  if (q)          list = list.filter(b => b.name && b.name.toLowerCase().includes(q));
+  if (f==='in')   list = list.filter(b => b.checkedIn);
+  if (f==='out')  list = list.filter(b => !b.checkedIn);
+  if (f==='vip')  list = list.filter(b => b.isVip || resolveEntryType(b).includes('VIP'));
+  if (f==='mec')  list = list.filter(b => b.source==='mec');
+  if (f==='sheet')list = list.filter(b => b.source==='sheet');
 
-function renderGuests(q) {
-  const el = document.getElementById('guest-list');
-  const guests = Object.values(bookingMap);
-  let filtered = guests;
-  if (q) filtered = filtered.filter(g => g.name && g.name.toLowerCase().includes(q));
-  if (activeFilter === 'in')  filtered = filtered.filter(g => g.checkedIn);
-  if (activeFilter === 'out') filtered = filtered.filter(g => !g.checkedIn);
-  if (activeFilter === 'vip') filtered = filtered.filter(g => g.isVip || (g.entryType || '').toUpperCase() === 'VIP');
+  list.sort((a,b) => (a.name||'z').localeCompare(b.name||'z'));
 
-  if (!filtered.length) {
-    el.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px 0;font-size:14px">${q ? 'No guests matching "' + q + '"' : 'No guests found'}</div>`;
+  const el = document.getElementById('g-list');
+  if (!list.length) {
+    el.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px 0;font-size:14px">${q ? `No guests matching "${q}"` : 'No guests found'}</div>`;
     return;
   }
 
-  el.innerHTML = filtered.slice(0, 100).map(g => {
-    const initials = (g.name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-    return `<div class="guest-item">
-      <div class="guest-avatar">${initials}</div>
-      <div class="guest-info">
-        <div class="guest-name">${g.name || 'Unknown'}</div>
-        <div class="guest-meta">${g.entryType || 'GE'} · ${g.source || ''}</div>
+  el.innerHTML = list.slice(0,200).map(b => {
+    const initials = (b.name||' ').split(' ').map(w=>w[0]||'?').join('').slice(0,2).toUpperCase();
+    const et       = resolveEntryType(b);
+    const color    = (eventConfig[et]||{}).wristband_colour || '#22224C';
+    return `<div class="guest-row">
+      <div class="gav" style="background:${color}">${initials}</div>
+      <div class="ginfo">
+        <div class="gname">${b.name}</div>
+        <div class="gmeta">${et} · ${b.source==='mec'?'Ticket':(b.category||'Guest')}${b.email?' · '+b.email:''}</div>
       </div>
-      <div class="guest-status ${g.checkedIn ? 'in' : ''}"></div>
+      <div class="gstatus ${b.checkedIn?'in':''}"></div>
     </div>`;
   }).join('');
 }
 
-// ── SETTINGS ──
-function saveDoorPosition() {
-  const pos = document.getElementById('door-position-input').value.trim();
-  if (!pos) return;
-  localStorage.setItem('fd_door', pos);
-  document.getElementById('st-door').textContent = pos;
-  alert('Door position saved: ' + pos);
+function setFilter(el) {
+  activeFilter = el.dataset.f;
+  document.querySelectorAll('.fpill').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  renderGuests();
 }
 
-// ── TABS ──
-function switchTab(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById(name + '-page').classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
+// ── STATS ──
+function renderStats() {
+  const all   = Object.values(bookingMap);
+  const total = all.length;
+  const in_ct = all.filter(b=>b.checkedIn).length;
+  const vip   = all.filter(b=>b.isVip||resolveEntryType(b).includes('VIP')).length;
+  const mec   = all.filter(b=>b.source==='mec').length;
+  const sheet = all.filter(b=>b.source==='sheet').length;
+  const pct   = total > 0 ? Math.round(in_ct/total*100) : 0;
 
-  if (name === 'scan') initCamera();
-  if (name === 'guests') filterGuests();
-  if (name === 'settings') {
-    document.getElementById('st-site').textContent = cfg ? cfg.u : '—';
-    const door = localStorage.getItem('fd_door');
-    if (door) {
-      document.getElementById('st-door').textContent = door;
-      document.getElementById('door-position-input').value = door;
+  document.getElementById('stats-content').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-card-title">Overview — ${activeEvent ? activeEvent.name : ''}</div>
+      <div class="stat-row"><div class="stat-key">Checked In</div><div class="stat-val" style="color:var(--pink)">${in_ct}</div></div>
+      <div class="stat-row"><div class="stat-key">Remaining</div><div class="stat-val">${total - in_ct}</div></div>
+      <div class="stat-row"><div class="stat-key">Total Guests</div><div class="stat-val">${total}</div></div>
+      <div class="stat-row"><div class="stat-key">Admitted</div><div class="stat-val">${pct}%</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-title">By Source</div>
+      <div class="stat-row"><div class="stat-key">MEC Tickets</div><div class="stat-val">${mec}</div></div>
+      <div class="stat-row"><div class="stat-key">Guest List</div><div class="stat-val">${sheet}</div></div>
+      <div class="stat-row"><div class="stat-key">VIP</div><div class="stat-val">${vip}</div></div>
+    </div>`;
+}
+
+// ── SETTINGS ──
+function saveDoor() {
+  const pos = document.getElementById('door-inp').value.trim();
+  if (!pos) return;
+  localStorage.setItem('tg_door', pos);
+  document.getElementById('ss-door').textContent = pos;
+}
+
+// ── PAGES / TABS ──
+function setPage(el) {
+  const p = el.dataset.p;
+  document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.getElementById(`pg-${p}`).classList.add('active');
+  el.classList.add('on');
+  if (p==='scan')     initCamera();
+  if (p==='guests')   renderGuests();
+  if (p==='stats')    renderStats();
+  if (p==='settings') {
+    const door = localStorage.getItem('tg_door');
+    if (door) { document.getElementById('ss-door').textContent = door; document.getElementById('door-inp').value = door; }
+    document.getElementById('ss-site').textContent = cfg ? cfg.u.replace('https://','') : '—';
+    document.getElementById('ss-evt').textContent  = activeEvent ? activeEvent.name : '—';
+  }
+}
+
+// ── CSV PARSER ──
+function parseCSV(text) {
+  const rows = []; let row = []; let cell = ''; let inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"'  && text[i+1] === '"') { cell += '"'; i++; }
+      else if (ch === '"'){ inQ = false; }
+      else cell += ch;
+    } else {
+      if (ch === '"'){ inQ = true; }
+      else if (ch === ','){ row.push(cell.trim()); cell = ''; }
+      else if (ch === '\n'){ row.push(cell.trim()); if (row.some(c=>c)) rows.push(row); row = []; cell = ''; }
+      else if (ch === '\r') {}
+      else cell += ch;
     }
   }
+  if (cell || row.length) { row.push(cell.trim()); if (row.some(c=>c)) rows.push(row); }
+  return rows;
 }
 </script>
 </body>
