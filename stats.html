@@ -182,18 +182,21 @@ let eventConfig = {};
 
 // ── INIT ──
 window.addEventListener('load', async () => {
-  cfg = JSON.parse(localStorage.getItem('tg_cfg') || 'null');
+  cfg = JSON.parse(localStorage.getItem('tg_cfg') || localStorage.getItem('fd_cfg') || 'null');
   if (!cfg) { document.getElementById('loading').innerHTML = '<div class="empty">Not logged in — <a href="index.html" style="color:var(--pink)">open scanner first</a></div>'; return; }
 
-  // Load events from sessionStorage
-  events = JSON.parse(sessionStorage.getItem('tg_events') || '[]');
+  // Load events from cfg payload (set by QR login)
+  if (cfg.events && cfg.events.length) events = cfg.events;
+  else events = JSON.parse(sessionStorage.getItem('tg_events') || '[]');
 
-  // Check if an event is active
+  // Check if an event is active — from localStorage or first event in cfg
   const stored = localStorage.getItem('tg_event');
   if (stored) {
     activeEvent = JSON.parse(stored);
-    document.getElementById('tb-sub').textContent = activeEvent.name;
+  } else if (events.length) {
+    activeEvent = events[0];
   }
+  if (activeEvent) document.getElementById('tb-sub').textContent = activeEvent.name;
 
   renderEventPills();
   await loadArchiveHistory();
