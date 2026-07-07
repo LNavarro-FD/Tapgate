@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.2.1';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1624,12 +1624,15 @@ async function loadGuestList() {
 }
 
 // ── Google Sheet integration ────────────────────────────────────────────────
-const SHEET_ID = '1qy9_HFxFZg9L3M2UzV_cSMesZp6UdYJZmlR-k9d3OCc';
+const SHEET_ID = '1Sx1KxRcRu8uhzbLD5cmA75ugxrYLlOi6kG5hrRt7SRM';
 const SHEET_TABS = {
-  guests:    '0',
-  djs:       '1627244189',
-  resources: '734386291',
-  remenham:  '630690329',
+  events:      '272492946',
+  eventConfig: '1546702819',
+  guests:      '1907315003',
+  djs:         '1508769014',
+  thirdParty:  '958761345',
+  doorTickets: '336649582',
+  lov:         '1657123614',
 };
 
 function sheetEventToId(eventStr) {
