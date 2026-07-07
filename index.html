@@ -985,23 +985,7 @@ input::placeholder { color: #999; }
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
 const APP_VERSION = '2.0.7';
-(function checkForUpdate() {
-  fetch(window.location.href.split('?')[0] + '?_v=' + Date.now(), { cache: 'no-store' })
-    .then(r => r.text())
-    .then(html => {
-      const m = html.match(/APP_VERSION = '([\d.]+)'/);
-      if (m && m[1] !== APP_VERSION) {
-        console.log('New version available:', m[1], '— reloading');
-        const fdParam = new URLSearchParams(window.location.search).get('fd');
-        if (fdParam) {
-          window.location.href = window.location.pathname + '?fd=' + encodeURIComponent(fdParam);
-        } else {
-          window.location.reload(true);
-        }
-      }
-    })
-    .catch(() => {});
-})();
+// auto-update removed;
 
 // ═══════════════════════════════════════════
 //  STATE
