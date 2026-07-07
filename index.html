@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.2.1';
+const APP_VERSION = '2.2.2';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1377,7 +1377,7 @@ async function loadGuestList() {
       return {checkins:[]};
     });
 
-    const wcTimeout = new Promise(resolve => setTimeout(() => { console.warn('WC fetch timed out'); showWarning('⚠️ Some ticket data took too long to load. Some guests may be missing — tap to retry.', 'amber', 'loadGuestList'); resolve([]); }, 8000));
+    const wcTimeout = new Promise(resolve => setTimeout(() => { console.warn('WC fetch timed out'); if (!window._bulk2Loaded) showWarning('⚠️ Some ticket data took too long to load. Some guests may be missing — tap to retry.', 'amber', 'loadGuestList'); resolve([]); }, 8000));
     const wcPromise = fetchWooOrders();
 
     // Wait for WC only (with timeout) — render initial guest list from WC + sheets
@@ -1608,6 +1608,7 @@ async function loadGuestList() {
     const totalBookings = Object.keys(bookingMap).length;
     if (totalBookings > 0) {
       const totalTickets = Object.values(bookingMap).reduce((n, b) => n + (b.tickets ? b.tickets.length : 1), 0);
+      window._bulk2Loaded = true;
       showWarning('✅ ' + totalTickets + ' attendees loaded', 'green', null);
       setTimeout(clearWarning, 4000);
     }
