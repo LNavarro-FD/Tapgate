@@ -522,35 +522,12 @@ input::placeholder { color: #999; }
 .sync-dot.offline { background: #FF9500; animation: pulse-warn 1.5s ease-in-out infinite; }
 @keyframes pulse-warn { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-/* ── WARNING BANNER ── */
-#warning-banner {
-  display: none;
-  width: 100%;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-  position: relative;
-  z-index: 200;
-  box-sizing: border-box;
-  line-height: 1.4;
-}
-#warning-banner.red    { background: #D0000A; color: #fff; }
-#warning-banner.amber  { background: #FF9500; color: #fff; }
-#warning-banner.green  { background: #00A355; color: #fff; }
-#warning-banner .warn-retry {
-  display: inline-block;
-  margin-left: 10px;
-  padding: 3px 10px;
-  background: rgba(255,255,255,0.25);
-  border: none;
-  border-radius: 12px;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-}
+/* Warning banner CSS in warnings.js */
+#warning-banner { display:none; width:100%; padding:10px 16px; font-size:13px; font-weight:600; text-align:center; position:relative; z-index:200; box-sizing:border-box; line-height:1.4; }
+#warning-banner.red   { background:#D0000A; color:#fff; }
+#warning-banner.amber { background:#FF9500; color:#fff; }
+#warning-banner.green { background:#00A355; color:#fff; }
+#warning-banner .warn-retry { display:inline-block; margin-left:10px; padding:3px 10px; background:rgba(255,255,255,0.25); border:none; border-radius:12px; color:#fff; font-size:12px; font-weight:700; font-family:inherit; cursor:pointer; }
 </style>
 <script>
   // Firebase REST API — no module imports (Safari compatible)
@@ -619,6 +596,7 @@ input::placeholder { color: #999; }
   document.dispatchEvent(new Event('firebaseReady'));
   console.log('Firebase REST ready');
 </script>
+<script src="warnings.js"></script>
 </head>
 <body>
 <div id="ios-install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1a2744;color:#fff;padding:12px 16px;flex-direction:row;align-items:center;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,0.3);">
@@ -636,7 +614,7 @@ input::placeholder { color: #999; }
 <header id="main-header" class="hidden">
   <div>
     <div class="brand-name">Funky Dory</div>
-    <div class="brand-sub">FD Scanner v2.0.2</div>
+    <div class="brand-sub">FD Scanner v2.0.3</div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
     <span id="sync-dot" class="sync-dot" title="Sync status"></span>
@@ -653,7 +631,7 @@ input::placeholder { color: #999; }
   <div style="padding:28px 22px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;flex:1;background:var(--bg);">
     <div>
       <div class="brand-name" style="font-size:24px;">Funky Dory</div>
-      <div class="brand-sub" style="font-size:11px;margin-top:4px;color:var(--navy);opacity:.7;">FD Scanner v2.0.2</div>
+      <div class="brand-sub" style="font-size:11px;margin-top:4px;color:var(--navy);opacity:.7;">FD Scanner v2.0.3</div>
     </div>
 
     <!-- QR Login — preferred method -->
@@ -976,7 +954,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.0.2';
+const APP_VERSION = '2.0.3';
 (function checkForUpdate() {
   fetch(window.location.href.split('?')[0] + '?_v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1148,18 +1126,9 @@ function connect() {
 }
 function useDemoMode() { cfg = { siteUrl:'', wcKey:'', wcSecret:'', demo:true }; launch(); }
 
-// ── WARNING BANNER ──
-function showWarning(msg, level, retryFn) {
-  var b = document.getElementById('warning-banner');
-  if (!b) return;
-  b.className = level || 'amber';
-  b.innerHTML = msg + (retryFn ? ' <button class="warn-retry" onclick="(' + retryFn + ')()">Tap to retry</button>' : '');
-  b.style.display = 'block';
-}
-function clearWarning() {
-  var b = document.getElementById('warning-banner');
-  if (b) { b.style.display = 'none'; b.innerHTML = ''; }
-}
+// Warning functions loaded from warnings.js — safe fallbacks if that file fails
+if (!window.showWarning)  window.showWarning  = function(msg, level) { console.warn('[WARNING]', msg); };
+if (!window.clearWarning) window.clearWarning = function() {};
 function launch() {
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('main-header').classList.remove('hidden');
