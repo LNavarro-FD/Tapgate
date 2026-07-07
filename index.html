@@ -1120,7 +1120,7 @@ function connect() {
   const secret = document.getElementById('wc-secret').value.trim();
   const mecKey = document.getElementById('mec-key').value.trim();
   if (!url||!key||!secret) { alert('Please fill in Site URL, Consumer Key and Consumer Secret.'); return; }
-  cfg = { siteUrl:url, wcKey:key, wcSecret:secret, mecKey, demo:false };
+  cfg = { u:url, k:key, s:secret, m:mecKey, demo:false };
   saveConfig(); launch();
 }
 function useDemoMode() { cfg = { siteUrl:'', wcKey:'', wcSecret:'', demo:true }; launch(); }
@@ -1134,7 +1134,7 @@ function useDemoMode() { cfg = { siteUrl:'', wcKey:'', wcSecret:'', demo:true };
       const padded = b64 + '=='.slice(0,(4-b64.length%4)%4);
       const parsed = JSON.parse(atob(padded));
       if (parsed.u && parsed.k && parsed.s) {
-        localStorage.setItem('fdScanConfig', JSON.stringify(parsed));
+        localStorage.setItem('fd_cfg', JSON.stringify(parsed));
         if (parsed.events && parsed.events.length) window._qrEvents = parsed.events;
         window.history.replaceState({}, '', window.location.pathname);
       }
