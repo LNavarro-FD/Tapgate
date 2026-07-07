@@ -954,7 +954,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.0.4';
+const APP_VERSION = '2.0.5';
 (function checkForUpdate() {
   fetch(window.location.href.split('?')[0] + '?_v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1165,80 +1165,13 @@ let upcomingEventNames = [];
 let upcomingEvents = [];
 
 async function fetchUpcomingEvents() {
-  // Always set HRR 2026 fallback immediately so pills show even if MEC is slow/broken
-  upcomingEvents = window.activeEvent ? [{ id: Number(window.activeEvent.mec_id), title: window.activeEvent.name, mec_data: { start_date: window.activeEvent.date, end_date: window.activeEvent.date, start_time: '12:00:00' } }] : [];
-  upcomingEventNames = upcomingEvents.map(e => e.title.toLowerCase());
-
-  if (!cfg.m || !cfg.u || cfg.demo) return;
-  try {
-    const now  = new Date();
-    const in10 = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
-    const fmt  = d => d.toISOString().split('T')[0];
-
-    // Try multiple endpoint formats MEC Utility supports
-    // Try multiple auth methods and endpoints
-    const authHeaders = [
-      { 'X-MEC-KEY': cfg.m },
-      { 'Authorization': `Bearer ${cfg.m}` },
-      { 'X-MEC-KEY': cfg.m, 'Authorization': `Bearer ${cfg.m}` },
-    ];
-    const baseUrls = [
-      `${cfg.u}/wp-json/mec-utility/v1/events?date_filter=upcoming&start_date=${fmt(now)}&end_date=${fmt(in10)}&per_page=50&status=publish`,
-      `${cfg.u}/wp-json/mec-utility/v1/events?start_date=${fmt(now)}&end_date=${fmt(in10)}&per_page=50`,
-      `${cfg.u}/wp-json/mec-utility/v1/events?date_filter=upcoming&per_page=50&api_key=${encodeURIComponent(cfg.m)}`,
-      `${cfg.u}/wp-json/mec-utility/v1/event-list?date_filter=upcoming&start_date=${fmt(now)}&end_date=${fmt(in10)}&per_page=50`,
-    ];
-
-    for (const hdrs of authHeaders) {
-      for (const url of baseUrls) {
-        try {
-          const r = await fetch(url, { headers: hdrs });
-          console.log('MEC events:', url.split('?')[0], 'auth:', Object.keys(hdrs)[0], 'status:', r.status);
-          if (!r.ok) continue;
-          const data = await r.json();
-          console.log('MEC events response keys:', Object.keys(data));
-          const events = Array.isArray(data) ? data : (data.events || data.data || data.results || []);
-          console.log('Events found in response:', events.length);
-          if (events.length > 0) {
-            // Only use MEC events if they include our HRR 2026 events
-            const HRR_IDS = new Set([String(window.activeEvent ? window.activeEvent.mec_id : '0')]);
-            const hasHRR = events.some(e => HRR_IDS.has(String(e.id)));
-            if (hasHRR) {
-              // Always ensure all 3 HRR events are present — merge MEC results with fallback
-              const HRR_FALLBACK = window.activeEvent ? [{ id: Number(window.activeEvent.mec_id), title: window.activeEvent.name, mec_data: { start_date: window.activeEvent.date, end_date: window.activeEvent.date, start_time: '12:00:00' } }] : [];
-              const returnedIds = new Set(events.map(e => String(e.id)));
-              const merged = [...events];
-              HRR_FALLBACK.forEach(fb => { if (!returnedIds.has(String(fb.id))) merged.push(fb); });
-              // Filter to HRR 2026 events only
-              const HRR_EVENT_IDS = new Set([String(window.activeEvent ? window.activeEvent.mec_id : '0')]);
-              upcomingEvents = merged.filter(e => {
-                if (HRR_EVENT_IDS.has(String(e.id))) return true;
-                const t = (e.title || e.name || e.post_title || '').toLowerCase();
-                return (t.includes('henley') || t.includes('regatta')) && !t.includes('soul');
-              });
-              upcomingEventNames = upcomingEvents.map(e => (e.title || e.name || e.post_title || '').toLowerCase());
-              console.log('✓ Upcoming events loaded:', upcomingEventNames.length, upcomingEventNames);
-              return;
-            }
-            console.warn('MEC returned events but none are HRR 2026 — using fallback');
-          }
-        } catch(e) {
-          console.warn('MEC endpoint failed:', e.message);
-        }
-      }
-    }
-    console.warn('✗ No upcoming events found from MEC API — using HRR 2026 fallback');
-    // Fallback: hardcode HRR 2026 events so pills always show
-    upcomingEvents = window.activeEvent ? [{ id: Number(window.activeEvent.mec_id), title: window.activeEvent.name, mec_data: { start_date: window.activeEvent.date, end_date: window.activeEvent.date, start_time: '12:00:00' } }] : [];
-    upcomingEventNames = upcomingEvents.map(e => e.title.toLowerCase());
-    console.log('✓ Using HRR 2026 fallback events:', upcomingEventNames);
-  } catch(e) {
-    console.warn('Could not fetch upcoming events:', e.message);
-    upcomingEvents = window.activeEvent ? [{ id: Number(window.activeEvent.mec_id), title: window.activeEvent.name, mec_data: { start_date: window.activeEvent.date, end_date: window.activeEvent.date, start_time: '12:00:00' } }] : [];
-    upcomingEventNames = upcomingEvents.map(e => e.title.toLowerCase());
+  // Event comes from QR payload — no need to fetch from MEC
+  if (window.activeEvent) {
+    upcomingEvents = [{ id: Number(window.activeEvent.mec_id), title: window.activeEvent.name, mec_data: { start_date: window.activeEvent.date } }];
+    upcomingEventNames = [window.activeEvent.name.toLowerCase()];
+    console.log('Using event from QR payload:', window.activeEvent.name, 'mec_id:', window.activeEvent.mec_id);
   }
 }
-
 function isUpcomingGuest(g) {
   if (showAll) return true;
   // MEC guests are already from upcoming events — always show
