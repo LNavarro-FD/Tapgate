@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.2.5';
+const APP_VERSION = '2.2.6';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1605,6 +1605,10 @@ async function loadGuestList() {
       window._bulk2Loaded = true;
       showWarning('✅ ' + totalTickets + ' attendees loaded', 'green', null);
       setTimeout(clearWarning, 4000);
+      // Save bookingMap to sessionStorage for stats page
+      try { sessionStorage.setItem('tg_bookingmap', JSON.stringify(bookingMap)); } catch(e) {}
+      // Save active event for stats page
+      if (window.activeEvent) try { localStorage.setItem('tg_event', JSON.stringify(window.activeEvent)); } catch(e) {}
     }
 
     // Load real check-in state from our database proxy
