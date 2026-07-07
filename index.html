@@ -564,31 +564,51 @@ async function loadAllData() {
           console.log('bulk2 checkins:', checkins.length);
           const uniqueEventIds = [...new Set(checkins.map(c => String(c.event_id || '')))];
           console.log('bulk2 event IDs in response:', uniqueEventIds, 'looking for:', String(activeEvent.mec_id));
-          // One entry per ATTENDEE (ticket) — key = invoice_id:attendee_key
-          const byAttendee = {};
+          // One entry per BOOKING — tickets[] tracks each attendee within the booking
+          const byBooking = {};
           checkins.forEach(c => {
             const bid    = String(c.invoice_id || c.booking_id || '');
             const attKey = String(c.attendee_key || '1');
             if (!bid) return;
             const evId = String(c.event_id || '');
             if (activeEvent.mec_id && evId !== String(activeEvent.mec_id)) return;
-            const key = `${bid}:${attKey}`;
-            byAttendee[key] = {
-              key,
-              source:       'mec',
-              name:         c.name || c.first_name || 'Unknown',
-              email:        c.email || '',
-              entryType:    c.entry_type || 'GE',
-              ticketName:   c.ticket_name || 'MEC Ticket',
-              checkedIn:    !!(c.checked_in),
-              isVip:        !!(c.is_vip) || /vip/i.test(c.ticket_name||''),
-              _mecInvoice:  String(c.mec_invoice_id || bid),
-              _invoiceId:   bid,
-              _attendeeKey: attKey,
-              _eventId:     evId,
-            };
+
+            if (!byBooking[bid]) {
+              byBooking[bid] = {
+                key:          bid,
+                source:       'mec',
+                name:         c.name || c.first_name || 'Unknown',
+                email:        c.email || '',
+                entryType:    c.entry_type || 'GE',
+                ticketName:   c.ticket_name || 'MEC Ticket',
+                checkedIn:    false,
+                isVip:        !!(c.is_vip) || /vip/i.test(c.ticket_name||''),
+                _mecInvoice:  String(c.mec_invoice_id || bid),
+                _invoiceId:   bid,
+                _eventId:     evId,
+                tickets:      [],
+                qty:          0,
+              };
+            }
+            // Add attendee ticket
+            byBooking[bid].tickets.push({
+              key:        `${bid}:${attKey}`,
+              attendeeKey: attKey,
+              name:        c.name || c.first_name || '',
+              ticketName:  c.ticket_name || 'MEC Ticket',
+              checkedIn:   !!(c.checked_in),
+            });
+            byBooking[bid].qty++;
           });
-          Object.assign(bookingMap, byAttendee);
+
+          // Set booking checkedIn — true only if ALL tickets admitted
+          Object.values(byBooking).forEach(b => {
+            const admittedCount = b.tickets.filter(t => t.checkedIn).length;
+            b.checkedIn        = admittedCount >= b.qty && b.qty > 0;
+            b.admittedCount    = admittedCount;
+          });
+
+          Object.assign(bookingMap, byBooking);
           console.log('bulk2 done — bookings:', Object.keys(byBooking).length);
         }
       } catch(e) { console.error('bulk2 error:', e.message); }
