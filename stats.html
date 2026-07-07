@@ -87,6 +87,7 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 
 .empty{color:var(--muted);text-align:center;padding:30px 0;font-size:14px}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.umd.min.js"></script>
 </head>
 <body>
 
@@ -154,6 +155,7 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
     <div class="section-lbl">Export & Archive</div>
     <div class="action-row">
       <button class="btn-action btn-dl"   onclick="downloadCSV()">⬇ Download CSV</button>
+      <button class="btn-action btn-dl"   onclick="downloadWord()" style="background:#2B5797;">📄 Guest List Word</button>
       <button class="btn-action btn-arch" onclick="archiveEvent()">📦 Archive Event</button>
     </div>
 
@@ -430,7 +432,86 @@ function downloadCSV() {
 }
 
 // ── ARCHIVE ──
-async function archiveEvent() {
+async async function downloadWord() {
+  if (!window.docx) { alert('Word library not loaded — try again in a moment'); return; }
+  const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, AlignmentType, HeadingLevel, BorderStyle } = window.docx;
+
+  // Build sorted guest list
+  const allBookings = Object.values(bookingMap);
+  const rows = [];
+
+  allBookings.forEach(b => {
+    const tickets = b.tickets || [{ checkedIn: b.checkedIn, ticketName: b.ticketName || '' }];
+    tickets.forEach(t => {
+      const nameParts = (b.name || '').trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName  = nameParts.slice(1).join(' ') || '';
+      const category  = b.source === 'mec' ? 'Ticket' : (b.isDJGuest ? 'DJ Guest' : 'Comp');
+      const ticketType = t.ticketName || b.ticketName || (b.source === 'mec' ? 'MEC Ticket' : 'Guest');
+      const guestOf   = b.guestOf || '';
+      rows.push({ firstName, lastName, ticketType, category, guestOf });
+    });
+  });
+
+  // Sort A-Z by first name
+  rows.sort((a, b) => a.firstName.localeCompare(b.firstName));
+
+  const colWidths = [1800, 1800, 2200, 1400, 2000];
+  const totalW    = 9200;
+
+  const headerRow = new TableRow({
+    tableHeader: true,
+    children: ['First Name','Last Name','Ticket Type','Category','Guest Of'].map((h, i) =>
+      new TableCell({
+        width: { size: colWidths[i], type: WidthType.DXA },
+        shading: { fill: '22224C' },
+        children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, color: 'FFFFFF', size: 18 })] })]
+      })
+    )
+  });
+
+  const dataRows = rows.map((r, idx) =>
+    new TableRow({
+      children: [r.firstName, r.lastName, r.ticketType, r.category, r.guestOf].map((v, i) =>
+        new TableCell({
+          width: { size: colWidths[i], type: WidthType.DXA },
+          shading: { fill: idx % 2 === 0 ? 'FFFFFF' : 'F5F5F8' },
+          children: [new Paragraph({ children: [new TextRun({ text: v || '', size: 18 })] })]
+        })
+      )
+    })
+  );
+
+  const evName = activeEvent ? activeEvent.name : 'Event';
+  const evDate = activeEvent ? activeEvent.date : '';
+
+  const doc = new Document({
+    sections: [{
+      properties: {},
+      children: [
+        new Paragraph({ text: 'Funky Dory', heading: HeadingLevel.HEADING_1 }),
+        new Paragraph({ children: [new TextRun({ text: evName + ' — Guest List', bold: true, size: 28 })] }),
+        new Paragraph({ children: [new TextRun({ text: evDate + ' · ' + rows.length + ' attendees', size: 20, color: '666666' })] }),
+        new Paragraph({ text: '' }),
+        new Table({
+          width: { size: totalW, type: WidthType.DXA },
+          columnWidths: colWidths,
+          rows: [headerRow, ...dataRows]
+        })
+      ]
+    }]
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = evName.replace(/\s+/g, '_') + '_Guest_List.docx';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function archiveEvent() {
   if (!activeEvent) { alert('No event selected'); return; }
   if (!confirm(`Archive "${activeEvent.name}"?\n\nThis will:\n• Save a permanent copy of all checkin data\n• Clear live checkins from Firebase\n• Mark event as archived\n\nThis cannot be undone.`)) return;
 
