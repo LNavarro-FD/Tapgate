@@ -984,7 +984,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.0.7';
+const APP_VERSION = '2.0.9';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1144,6 +1144,19 @@ function useDemoMode() { cfg = { siteUrl:'', wcKey:'', wcSecret:'', demo:true };
 if (!window.showWarning)  window.showWarning  = function(msg, level) { console.warn('[WARNING]', msg); };
 if (!window.clearWarning) window.clearWarning = function() {};
 function launch() {
+  // Set activeEvent from saved config if not already set from QR
+  if (!window.activeEvent) {
+    const saved = localStorage.getItem('fd_cfg');
+    if (saved) {
+      try {
+        const c = JSON.parse(saved);
+        if (c.events && c.events.length) {
+          window.activeEvent = c.events[0];
+          console.log('activeEvent from cfg:', window.activeEvent.name, window.activeEvent.mec_id);
+        }
+      } catch(e) {}
+    }
+  }
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('main-header').classList.remove('hidden');
   // Populate settings fields from cfg
@@ -1487,7 +1500,7 @@ async function loadGuestList() {
     }
     const bulkByBooking = {};
     (bd.checkins || []).forEach(c => {
-      if (!keepEventIds.has(String(c.event_id))) return;
+      // event filter removed — bulk2 already filtered by event_id on server
       const bid = String(c.booking_id);
       if (!bulkByBooking[bid]) bulkByBooking[bid] = { inv: String(c.invoice_id), mecInv: String(c.mec_invoice_id || ''), eventId: String(c.event_id), attendees: [] };
       bulkByBooking[bid].attendees.push(c);
