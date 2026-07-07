@@ -562,15 +562,14 @@ async function loadAllData() {
           // bulk2 returns {checkins:[...]}
           const checkins = Array.isArray(bd) ? bd : (bd.checkins || []);
           console.log('bulk2 checkins:', checkins.length);
-          if (checkins.length > 0) console.log('bulk2 sample keys:', Object.keys(checkins[0]), 'event fields:', checkins[0].event_id, checkins[0].mec_event_id, checkins[0].EventID, checkins[0].event);
+          const uniqueEventIds = [...new Set(checkins.map(c => String(c.event_id || '')))];
+          console.log('bulk2 event IDs in response:', uniqueEventIds, 'looking for:', String(activeEvent.mec_id));
           const byBooking = {};
           checkins.forEach(c => {
             const bid = String(c.invoice_id || c.booking_id || '');
             if (!bid) return;
-            // Log first mismatch to understand event_id field
-            const evId = String(c.event_id || c.mec_event_id || c.EventID || c.event || '');
-            // Don't filter by event ID — bulk2 returns all events, we load all
-            // Event filtering happens at display level via activeEvent
+            const evId = String(c.event_id || '');
+            if (activeEvent.mec_id && evId !== String(activeEvent.mec_id)) return;
             if (!byBooking[bid]) {
               byBooking[bid] = {
                 key: bid, source: 'mec',
