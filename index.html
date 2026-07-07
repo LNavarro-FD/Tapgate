@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.2.7';
+const APP_VERSION = '2.2.8';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1460,7 +1460,7 @@ async function loadGuestList() {
       if (ticket && g.name) ticket.name = g.name;
     });
 
-    // 4. Add WC guests — only those NOT already covered by MEC (comps, TM, Remenham Farm)
+    // 4. Add WC guests — only those NOT already covered by MEC (comps, TM)
     const mecInvoiceIds = new Set(Object.values(bookingMap).map(b => String(b.invoiceID)));
     wcGuests.forEach(g => {
       if (mecInvoiceIds.has(String(g.orderNumber))) return;
@@ -2209,7 +2209,6 @@ function renderSubPills(evId, col) {
     { key: 'djs',           label: '🎧 DJs' },
     { key: 'entertainers',  label: '🎭 Entertainers' },
     { key: 'staff',         label: '👷 Staff' },
-    { key: 'remenham',      label: '🏡 Remenham' },
   ];
   cats.forEach(c => {
     const btn = document.createElement('button');
@@ -2349,7 +2348,7 @@ function renderGuestList() {
         if (glSubFilter === 'djs')          return key.startsWith('dj-');
         if (glSubFilter === 'entertainers') return !!b.isEntertainment;
         if (glSubFilter === 'staff')        return key.startsWith('res-') && !b.isEntertainment;
-        if (glSubFilter === 'remenham')     return !!b.isRemenham;
+        if (glSubFilter === '')     return !!b.isRemenham;
       }
       // Hide staff/crew and entertainers from main event pill unless searching or their sub-pill active
       if (!q && glSubFilter === 'all' && (b.bookingId || '').startsWith('res-')) return false;
@@ -2727,7 +2726,7 @@ async function lookupTicket(code) {
   console.time('SCAN_TOTAL');
 
   try {
-    // 0. Check if it's an RF (Remenham Farm) QR code
+    // 0. Check if it's an RF () QR code
     const rfParsed = parseMecQrUrl(code);
     if (rfParsed && rfParsed.rf) {
       const rfId = String(rfParsed.rf);
@@ -3096,7 +3095,7 @@ function parseMecQrUrl(code) {
     if (code.startsWith('http')) {
       const url = new URL(code);
 
-      // RF (Remenham Farm) QR code
+      // RF () QR code
       const rf = url.searchParams.get('rf');
       if (rf) return { rf, invoiceID: null, place: '1', hash: null, email: null, shortUrl: null };
 
@@ -3920,7 +3919,7 @@ async function fetchSingleBooking() {
       <div style="background:#f0f7ff;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
         <div style="font-weight:800;font-size:14px;color:var(--navy);">${localBooking.name}</div>
         ${localBooking.email ? `<div style="font-size:12px;color:var(--muted);">${localBooking.email}</div>` : ''}
-        <div style="font-size:12px;color:var(--muted);margin-top:4px;">${localBooking.tickets.length} ticket${localBooking.tickets.length!==1?'s':''} · ${localBooking.isRemenham ? 'Remenham Farm' : localBooking.source?.toUpperCase() || ''} #${input}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">${localBooking.tickets.length} ticket${localBooking.tickets.length!==1?'s':''} · ${localBooking.isRemenham ? '' : localBooking.source?.toUpperCase() || ''} #${input}</div>
       </div>
       <button onclick="viewBookingInList('${localBooking.bookingId}');"
         style="width:100%;padding:12px;background:var(--navy);color:white;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;">
