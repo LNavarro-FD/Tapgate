@@ -1580,7 +1580,7 @@ async function loadGuestList() {
 
     // Load real check-in state from our database proxy
     // MEC's API doesn't reflect our direct writes, so we read back from fd2/v1/checkins
-    await loadCheckinState();
+    // checkin state from bulk2
 
   } catch(e) {
     console.error('Guest list load error:', e);
@@ -1850,40 +1850,7 @@ async function loadCompGuests() {
   }
 }
 
-async function loadCheckinState() {
-  if (cfg.demo || !cfg.u) return;
-  try {
-    // Single bulk call — get all checked-in attendees at once
-    const r = await fetch(`${cfg.u}/wp-json/fd2/v1/checkins/bulk`);
-    if (!r.ok) {
-      console.warn('Bulk checkin load failed:', r.status);
-      return;
-    }
-    const data = await r.json();
-    if (!data.checkins) return;
-
-    let totalChecked = 0;
-    data.checkins.forEach(c => {
-      // c = { invoice_id, booking_id, place, checked_in }
-      const booking = invoiceMap[c.invoice_id] || bookingMap[c.booking_id];
-      if (!booking) return;
-      const ticket = booking.tickets.find(t => String(t.attendeeKey) === String(c.place));
-      if (ticket && c.checked_in) {
-        ticket.checkedIn = true;
-        totalChecked++;
-      }
-    });
-
-    if (totalChecked > 0) {
-      console.log(`✓ Loaded ${totalChecked} checked-in tickets from database`);
-      stats.admitted = totalChecked;
-      document.getElementById('hdr-count').textContent = totalChecked;
-      updateStats(); updateGLStats(); renderGuestList();
-    }
-  } catch(e) {
-    console.warn('loadCheckinState failed:', e.message);
-  }
-}
+// loadCheckinState removed — checkin state comes from bulk2
 
 async function fetchWooOrders() {
   const base  = `${cfg.u}/wp-json/wc/v3`;
