@@ -109,6 +109,7 @@ input::placeholder { color: #999; }
   padding-bottom: env(safe-area-inset-bottom, 6px);
   overflow: hidden;
 }
+#main-app { padding-bottom: env(safe-area-inset-bottom, 0); }
 .nav-btn {
   flex: 1; background: none; border: none; padding: 11px 6px 8px;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -773,22 +774,22 @@ input::placeholder { color: #999; }
 <div id="guests-screen" class="screen hidden">
   <div class="gl-toolbar">
     <div style="position:relative;flex:1;">
-      <button onclick="var p=document.getElementById('gl-pills');p.style.display=p.style.display==='none'?'flex':'none'" style="flex-shrink:0;background:none;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:16px;cursor:pointer;">⚙️</button>
       <input class="gl-search" type="text" id="gl-search" placeholder="Search by name…" oninput="debouncedSearch()" autocomplete="off" autocorrect="off" autocapitalize="none" style="width:100%;padding-right:36px;box-sizing:border-box;">
       <button id="gl-search-clear" onclick="document.getElementById('gl-search').value='';debouncedSearch();" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;">✕</button>
     </div>
+    <button onclick="var p=document.getElementById('gl-pills');var f=document.getElementById('gl-filter-bar');var show=p.style.display==='none';p.style.display=show?'flex':'none';f.style.display=show?'flex':'none'" style="flex-shrink:0;background:none;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:16px;cursor:pointer;" title="Filters">⚙️</button>
     <button class="gl-refresh" onclick="refreshGuests()" title="Refresh">↻</button>
   </div>
   <!-- event-bar removed — replaced by dynamic event filter pills -->
   <div class="gl-active-filter" id="gl-active-filter" style="display:none!important"></div>
   <div class="gl-sub-filter-bar" id="gl-sub-filter-bar"></div>
-  <div class="gl-filter-bar" id="gl-filter-bar">
+  <div class="gl-filter-bar" id="gl-filter-bar" style="display:none">
     <!-- Event pills injected dynamically by renderFilterPills() -->
     <div style="flex:1 1 auto;min-width:8px"></div>
     <button class="filter-pill" onclick="setFilter('in',this)">✓ In</button>
     <button class="filter-pill" onclick="setFilter('pending',this)">👻 No Show</button>
   </div>
-  <div id="ptr-indicator" class="ptr-indicator">↓ Release to refresh</div>
+  <div id="ptr-indicator" class="ptr-indicator" style="display:none">↓ Release to refresh</div>
   <div id="gl-list" class="gl-list">
     <div class="gl-loading"><span class="spin"></span>&nbsp; Loading…</div>
   </div>
