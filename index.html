@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.2.8';
+const APP_VERSION = '2.2.9';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -2348,8 +2348,7 @@ function renderGuestList() {
         if (glSubFilter === 'djs')          return key.startsWith('dj-');
         if (glSubFilter === 'entertainers') return !!b.isEntertainment;
         if (glSubFilter === 'staff')        return key.startsWith('res-') && !b.isEntertainment;
-        if (glSubFilter === '')     return !!b.isRemenham;
-      }
+            }
       // Hide staff/crew and entertainers from main event pill unless searching or their sub-pill active
       if (!q && glSubFilter === 'all' && (b.bookingId || '').startsWith('res-')) return false;
       return true;
@@ -3678,8 +3677,7 @@ function renderEventCards() {
       const evLabel = evName || 'All Events';
       const sheetTod = getTimeOfDay(b.eventTitle || '');
       const sheetTodSuffix = sheetTod ? ' — ' + sheetTod : '';
-      if (b.isRemenham) key = '🏡 RF — ' + evLabel;
-      else if (b.entryType === 'AAA' || (b.guestType && (b.guestType.toLowerCase().includes('dj') || b.guestType.toLowerCase().includes('artist')))) key = '🎧 DJs — ' + evLabel;
+          else if (b.entryType === 'AAA' || (b.guestType && (b.guestType.toLowerCase().includes('dj') || b.guestType.toLowerCase().includes('artist')))) key = '🎧 DJs — ' + evLabel;
       else if (b.isEntertainment || (b.guestType && b.guestType.toLowerCase().includes('entertain'))) key = '🎭 Entertainers — ' + evLabel;
       else if (b.guestType && (b.guestType.toLowerCase().includes('staff') || b.guestType.toLowerCase().includes('crew') || b.guestType.toLowerCase().includes('resource') || b.guestType.toLowerCase().includes('bar') || b.guestType.toLowerCase().includes('production'))) key = '👷 Staff — ' + evLabel;
       else key = '🎁 Guests — ' + evLabel + sheetTodSuffix;
