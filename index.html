@@ -953,7 +953,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.0.1';
 (function checkForUpdate() {
   fetch(window.location.href.split('?')[0] + '?_v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -3703,7 +3703,7 @@ function vibrate(p) {
 // ═══════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════
-// DOMContentLoaded handles all credential loading below
+// Startup handled by tapgateInit() abovetLoaded handles all credential loading below
 window.addEventListener('DOMContentLoaded', () => {
   // 1. Check URL for QR-encoded credentials (?fd=base64payload)
   const params = new URLSearchParams(window.location.search);
