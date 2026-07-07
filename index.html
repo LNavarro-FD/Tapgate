@@ -194,6 +194,9 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 .tab.on .tabi{color:var(--pink)}
 .tabi{font-size:21px;line-height:1}
 .tabl{font-size:10px;font-weight:600;letter-spacing:.04em}
+
+/* Guest List from FDSCAN-LIVE */
+
 </style>
 </head>
 <body>
@@ -294,28 +297,90 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 
     <!-- GUESTS -->
     <div class="page" id="pg-guests">
-      <div class="search-wrap">
-        <div class="search-inner">
-          <span class="search-ico">🔍</span>
-          <input class="search-inp" id="g-search" type="search" placeholder="Search guests..." oninput="renderGuests()">
-        </div>
-      </div>
-      <div class="filter-row" id="filter-row">
-        <button class="fpill on" data-f="all"    onclick="setFilter(this)">All</button>
-        <button class="fpill"    data-f="out"    onclick="setFilter(this)">⏳ Not In</button>
-        <button class="fpill"    data-f="in"     onclick="setFilter(this)">✅ In</button>
-        <button class="fpill"    data-f="GE"     onclick="setFilter(this)">🎟 GE</button>
-        <button class="fpill"    data-f="SEATED" onclick="setFilter(this)">💺 Seated</button>
-        <button class="fpill"    data-f="dj"     onclick="setFilter(this)">🎧 DJ Guests</button>
-        <button class="fpill"    data-f="sheet"  onclick="setFilter(this)">📋 Guest List</button>
-        <button class="fpill"    data-f="mec"  onclick="setFilter(this)">🎟 Tickets</button>
-        <button class="fpill"    data-f="sheet"onclick="setFilter(this)">📋 Guest List</button>
-      </div>
-      <div class="guest-list-wrap" id="g-list"></div>
+<div id="guests-screen" class="screen hidden">
+  <div class="gl-toolbar">
+    <div style="position:relative;flex:1;">
+      <input class="gl-search" type="text" id="gl-search" placeholder="Search by name…" oninput="debouncedSearch()" autocomplete="off" autocorrect="off" autocapitalize="none" style="width:100%;padding-right:36px;box-sizing:border-box;">
+      <button id="gl-search-clear" onclick="document.getElementById('gl-search').value='';debouncedSearch();" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;">✕</button>
     </div>
+    <button class="gl-refresh" onclick="refreshGuests()" title="Refresh">↻</button>
+  </div>
+  <!-- event-bar removed — replaced by dynamic event filter pills -->
+  <div class="gl-active-filter" id="gl-active-filter" style="display:none!important"></div>
+  <div class="gl-sub-filter-bar" id="gl-sub-filter-bar"></div>
+  <div class="gl-filter-bar" id="gl-filter-bar">
+    <!-- Event pills injected dynamically by renderFilterPills() -->
+    <div style="flex:1 1 auto;min-width:8px"></div>
+    <button class="filter-pill" onclick="setFilter('in',this)">✓ In</button>
+    <button class="filter-pill" onclick="setFilter('pending',this)">👻 No Show</button>
+  </div>
+  <div id="ptr-indicator" class="ptr-indicator">↓ Release to refresh</div>
+  <div id="gl-list" class="gl-list">
+    <div class="gl-loading"><span class="spin"></span>&nbsp; Loading…</div>
+  </div>
+  <!-- Find new booking button -->
+  <div style="padding:10px 14px;border-top:1px solid var(--border);background:var(--white);flex-shrink:0;">
+    <button onclick="openFindBooking()" style="width:100%;padding:12px;background:var(--navy);color:white;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.03em;-webkit-tap-highlight-color:transparent;">
+      🔍 Search by Order Number
+    </button>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn" onclick="showTab('scan')"><span class="nav-icon">📷</span>Scan</button>
+    <button class="nav-btn active" onclick="showTab('guests')"><span class="nav-icon">👥</span>Guests</button>
+    <button class="nav-btn" onclick="showTab('stats')"><span class="nav-icon">📊</span>Stats</button>
+    <button class="nav-btn" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>Settings</button>
+  </nav>
+</div>
 
-    <!-- STATS -->
-    <div class="page" id="pg-stats">
+<!-- FIND NEW BOOKING MODAL -->
+<div id="find-booking-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:24px;">
+  <div style="background:white;border-radius:16px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+    <div style="background:var(--navy);color:white;padding:14px 18px;font-size:14px;font-weight:800;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center;">
+      <span>🔍 Search by Order Number</span>
+      <button onclick="closeFindBooking()" style="background:none;border:none;color:white;font-size:22px;cursor:pointer;padding:0;line-height:1;">×</button>
+    </div>
+    <div style="padding:18px;">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Enter the WooCommerce order number from the guest's confirmation email.</p>
+      <input id="find-booking-input" type="number" placeholder="e.g. 30602"
+        style="width:100%;padding:13px 14px;border:2px solid var(--border);border-radius:10px;font-size:18px;font-family:inherit;outline:none;-webkit-appearance:none;"
+        onkeydown="if(event.key==='Enter') fetchSingleBooking()">
+      <div id="find-booking-result" style="margin-top:12px;font-size:13px;color:var(--muted);min-height:20px;"></div>
+    </div>
+    <div style="padding:0 18px 18px;display:flex;gap:10px;">
+      <button onclick="closeFindBooking()" style="flex:1;padding:13px;background:var(--bg);color:var(--muted);border:2px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Cancel</button>
+      <button onclick="fetchSingleBooking()" style="flex:2;padding:13px;background:var(--pink);color:white;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;" id="find-booking-btn">Find Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- GUEST DETAIL DRAWER -->
+<div id="guest-drawer" class="hidden" onclick="closeDrawer(event)">
+  <div class="drawer-scrim"></div>
+  <div class="drawer-panel">
+    <div class="drawer-handle"></div>
+    <div>
+      <div class="drawer-name" id="dr-name"></div>
+      <div class="drawer-ticket" id="dr-ticket"></div>
+      <div id="dr-guest-of" class="hidden" style="margin-top:8px;padding:10px 14px;background:#F0F4FF;border-radius:10px;border-left:4px solid #0050B3;font-size:13px;color:#0050B3;font-weight:700;"></div>
+    </div>
+    <div class="drawer-ent std" id="dr-ent">
+      <div class="drawer-ent-title" id="dr-ent-title"></div>
+      <div id="dr-ent-rows"></div>
+    </div>
+    <div class="drawer-order" id="dr-order"></div>
+    <button class="drawer-admit hidden" id="dr-admit-btn" onclick="admitFromDrawer()">
+      <span style="font-size:28px;display:block;margin-bottom:4px;">✓</span>
+      ADMIT
+    </button>
+    <div id="dr-already-in" class="hidden" style="text-align:center;padding:16px;background:#E6F9EF;border-radius:12px;border:2px solid #00A85A;color:#00A85A;font-size:15px;font-weight:800;letter-spacing:.05em;">✓ Already checked in</div>
+    <button class="drawer-close" onclick="closeDrawer()">Close</button>
+  </div>
+</div>
+
+<!-- STATS TAB -->
+</div>
+
+<div class="page" id="pg-stats">
       <div id="stats-content"><div style="color:var(--muted);text-align:center;padding:40px 0">Loading stats...</div></div>
     </div>
 
@@ -361,7 +426,7 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 'use strict';
 
 // ── CONSTANTS ──
-const APP_VER  = '1.0.3';
+const APP_VER  = '1.0.4';
 const FB_URL   = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
 const SHEET_ID_DEFAULT = '1vxZ2WvViQVVY0NFizoGJ4Vc9hF9SOpGT67aLXKDoc4k';
 
@@ -372,6 +437,10 @@ let eventConfig  = {};     // entry_code → { label, wristband_colour, flash_co
 let bookingMap   = {};     // key → booking object
 let fbCheckins   = {};     // invoice_id / item_key → { checkedIn, time, door }
 let activeFilter = 'all';
+let glFilter = 'all';
+let glSubFilter = 'all';
+
+//
 let scanBusy     = false;
 let camStream    = null;
 let detector     = null;
@@ -1018,55 +1087,265 @@ function dismissResult() {
 }
 
 // ── GUESTS ──
-function renderGuests() {
-  const q   = (document.getElementById('g-search').value || '').toLowerCase();
-  const f   = activeFilter;
-  let list  = Object.values(bookingMap);
+function renderGuestList() {
+  const q = (document.getElementById('gl-search').value || '').toLowerCase().trim();
+  
+  // Smart search helper — matches partial names, word order independent
+  function nameMatch(fullName, query) {
+    if (!query || !fullName) return !query;
+    const name = fullName.toLowerCase();
+    // Direct contains match
+    if (name.includes(query)) return true;
+    // Word-by-word match — all query words must appear in name
+    const qWords = query.split(/\s+/).filter(Boolean);
+    const nWords = name.split(/\s+/);
+    return qWords.every(qw => nWords.some(nw => nw.startsWith(qw)));
+  }
+  const all = Object.values(bookingMap);
+  const filtered = all.filter(b => {
+    const mq = !q || nameMatch(b.name, q) || 
+                String(b.bookingId).includes(q) || 
+                (b.email && b.email.includes(q)) ||
+                (b.guestOf && nameMatch(b.guestOf, q)) ||
+                b.tickets.some(t => t.name && nameMatch(t.name, q));
+    if (!mq) return false; // search query didn't match
+    if (glFilter === 'none') return false;
+    // Event filter — search stays within the active event
+    if (glFilter.startsWith('event:')) {
+      const evId = glFilter.replace('event:', '');
+      // Check event membership
+      let inEvent = false;
+      if (b._eventId) {
+        inEvent = b._eventId === evId;
+      } else if (b.isComp || b.source === 'wc') {
+        const ev = upcomingEvents.find(e => String(e.id) === evId);
+        if (ev) {
+          const bTitle = (b.eventTitle || '').toLowerCase();
+          const evTitle = (ev.title || '').toLowerCase();
+          const SKIP = ['funky','dory','during','henley','royal','regatta','meets','general','admission','access','release','early','bird','final','full','2026','scan','test','party'];
+          const evWords = evTitle.split(/\W+/).filter(w => w.length > 3 && !SKIP.includes(w));
+          inEvent = evWords.length > 0 && evWords.some(w => bTitle.includes(w));
+        }
+      }
+      if (!inEvent) return false;
+      // Sub-pill category filter (ignored when searching)
+      if (!q && glSubFilter !== 'all') {
+        const key = b.bookingId || '';
+        if (glSubFilter === 'tickets')      return b.source === 'mec' || b.source === 'wc';
+        if (glSubFilter === 'guests')       return key.startsWith('gs-');
+        if (glSubFilter === 'djs')          return key.startsWith('dj-');
+        if (glSubFilter === 'entertainers') return !!b.isEntertainment;
+        if (glSubFilter === 'staff')        return key.startsWith('res-') && !b.isEntertainment;
+        if (glSubFilter === 'remenham')     return !!b.isRemenham;
+      }
+      // Hide staff/crew and entertainers from main event pill unless searching or their sub-pill active
+      if (!q && glSubFilter === 'all' && (b.bookingId || '').startsWith('res-')) return false;
+      return true;
+    }
+    if (glFilter === 'in')         return getBookingAdmittedCount(b) > 0;
+    if (glFilter === 'pending')    return getBookingAdmittedCount(b) < b.tickets.length;
 
-  if (q)          list = list.filter(b => b.name && b.name.toLowerCase().includes(q));
-  if (f==='in')     list = list.filter(b => b.checkedIn);
-  if (f==='out')    list = list.filter(b => !b.checkedIn);
-  if (f==='vip')    list = list.filter(b => b.isVip || resolveEntryType(b).includes('VIP'));
-  if (f==='mec')    list = list.filter(b => b.source==='mec');
-  if (f==='sheet')  list = list.filter(b => b.source==='sheet');
-  if (f==='GE')     list = list.filter(b => (b.entryType||'').toUpperCase()==='GE' || resolveEntryType(b)==='GE');
-  if (f==='SEATED') list = list.filter(b => (b.entryType||'').toUpperCase()==='SEATED' || resolveEntryType(b)==='SEATED');
-  if (f==='Staff')  list = list.filter(b => (b.entryType||'').toUpperCase()==='STAFF' || resolveEntryType(b)==='Staff');
-  if (f==='AAA')    list = list.filter(b => (b.entryType||'').toUpperCase()==='AAA' || resolveEntryType(b)==='AAA');
-  if (f==='dj')     list = list.filter(b => b.source==='sheet' && (b.category||'').toLowerCase().includes('dj'));
+    return true;
+  }).sort((a,b) => {
+    const aVip = a.tickets.some(t => t.isVip);
+    const bVip = b.tickets.some(t => t.isVip);
+    if (aVip && !bVip) return -1;
+    if (!aVip && bVip) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
-  list.sort((a,b) => (a.name||'z').localeCompare(b.name||'z'));
+  // Show/update event filter bar
+  const evBar = document.getElementById('event-bar');
+  if (evBar) evBar.style.display = upcomingEventNames.length > 0 ? 'block' : 'none';
 
-  const el = document.getElementById('g-list');
-  if (!list.length) {
-    el.innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px 0;font-size:14px">${q ? `No guests matching "${q}"` : 'No guests found'}</div>`;
+  if (!filtered.length) {
+    document.getElementById('gl-list').innerHTML =
+      `<div class="gl-empty">No guests match${q ? ` "<strong>${q}</strong>"` : ' this filter'}${glFilter.startsWith('event:') ? '<br><small style="color:var(--muted)">Try tapping "See all" above</small>' : ''}</div>`;
     return;
   }
 
-  el.innerHTML = list.slice(0,200).map(b => {
-    const initials = (b.name||' ').split(' ').map(w=>w[0]||'?').join('').slice(0,2).toUpperCase();
-    const et       = resolveEntryType(b);
-    const color    = (eventConfig[et]||{}).wristband_colour || '#22224C';
-    const qty      = b.qty || 1;
-    const admitted = b.admittedCount || (b.checkedIn ? qty : 0);
-    const qtyLabel = qty > 1 ? ` · ${admitted} of ${qty} in` : (b.checkedIn ? ' · ✓ In' : '');
-    const statusCls = b.checkedIn ? 'in' : (admitted > 0 ? 'partial' : '');
-    return `<div class="guest-row">
-      <div class="gav" style="background:${color}">${initials}</div>
-      <div class="ginfo">
-        <div class="gname">${b.name}</div>
-        <div class="gmeta">${et}${qtyLabel} · ${b.source==='mec'?'Ticket':(b.category||'Guest')}</div>
+  const totalTickets = filtered.reduce((sum, b) => sum + b.tickets.length, 0);
+  const countHTML = `<div class="gl-count">${filtered.length} booking${filtered.length!==1?'s':''} · ${totalTickets} ticket${totalTickets!==1?'s':''}</div>`;
+
+  const rows = filtered.map(b => {
+    const admitted = getBookingAdmittedCount(b);
+    const total    = b.tickets.length;
+    const allIn    = admitted === total;
+    const someIn   = admitted > 0 && !allIn;
+    const initials = b.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() || 'G';
+    const hasVip   = b.tickets.some(t => t.isVip);
+    const avCls    = allIn ? 'checked' : b.isTM ? 'tm' : hasVip ? 'vip' : '';
+    const avTxt    = allIn ? '✓' : initials;
+    // Get event colour for avatar background
+    const evCol    = getEventColourById(b._eventId);
+    const avStyle  = allIn ? '' : b.isTM ? '' : hasVip ? '' :
+      `background:${evCol.bg};color:${evCol.text};`;
+    const badges   = [
+      hasVip        ? '<span class="badge vip">⭐ VIP</span>' : '',
+      b.isTM        ? '<span class="badge tm">🎫 TM</span>'  : '',
+      b.isComp      ? '<span class="badge comp">Comp</span>' : '',
+      admitted > 0  ? `<span class="badge in">${admitted} of ${total} ✓</span>` : '',
+    ].filter(Boolean).join('');
+
+    // Individual ticket rows — each has its own check in / undo
+    // When searching, only show tickets that match the query (or all if booking name matched)
+    const bookingNameMatched = !q || nameMatch(b.name, q);
+    const ticketsToShow = q && !bookingNameMatched
+      ? b.tickets.filter(t => t.name && nameMatch(t.name, q))
+      : b.tickets;
+    const ticketRows = ticketsToShow.map((t, i) => {
+      const num = b.tickets.indexOf(t) + 1;
+      return `
+      <div class="gl-attendee ${t.checkedIn?'gl-attendee-in':''}" style="width:100%;box-sizing:border-box;">
+        <div style="flex:1;min-width:0;overflow:hidden;">
+          <div style="font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${
+            t.name && t.name !== b.name
+              ? t.name
+              : num === 1
+                ? b.name
+                : `Guest ${num}`
+          }</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${num === 1 && t.name === b.name ? '' : `Ticket ${num} · `}${t.ticketName}</div>
+        </div>
+        <div style="flex-shrink:0;margin-left:8px;">
+        ${t.checkedIn
+          ? `<div style="display:flex;align-items:center;gap:6px;">
+               <span style="font-size:12px;font-weight:800;color:var(--ok);">✓ In</span>
+               <button onclick="event.stopPropagation();undoSpecific('${b.bookingId}','${t.attendeeKey}')"
+                 style="background:#fff;color:var(--err);border:2px solid var(--err);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;">↩ Undo</button>
+             </div>`
+          : `<button onclick="event.stopPropagation();admitSpecific('${b.bookingId}','${t.attendeeKey}')"
+               style="background:var(--ok);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;white-space:nowrap;">✓ Check In</button>`
+        }
+        </div>
+      </div>`;
+    }).join('');
+
+    const statusText = allIn
+      ? `<span style="font-size:12px;font-weight:800;color:var(--ok);">✓ All ${total} in</span>`
+      : admitted > 0
+        ? `<span style="font-size:12px;font-weight:700;color:var(--warn);">${admitted} of ${total} checked in</span>`
+        : `<span style="font-size:12px;font-weight:700;color:var(--muted);">${total} ticket${total!==1?'s':''}</span>`;
+
+    // Name row — NO tap action. Expand is chevron button only.
+    // Action buttons are ONLY inside expanded panel.
+    return `<div class="gl-booking" id="bk-${b.bookingId}">
+
+      <!-- NAME ROW — tap name to expand -->
+      <div class="gl-item${allIn?' checked-in':''}" style="cursor:default;width:100%;overflow:hidden;box-sizing:border-box;">
+        <div class="gl-avatar ${avCls}" style="flex-shrink:0;${avStyle}">${avTxt}</div>
+        <div class="gl-info" onclick="toggleBooking('${b.bookingId}')" style="flex:1;min-width:0;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+          <div class="gl-name" style="display:flex;align-items:center;justify-content:space-between;gap:6px;overflow:hidden;">
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.name}</span>
+            <span style="color:var(--muted);font-size:22px;line-height:1;flex-shrink:0;" id="chevron-${b.bookingId}">›</span>
+          </div>
+          <div class="gl-ticket" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.eventDay&&b.eventDay!=='All'?'<span style="font-weight:800;color:var(--navy);margin-right:4px;">'+b.eventDay+'</span>':''}${b.guestOf?'<span style="color:var(--muted);">Guest of '+b.guestOf+' · </span>':''}${b.eventTitle||''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;max-width:70px;margin-left:6px;overflow:hidden;">
+          ${badges}
+          ${statusText}
+        </div>
       </div>
-      <div class="gstatus ${statusCls}"></div>
+
+      <!-- EXPANDED PANEL — all actions live here -->
+      <div class="gl-attendees ${
+        q && !nameMatch(b.name, q) && b.tickets.some(t => t.name && nameMatch(t.name, q)) ? '' : 'hidden'
+      }" id="att-${b.bookingId}" style="width:100%;overflow:hidden;box-sizing:border-box;">
+
+        <!-- Check in ALL button always at top -->
+        <div style="padding:12px 16px 8px;border-bottom:1px solid var(--border);box-sizing:border-box;">
+          ${allIn
+            ? `<button onclick="event.stopPropagation();undoAllBooking('${b.bookingId}')"
+                style="width:100%;box-sizing:border-box;background:#fff;color:var(--err);border:2px solid var(--err);border-radius:10px;padding:13px;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;">
+                ↩ Undo All ${total} Check-ins
+              </button>`
+            : `<button onclick="event.stopPropagation();admitAllBooking('${b.bookingId}')"
+                style="width:100%;box-sizing:border-box;background:var(--ok);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;box-shadow:0 3px 12px rgba(0,168,90,.3);">
+                ✓ Check In All ${total} Ticket${total>1?'s':''}
+              </button>`
+          }
+        </div>
+
+        <!-- Individual tickets -->
+        <div style="padding:8px 0;width:100%;box-sizing:border-box;">
+          ${ticketRows}
+        </div>
+
+      </div>
     </div>`;
   }).join('');
+
+  document.getElementById('gl-list').innerHTML = countHTML + rows;
 }
+
+// ═══════════════════════════════════════════
+//  GUEST DRAWER
+// ═══════════════════════════════════════════
+
+function updateGLStats() {
+  const bookings  = Object.values(bookingMap);
+  const allTickets = bookings.reduce((sum, b) => sum + b.tickets.length, 0);
+  const admittedTickets = bookings.reduce((sum, b) => sum + getBookingAdmittedCount(b), 0);
+  document.getElementById('st-gl-total').textContent = bookings.length;
+  document.getElementById('st-gl-vip').textContent   = bookings.filter(b => b.tickets.some(t=>t.isVip)).length;
+  document.getElementById('st-gl-comp').textContent  = bookings.filter(b => b.isComp).length;
+  document.getElementById('st-gl-in').textContent    = admittedTickets + '/' + allTickets;
+}
+
+// ═══════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════
+
+function debouncedSearch() {
+  const inp = document.getElementById('gl-search');
+  const clr = document.getElementById('gl-search-clear');
+  if (clr) clr.style.display = inp.value ? 'block' : 'none';
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => renderGuestList(), 50);
+}
+// ═══════════════════════════════════════════
+// ── Pull to refresh ──
+(function() {
+  let startY = 0, pulling = false;
+  document.addEventListener('DOMContentLoaded', () => {
+    const list = document.getElementById('gl-list');
+    const ind  = document.getElementById('ptr-indicator');
+    if (!list || !ind) return;
+
+    list.addEventListener('touchstart', e => {
+      if (list.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true; }
+    }, { passive: true });
+
+    list.addEventListener('touchmove', e => {
+      if (!pulling) return;
+      const dy = e.touches[0].clientY - startY;
+      ind.textContent = dy > 60 ? '↑ Release to refresh' : '↓ Pull to refresh';
+      ind.classList.toggle('visible', dy > 20);
+    }, { passive: true });
+
+    list.addEventListener('touchend', e => {
+      if (!pulling) return;
+      pulling = false;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (dy > 60) {
+        ind.textContent = '🔄 Refreshing…';
+        ind.classList.add('visible');
+        refreshGuests().finally(() => { ind.classList.remove('visible'); });
+      } else {
+        ind.classList.remove('visible');
+      }
+    });
+  });
+})();
+
+let qrLoginReader = null;
 
 function setFilter(el) {
   activeFilter = el.dataset.f;
+  glFilter = el.dataset.f;
   document.querySelectorAll('.fpill').forEach(p => p.classList.remove('on'));
   el.classList.add('on');
-  renderGuests();
+  renderGuestList();
 }
 
 // ── STATS ──
@@ -1111,7 +1390,7 @@ function setPage(el) {
   document.getElementById(`pg-${p}`).classList.add('active');
   el.classList.add('on');
   if (p==='scan')     initCamera();
-  if (p==='guests')   renderGuests();
+  if (p==='guests')   renderGuestList();
   if (p==='stats')    renderStats();
   if (p==='settings') {
     const door = localStorage.getItem('tg_door');
