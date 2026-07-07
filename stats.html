@@ -332,7 +332,6 @@ function renderStats() {
     });
   });
   const maxType = Math.max(...Object.values(typeCounts), 1);
-  const maxType = Math.max(...Object.values(typeCounts), 1);
   document.getElementById('type-rows').innerHTML = Object.entries(typeCounts)
     .sort((a,b)=>b[1]-a[1])
     .map(([k,v]) => {
