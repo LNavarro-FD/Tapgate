@@ -786,8 +786,8 @@ input::placeholder { color: #999; }
   <div class="gl-pills" id="gl-pills" style="display:none;flex-wrap:wrap;gap:6px;padding:8px 14px;">
     <button class="filter-pill on" onclick="setGlFilter('all',this)">All</button>
     <button class="filter-pill" onclick="setGlFilter('tickets',this)">🎟 Tickets</button>
-    <button class="filter-pill" onclick="setGlFilter('guests',this)">📋 Comps</button>
-    <button class="filter-pill" onclick="setGlFilter('dj',this)">🎧 DJs &amp; Guests</button>
+    <button class="filter-pill" onclick="setGlFilter('guests',this)">👥 Guests</button>
+    <button class="filter-pill" onclick="setGlFilter('dj',this)">🎧 DJs</button>
   </div>
   <div class="gl-filter-bar" id="gl-filter-bar" style="display:none"></div>
   <div id="ptr-indicator" class="ptr-indicator" style="display:none">↓ Release to refresh</div>
@@ -797,7 +797,7 @@ input::placeholder { color: #999; }
   <!-- Find new booking button -->
   <div style="padding:10px 14px;border-top:1px solid var(--border);background:var(--white);flex-shrink:0;">
     <button onclick="openFindBooking()" style="width:100%;padding:12px;background:var(--navy);color:white;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.03em;-webkit-tap-highlight-color:transparent;">
-      🔍 Search by Order Number
+      <!-- Search by Order Number hidden -->
     </button>
   </div>
   <nav class="bottom-nav">
@@ -812,7 +812,7 @@ input::placeholder { color: #999; }
 <div id="find-booking-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:24px;">
   <div style="background:white;border-radius:16px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
     <div style="background:var(--navy);color:white;padding:14px 18px;font-size:14px;font-weight:800;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center;">
-      <span>🔍 Search by Order Number</span>
+      <span><!-- Search by Order Number hidden --></span>
       <button onclick="closeFindBooking()" style="background:none;border:none;color:white;font-size:22px;cursor:pointer;padding:0;line-height:1;">×</button>
     </div>
     <div style="padding:18px;">
@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.1.8';
+const APP_VERSION = '2.2.0';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1755,49 +1755,50 @@ async function loadCompGuests() {
       console.log(`✓ Sheet Guests: ${n}`); total += n;
     } catch(e) { console.warn('Sheet Guests failed:', e.message); }
 
-    // Tab 2: DJs and Guests — First Name(0)|Last Name(1)|Date(2)|Theme(3)|...|Email(6)|...|Guest1(18)|Guest2(20)...
+    // Tab: DJ's — Event ID(0)|Performer Name(1)|Type(2)|Email(3)|Entry Code(4)|Set Time(5)|Stage(6)|Lanyard(7)|Notes(8)
+    // DJ guests come from GUESTS tab with Category=DJ Guest and Guest Of=Performer Name
     try {
-      const rows = await fetchSheetTab(SHEET_TABS.djs);
+      const djRows = await fetchSheetTab(SHEET_TABS.djs);
       let n = 0;
-      rows.slice(1).forEach((r, i) => {
-        const firstName = (r[0]||'').trim(), lastName = (r[1]||'').trim();
-        const theme = (r[3]||'').trim(), email = (r[6]||'').toLowerCase().trim();
-        const name = [firstName, lastName].filter(Boolean).join(' ');
+      // Build a map of performer name → bookingMap key for guest linking
+      window._djMap = {};
+      djRows.slice(1).forEach((r, i) => {
+        const [eventId, performerName, type, email, entryCode, setTime, stage, lanyard, notes] = r;
+        const name = (performerName||'').trim();
         if (!name) return;
-        const eventIds = sheetEventToId(theme);
+        const eventIds = sheetEventToId(eventId);
         if (!eventIds.length) return;
-
-        // Build tickets array: DJ first, then guests
+        const hasLanyard = (lanyard||'').toLowerCase() === 'yes';
         const tickets = [{
           key: `dj-${i}-0`, attendeeKey: '1',
-          name: name, ticketName: 'DJ',
-          isVip: false, checkedIn: false, hasLanyard: true, entryType: 'AAA'
+          name, ticketName: 'DJ',
+          isVip: false, checkedIn: false, hasLanyard, entryType: parseEntryType(entryCode)||'AAA',
+          setTime: (setTime||'').trim(), stage: (stage||'').trim()
         }];
-        let guestCount = 1;
-        for (let g = 0; g < 10; g++) {
-          const gName = (r[12 + g]||'').trim();
-          if (!gName) continue;
-          guestCount++;
-          tickets.push({
-            key: `dj-${i}-g${g}`, attendeeKey: String(guestCount),
-            name: gName, ticketName: 'DJ Guest',
-            isVip: false, checkedIn: false, hasLanyard: false, entryType: 'GE', isDJGuest: true
-          });
-        }
-
-        // Add as one booking per event with all tickets
         eventIds.forEach(evId => {
           const bKey = `dj-${i}-${evId}`;
           bookingMap[bKey] = {
             bookingId: bKey, invoiceID: bKey,
-            name, email,
+            name, email: (email||'').toLowerCase(),
             eventTitle: 'DJ', eventDay: '',
             _eventId: evId,
             tickets, source: 'sheet', isComp: false, isTM: false,
-            entryType: 'AAA', hasLanyard: true
+            entryType: parseEntryType(entryCode)||'AAA', hasLanyard,
+            djGuests: [], // populated below from GUESTS tab
           };
+          window._djMap[name.toLowerCase()] = bKey;
         });
-        n += tickets.length;
+        n++;
+      });
+      // Link DJ guests from bookingMap (added by GUESTS tab loader)
+      Object.values(bookingMap).forEach(b => {
+        if (b.source === 'sheet' && b.isDJGuest && b.guestOf) {
+          const djKey = window._djMap[(b.guestOf||'').toLowerCase()];
+          if (djKey && bookingMap[djKey]) {
+            bookingMap[djKey].djGuests = bookingMap[djKey].djGuests || [];
+            bookingMap[djKey].djGuests.push(b.bookingId);
+          }
+        }
       });
       console.log(`✓ Sheet DJs: ${n}`); total += n;
     } catch(e) { console.warn('Sheet DJs failed:', e.message); }
@@ -2382,8 +2383,8 @@ function renderGuestList() {
     if (!mq) return false; // search query didn't match
     if (glFilter === 'none') return false;
     if (glFilter === 'tickets') return b.source === 'mec' || b.source === 'wc';
-    if (glFilter === 'guests')  return b.source === 'sheet';
-    if (glFilter === 'dj')      return b.source === 'sheet' && (b.entryType === 'AAA' || (b.eventTitle||'').toLowerCase() === 'dj');
+    if (glFilter === 'guests')  return b.source === 'sheet' && !((b.eventTitle||'').toLowerCase() === 'dj' && !b.isDJGuest);
+    if (glFilter === 'dj')      return b.source === 'sheet' && (b.eventTitle||'').toLowerCase() === 'dj';
     // Event filter — search stays within the active event
     if (glFilter.startsWith('event:')) {
       const evId = glFilter.replace('event:', '');
