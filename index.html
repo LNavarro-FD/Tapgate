@@ -383,7 +383,7 @@ window.addEventListener('load', async () => {
   const tg = params.get('tg') || params.get('fd');
   if (tg) {
     try {
-      const b64    = decodeURIComponent(tg).replace(/-/g,'+').replace(/_/,'/');
+      const b64    = decodeURIComponent(tg).replace(/-/g,'+').replace(/_/g,'/');
       const padded = b64 + '=='.slice(0, (4 - b64.length % 4) % 4);
       const parsed = JSON.parse(atob(padded));
       if (parsed.u && parsed.k && parsed.s) {
