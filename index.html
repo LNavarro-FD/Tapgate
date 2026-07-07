@@ -200,6 +200,175 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 
 /* Guest List CSS */
 
+
+/* Guest List CSS from FDSCAN-LIVE */
+.gl-toolbar {
+  flex-shrink: 0; padding: 12px 14px; display: flex; gap: 8px; align-items: center;
+  border-bottom: 2px solid var(--border); background: var(--white);
+  width: 100%; overflow: hidden; box-sizing: border-box;
+}
+.gl-search {
+  flex: 1; background: var(--bg); border: 2px solid var(--border);
+  border-radius: 9px; padding: 14px 15px; font-size: 18px; color: var(--text);
+  font-family: inherit; outline: none; -webkit-appearance: none;
+}
+.gl-search:focus { border-color: var(--pink); }
+.gl-search::placeholder { color: #999; }
+.gl-refresh {
+  background: var(--bg); border: 2px solid var(--border);
+  border-radius: 9px; padding: 10px 14px; color: var(--text); font-size: 20px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; line-height: 1;
+}
+.gl-filter-bar {
+  flex-shrink: 0; display: flex; flex-wrap: nowrap; gap: 7px; padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  width: 100%;
+}
+.gl-filter-bar::-webkit-scrollbar { display: none; }
+/* Sub-pill row */
+.gl-sub-filter-bar {
+  flex-shrink: 0; display: none; flex-wrap: nowrap; gap: 6px;
+  padding: 7px 14px; border-bottom: 1px solid var(--border);
+  background: var(--bg); overflow-x: auto; overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  width: 100%; box-sizing: border-box;
+}
+.gl-sub-filter-bar.show { display: flex; }
+.gl-sub-filter-bar::-webkit-scrollbar { display: none; }
+.sub-pill {
+  flex-shrink: 0; background: var(--white); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 5px 13px;
+  font-size: 12px; font-weight: 700; color: var(--navy);
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.sub-pill.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.gl-filter-bar.collapsed {
+  max-height: none;
+  overflow: visible;
+  flex-wrap: nowrap;
+  padding: 8px 14px;
+}
+/* Active event bar — shown when an event is selected */
+.gl-active-filter {
+  flex-shrink: 0; width: 100%; box-sizing: border-box;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--navy);
+  border-bottom: 1px solid var(--border);
+}
+.gl-active-filter.show { display: flex; }
+.gl-active-filter-name {
+  font-size: 13px; font-weight: 800; color: #fff;
+  letter-spacing: .05em; flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.gl-active-filter-clear {
+  flex-shrink: 0;
+  background: none; border: 1.5px solid rgba(255,255,255,.4);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 12px; font-weight: 700; color: #fff;
+  cursor: pointer; font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+.filter-pill {
+  flex-shrink: 0; background: var(--bg); border: 2px solid var(--border);
+  border-radius: 20px; padding: 8px 16px; font-size: 13px; font-weight: 700;
+  color: var(--muted);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; white-space: nowrap; font-family: inherit;
+}
+
+/* Event cards in stats */
+.ev-card {
+  background: var(--white); border-radius: 14px; overflow: hidden;
+  border: 2px solid var(--border); margin-bottom: 14px;
+}
+.ev-card-header {
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.ev-card-title {
+  font-size: 22px; font-weight: 900; color: var(--text); line-height: 1.2;
+  margin-bottom: 4px;
+}
+.ev-card-sub { font-size: 13px; color: var(--muted); }
+.ev-card-stats {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0;
+}
+.ev-stat {
+  padding: 18px 16px; text-align: center; border-right: 1px solid var(--border);
+}
+.ev-stat:last-child { border-right: none; }
+.ev-stat-num { font-size: 34px; font-weight: 900; line-height: 1; }
+.ev-stat-lbl { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+.ev-progress-wrap { height: 8px; background: var(--bg); }
+.ev-progress-bar  { height: 100%; background: var(--ok); transition: width .4s; }
+.filter-pill.active { background: var(--pink); border-color: var(--pink); color: #fff; }
+.filter-pill.day-pill.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+.gl-list { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; background: var(--bg); width: 100%; }
+.ptr-indicator {
+  text-align: center; padding: 12px; font-size: 12px; font-weight: 700;
+  color: var(--muted); letter-spacing: .05em; text-transform: uppercase;
+  transition: all .2s; overflow: hidden; height: 0;
+}
+.ptr-indicator.visible { height: 40px; }
+.gl-count { padding: 8px 16px; font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; border-bottom: 1px solid var(--border); background: var(--white); width: 100%; overflow: hidden; }
+.gl-item {
+  display: flex; align-items: center; gap: 13px;
+  padding: 16px 16px; border-bottom: 1px solid var(--border);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .1s;
+  background: var(--white); width: 100%; overflow: hidden;
+}
+.gl-item:active { background: var(--bg); }
+.gl-item.checked-in { opacity: .45; }
+.gl-avatar {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 900;
+  background: #FFD6E3; color: #C0004A;
+}
+.gl-avatar.vip     { background: #FFF3B0; color: #7A5500; }
+.gl-avatar.checked { background: #C8F5E0; color: #006B38; font-size: 20px; }
+.gl-avatar.tm      { background: #D6E8FF; color: #0050B3; }
+.gl-info  { flex: 1; min-width: 0; overflow: hidden; max-width: calc(100% - 130px); }
+.gl-name  { font-size: 17px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gl-ticket { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gl-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+.badge {
+  font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 20px; white-space: nowrap; display: inline-block;
+}
+.badge.vip  { background: #FFF3B0; color: #7A5500;  border: 1.5px solid #C89500; }
+.badge.comp { background: #FFD6E3; color: #C0004A;  border: 1.5px solid var(--pink); }
+.badge.tm   { background: #D6E8FF; color: #0050B3;  border: 1.5px solid #0050B3; }
+.badge.in   { background: #C8F5E0; color: #006B38;  border: 1.5px solid var(--ok); }
+
+.gl-empty   { text-align: center; padding: 48px 24px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.gl-loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+
+/* gl-attendees — shown on expand, clearly separated from main row */
+.gl-attendees { background: #F9F9FB; border-top: 1px solid var(--border); width: 100%; overflow: hidden; }
+.gl-attendee  { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid #ECECF0; width: 100%; overflow: hidden; }
+.gl-attendee:last-of-type { border-bottom: none; }
+.gl-attendee-in { opacity: .55; }
+.gl-att-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+.gl-att-dot.ok { background: var(--ok); }
+.gl-att-name { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gl-att-ticket { font-size: 12px; color: var(--muted); flex-shrink: 0; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gl-att-in   { font-size: 11px; font-weight: 800; color: var(--ok); letter-spacing: .05em; flex-shrink: 0; }
+
+/* ── Guest drawer ── */
+#guest-dr
 </style>
 </head>
 <body>
@@ -429,7 +598,7 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 'use strict';
 
 // ── CONSTANTS ──
-const APP_VER  = '1.0.5';
+const APP_VER  = '1.0.6';
 const FB_URL   = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
 const SHEET_ID_DEFAULT = '1vxZ2WvViQVVY0NFizoGJ4Vc9hF9SOpGT67aLXKDoc4k';
 
