@@ -477,11 +477,27 @@ let events = [];
 
 async function loadEventList() {
   events = [];
-  // Load from Google Sheet EVENTS tab
+
+  // Primary: load from cfg.events (encoded in login QR)
+  if (cfg.events) {
+    events = cfg.events;
+    sessionStorage.setItem('tg_events', JSON.stringify(events));
+    renderEventList();
+    return;
+  }
+
+  // Secondary: load from sessionStorage cache
+  const cached = sessionStorage.getItem('tg_events');
+  if (cached) {
+    events = JSON.parse(cached);
+    renderEventList();
+    return;
+  }
+
+  // Fallback: try to load from Google Sheet EVENTS tab
+  // Sheet is supplementary — MEC/WC is primary source of truth
   const sheetId = cfg.sheet || SHEET_ID_DEFAULT;
-  // Try known GIDs for EVENTS tab
-  const gids = ['0', '1627244189', '630690329', '1'];
-  let loaded = false;
+  const gids = ['0','1','2','3','4','5','6'];
   for (const gid of gids) {
     try {
       const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&t=${Date.now()}`;
@@ -491,31 +507,26 @@ async function loadEventList() {
       const rows = parseCSV(text);
       if (!rows.length || !rows[0].some(h => h.toLowerCase().includes('event'))) continue;
       const headers = rows[0].map(h => h.trim().toLowerCase());
-      const nameIdx = headers.findIndex(h => h.includes('event_name') || h.includes('name'));
+      const nameIdx = headers.findIndex(h => h.includes('event_name') || h === 'event name');
       if (nameIdx === -1) continue;
       events = rows.slice(1).filter(r => r[nameIdx]).map(r => {
         const get = (keys) => { for (const k of keys) { const i = headers.findIndex(h=>h.includes(k)); if(i>-1) return r[i]||''} return ''; };
         return {
-          id:      get(['event_id','id']),
-          mec_id:  get(['mec_event_id','mec_id']),
-          name:    get(['event_name','name']),
-          short:   get(['event_short','short']),
-          date:    get(['event_date','date']),
-          venue:   get(['venue']),
-          color:   get(['color','colour']) || '#FF4B7B',
-          active:  get(['active']),
+          id:     get(['event_id','id']),
+          mec_id: get(['mec_event_id','mec_id']),
+          name:   get(['event_name','name']),
+          short:  get(['event_short','short']),
+          date:   get(['event_date','date']),
+          venue:  get(['venue']),
+          color:  get(['color','colour']) || '#FF4B7B',
+          active: get(['active']),
         };
-      }).filter(e => e.name && e.active.toLowerCase() !== 'no');
-      if (events.length) { loaded = true; break; }
+      }).filter(e => e.name && (e.active||'').toLowerCase() !== 'no');
+      if (events.length) {
+        sessionStorage.setItem('tg_events', JSON.stringify(events));
+        break;
+      }
     } catch(e) { continue; }
-  }
-
-  // Fallback: load from sessionStorage cache
-  if (!loaded) {
-    const cached = sessionStorage.getItem('tg_events');
-    if (cached) events = JSON.parse(cached);
-  } else {
-    sessionStorage.setItem('tg_events', JSON.stringify(events));
   }
 
   renderEventList();
