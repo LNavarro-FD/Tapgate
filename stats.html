@@ -347,9 +347,9 @@ function renderStats() {
 
   // By source
   const srcCounts = {};
-  allCheckins.forEach(c => {
-    const src = c.source || (c.door ? 'door' : 'mec');
-    srcCounts[src] = (srcCounts[src]||0) + 1;
+  allBookings.forEach(b => {
+    const src = b.source || 'mec';
+    srcCounts[src] = (srcCounts[src]||0) + (b.tickets ? b.tickets.length : 1);
   });
   const srcLabels = { mec:'MEC Tickets', sheet:'Guest List', door:'Door Sales', rf:'Remenham Farm', eb:'Eventbrite' };
   const maxSrc = Math.max(...Object.values(srcCounts), 1);
