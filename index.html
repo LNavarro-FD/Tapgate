@@ -984,7 +984,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.0.9';
+const APP_VERSION = '2.1.0';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1879,9 +1879,22 @@ async function fetchWooOrders() {
     const t = (ev.title || '').toLowerCase();
     return t.includes('henley') || t.includes('regatta') || t.includes('ibiza') || t.includes('studio 54') || t.includes('brunch') || t.includes('ladies');
   });
-  // Use KNOWN_PRODUCT_IDS directly — no dynamic search (avoids Soul Brunch/FD Festival false matches)
-  const KNOWN_PRODUCT_IDS = [46883,45414,40451,40450,40449,40448,36309,36308,36307,36306,36305,36304,36303,36302,36301,36299,36298,36297,36296,36295,36294,36293,36292,36291,36290,36289,36288,36287,36284,36283,36282,36281,36280,36279,36278,36277,36276,36275,36273];
-  productIds = [...KNOWN_PRODUCT_IDS];
+  // Fetch product IDs dynamically from fd2/v1/products — no hardcoding
+  let productIds = [];
+  if (window.activeEvent && window.activeEvent.mec_id) {
+    try {
+      const pr = await fetch(`${cfg.u}/wp-json/fd2/v1/products?event_id=${window.activeEvent.mec_id}`);
+      if (pr.ok) {
+        const pd = await pr.json();
+        productIds = pd.product_ids || [];
+        console.log(`WC product IDs for event ${window.activeEvent.mec_id}:`, productIds);
+      } else {
+        console.warn('Products endpoint failed:', pr.status);
+      }
+    } catch(e) {
+      console.warn('Products fetch error:', e.message);
+    }
+  }
   console.log(`WC product IDs for current events: ${productIds.join(',')}`);
 
   // Step 2: Fetch orders for each product ID separately then merge
