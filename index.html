@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.2.8';
+const APP_VERSION = '2.3.0';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1355,8 +1355,32 @@ async function loadGuestList() {
   window._guestListLoading = true;
   renderGuestList(); // show loading state immediately
   document.getElementById('gl-list').innerHTML = '<div class="gl-loading"><span class="spin"></span>&nbsp; Loading…</div>';
-  guestMap = {}; bookingMap = {}; invoiceMap = {}; emailMap = {}; idMap = {};
   if (cfg.demo) { loadDemoGuests(); renderGuestList(); updateGLStats(); return; }
+
+  // Restore from sessionStorage if returning from stats (data < 10 mins old)
+  try {
+    const cached    = sessionStorage.getItem('tg_bookingmap');
+    const cachedAt  = parseInt(sessionStorage.getItem('tg_bookingmap_ts') || '0');
+    const age       = Date.now() - cachedAt;
+    if (cached && age < 10 * 60 * 1000) {
+      bookingMap = JSON.parse(cached);
+      // Rebuild index maps
+      Object.values(bookingMap).forEach(b => {
+        if (b._mecInvoice) invoiceMap[b._mecInvoice] = b;
+        if (b.email)       emailMap[b.email.toLowerCase()] = b;
+        if (b.key)         idMap[b.key] = b;
+      });
+      window._guestListLoading = false;
+      window._bulk2Loaded = true;
+      renderGuestList(); updateGLStats(); updateStats();
+      console.log('Restored from sessionStorage — age:', Math.round(age/1000) + 's, bookings:', Object.keys(bookingMap).length);
+      // Still run sheet loading in background to get fresh DJ/guest data
+      fetchUpcomingEvents().then(() => loadSheetData()).catch(() => {});
+      return;
+    }
+  } catch(e) { console.warn('sessionStorage restore failed:', e.message); }
+
+  guestMap = {}; bookingMap = {}; invoiceMap = {}; emailMap = {}; idMap = {};
   try {
     // 1. Fetch upcoming MEC events
     await fetchUpcomingEvents();
@@ -1606,7 +1630,7 @@ async function loadGuestList() {
       showWarning('✅ ' + totalTickets + ' attendees loaded', 'green', null);
       setTimeout(clearWarning, 4000);
       // Save bookingMap to sessionStorage for stats page
-      try { sessionStorage.setItem('tg_bookingmap', JSON.stringify(bookingMap)); } catch(e) {}
+      try { sessionStorage.setItem('tg_bookingmap', JSON.stringify(bookingMap)); sessionStorage.setItem('tg_bookingmap_ts', String(Date.now())); } catch(e) {}
       // Save active event for stats page
       if (window.activeEvent) try { localStorage.setItem('tg_event', JSON.stringify(window.activeEvent)); } catch(e) {}
     }
