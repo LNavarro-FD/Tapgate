@@ -643,59 +643,58 @@ async function loadBulk2() {
   const siteUrl = cfg.u || cfg.siteUrl || '';
   const wcKey   = cfg.k || cfg.wcKey   || '';
   const wcSec   = cfg.s || cfg.wcSecret|| '';
-  if (!siteUrl || !wcKey || !wcSec) throw new Error('Missing credentials');
+  if (!siteUrl || !wcKey || !wcSec) throw new Error('Missing WC credentials');
 
   const auth = btoa(`${wcKey}:${wcSec}`);
   const url  = `${siteUrl}/wp-json/fd2/v1/bulk2?_=${Date.now()}`;
-  console.log('bulk2 calling:', url);
+  console.log('bulk2 calling:', siteUrl);
 
   const r = await fetch(url, {
     cache: 'no-store',
     headers: { 'Authorization': `Basic ${auth}` },
     signal: AbortSignal.timeout(20000)
   });
+
   console.log('bulk2 status:', r.status);
   if (!r.ok) throw new Error(`bulk2 HTTP ${r.status}`);
 
-  const raw = await r.json();
-  console.log('bulk2 raw type:', typeof raw, 'isArray:', Array.isArray(raw), 'keys:', raw ? Object.keys(raw).slice(0,5) : 'null');
+  const bd = await r.json();
 
-  // Handle various response formats
-  let bookings = [];
-  if (Array.isArray(raw)) {
-    bookings = raw;
-  } else if (raw && raw.bookings) {
-    bookings = raw.bookings;
-  } else if (raw && raw.data) {
-    bookings = raw.data;
-  } else if (raw && typeof raw === 'object') {
-    bookings = Object.values(raw);
-  }
+  // bulk2 returns { checkins: [...] }
+  const checkins = (bd && bd.checkins) ? bd.checkins : (Array.isArray(bd) ? bd : []);
+  console.log('bulk2 total checkins:', checkins.length);
 
-  console.log('bulk2 bookings to process:', bookings.length);
-
-  bookings.forEach(b => {
-    const key = String(b.invoice_id || b.id || b.key || '');
-    if (!key) return;
-    // Filter to active event if mec_id available
-    const bEventId = String(b.event_id || b.mec_event_id || '');
-    if (activeEvent.mec_id && bEventId && bEventId !== String(activeEvent.mec_id)) return;
-
-    bookingMap[key] = {
-      key,
-      source:      'mec',
-      name:        b.name || b.attendee_name || b.first_name || 'Unknown',
-      email:       b.email || '',
-      tickets:     b.tickets || [],
-      isVip:       b.is_vip || false,
-      entryType:   b.entry_type || b.entryType || 'GE',
-      ticketName:  b.ticket_name || b.ticketName || 'MEC Ticket',
-      checkedIn:   false,
-      _mecInvoice: key,
-      _eventId:    bEventId,
-    };
+  // Group by booking ID
+  const byBooking = {};
+  checkins.forEach(c => {
+    const bid = String(c.invoice_id || c.booking_id || '');
+    if (!bid) return;
+    // Filter to active event
+    const evId = String(c.event_id || c.mec_event_id || '');
+    if (activeEvent.mec_id && evId && evId !== String(activeEvent.mec_id)) return;
+    if (!byBooking[bid]) {
+      byBooking[bid] = {
+        key:         bid,
+        source:      'mec',
+        name:        c.name || c.attendee_name || c.first_name || 'Unknown',
+        email:       c.email || '',
+        tickets:     [],
+        isVip:       c.is_vip || false,
+        entryType:   c.entry_type || c.entryType || 'GE',
+        ticketName:  c.ticket_name || c.ticketName || 'MEC Ticket',
+        checkedIn:   !!(c.checked_in || c.checkedIn),
+        _mecInvoice: String(c.mec_invoice_id || bid),
+        _eventId:    evId,
+      };
+    }
+    byBooking[bid].tickets.push({
+      ticketName: c.ticket_name || '',
+      checkedIn:  !!(c.checked_in || c.checkedIn),
+    });
   });
-  console.log('bulk2 done — bookingMap size:', Object.keys(bookingMap).length);
+
+  Object.assign(bookingMap, byBooking);
+  console.log('bulk2 done — Festival 7 bookings:', Object.keys(byBooking).length, '— total bookingMap:', Object.keys(bookingMap).length);
 }
 
 async function loadSheetGuests() {
