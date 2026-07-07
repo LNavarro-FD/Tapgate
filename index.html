@@ -786,7 +786,7 @@ input::placeholder { color: #999; }
   <div class="gl-pills" id="gl-pills" style="display:none;flex-wrap:wrap;gap:6px;padding:8px 14px;">
     <button class="filter-pill on" onclick="setGlFilter('all',this)">All</button>
     <button class="filter-pill" onclick="setGlFilter('tickets',this)">🎟 Tickets</button>
-    <button class="filter-pill" onclick="setGlFilter('guests',this)">📋 Guests</button>
+    <button class="filter-pill" onclick="setGlFilter('guests',this)">📋 Comps</button>
     <button class="filter-pill" onclick="setGlFilter('dj',this)">🎧 DJ Guests</button>
   </div>
   <div class="gl-filter-bar" id="gl-filter-bar" style="display:none"></div>
@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.1.6';
+const APP_VERSION = '2.1.7';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1607,7 +1607,8 @@ async function loadGuestList() {
     window._guestListLoading = false;
     const totalBookings = Object.keys(bookingMap).length;
     if (totalBookings > 0) {
-      showWarning('✅ ' + totalBookings + ' guests loaded', 'green', null);
+      const totalTickets = Object.values(bookingMap).reduce((n, b) => n + (b.tickets ? b.tickets.length : 1), 0);
+      showWarning('✅ ' + totalTickets + ' attendees loaded', 'green', null);
       setTimeout(clearWarning, 4000);
     }
 
