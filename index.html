@@ -953,7 +953,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.0.2';
+const APP_VERSION = '2.0.0';
 (function checkForUpdate() {
   fetch(window.location.href.split('?')[0] + '?_v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -987,7 +987,7 @@ let glFilter = 'all';
 let glSubFilter = 'all';
 
 // Door ticket counters (persisted in localStorage)
-const DOOR_TICKETS = {}; // Loaded from Google Sheet DOOR_TICKETS tab
+const DOOR_TICKETS = {};
 function getDoorCounts() {
   try { return JSON.parse(localStorage.getItem('fd_door_counts') || '{}'); } catch(e) { return {}; }
 }
@@ -1124,8 +1124,6 @@ function connect() {
   saveConfig(); launch();
 }
 function useDemoMode() { cfg = { siteUrl:'', wcKey:'', wcSecret:'', demo:true }; launch(); }
-// Auto-login handled by DOMContentLoaded below
-
 function launch() {
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('main-header').classList.remove('hidden');
@@ -1164,6 +1162,630 @@ let upcomingEvents = [];
 async function fetchUpcomingEvents() {
   // Always set HRR 2026 fallback immediately so pills show even if MEC is slow/broken
   upcomingEvents = window.activeEvent ? [{ id: Number(window.activeEvent.mec_id), title: window.activeEvent.name, mec_data: { start_date: window.activeEvent.date, end_date: window.activeEvent.date, start_time: '12:00:00' } }] : [];
+  upcomingEventNames = upcomingEvents.map(e => e.title.toLowerCase());
+
+  if (!cfg.m || !cfg.u || cfg.demo) return;
+  try {
+    const now  = new Date();
+    const in10 = new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000);
+    const fmt  = d => d.toISOString().split('T')[0];
+
+    // Try multiple endpoint formats MEC Utility supports
+    // Try multiple auth methods and endpoints
+    const authHeaders = [
+      { 'X-MEC-KEY': cfg.m },
+      { 'Authorization': `Bearer ${cfg.m}` },
+      { 'X-MEC-KEY': cfg.m, 'Authorization': `Bearer ${cfg.m}` },
+    ];
+    const baseUrls = [
+      `${cfg.u}/wp-json/mec-utility/v1/events?date_filter=upcoming&start_date=${fmt(now)}&end_date=${fmt(in10)}&per_page=50&status=publish`,
+      `${cfg.u}/wp-json/mec-utility/v1/events?start_date=${fmt(now)}&end_date=${fmt(in10)}&per_page=50`,
+      `${cfg.u}/wp-json/mec-utility/v1/events?date_filter=upcoming&per_page=50&api_key=${encodeURIComponent(cfg.m)}`,
+      `${cfg.u}/wp-json/mec-utility/v1/event-list?date_filter=upcoming&start_date=${fmt(now)}&end_date=${fmt(in10)}&per_page=50`,
+    ];
+
+    for (const hdrs of authHeaders) {
+      for (const url of baseUrls) {
+        try {
+          const r = await fetch(url, { headers: hdrs });
+          console.log('MEC events:', url.split('?')[0], 'auth:', Object.keys(hdrs)[0], 'status:', r.status);
+          if (!r.ok) continue;
+          const data = await r.json();
+          console.log('MEC events response keys:', Object.keys(data));
+          const events = Array.isArray(data) ? data : (data.events || data.data || data.results || []);
+          console.log('Events found in response:', events.length);
+          if (events.length > 0) {
+            // Only use MEC events if they include our HRR 2026 events
+            const HRR_IDS = new Set([String(window.activeEvent ? window.activeEvent.mec_id : '0')]);
+            const hasHRR = events.some(e => HRR_IDS.has(String(e.id)));
+            if (hasHRR) {
+              // Always ensure all 3 HRR events are present — merge MEC results with fallback
+              const HRR_FALLBACK = window.activeEvent ? [{ id: Number(window.activeEvent.mec_id), title: window.activeEvent.name, mec_data: { start_date: window.activeEvent.date, end_date: window.activeEvent.date, start_time: '12:00:00' } }] : [];
+              const returnedIds = new Set(events.map(e => String(e.id)));
+              const merged = [...events];
+              HRR_FALLBACK.forEach(fb => { if (!returnedIds.has(String(fb.id))) merged.push(fb); });
+              // Filter to HRR 2026 events only
+              const HRR_EVENT_IDS = new Set([String(window.activeEvent ? window.activeEvent.mec_id : '0')]);
+              upcomingEvents = merged.filter(e => {
+                if (HRR_EVENT_IDS.has(String(e.id))) return true;
+                const t = (e.title || e.name || e.post_title || '').toLowerCase();
+                return (t.includes('henley') || t.includes('regatta')) && !t.includes('soul');
+              });
+              upcomingEventNames = upcomingEvents.map(e => (e.title || e.name || e.post_title || '').toLowerCase());
+              console.log('✓ Upcoming events loaded:', upcomingEventNames.length, upcomingEventNames);
+              return;
+            }
+            console.warn('MEC returned events but none are HRR 2026 — using fallback');
+          }
+        } catch(e) {
+          console.warn('MEC endpoint failed:', e.message);
+        }
+      }
+    }
+    console.warn('✗ No upcoming events found from MEC API — using HRR 2026 fallback');
+    // Fallback: hardcode HRR 2026 events so pills always show
+    upcomingEvents = window.activeEvent ? [{ id: Number(window.activeEvent.mec_id), title: window.activeEvent.name, mec_data: { start_date: window.activeEvent.date, end_date: window.activeEvent.date, start_time: '12:00:00' } }] : [];
+    upcomingEventNames = upcomingEvents.map(e => e.title.toLowerCase());
+    console.log('✓ Using HRR 2026 fallback events:', upcomingEventNames);
+  } catch(e) {
+    console.warn('Could not fetch upcoming events:', e.message);
+    upcomingEvents = window.activeEvent ? [{ id: Number(window.activeEvent.mec_id), title: window.activeEvent.name, mec_data: { start_date: window.activeEvent.date, end_date: window.activeEvent.date, start_time: '12:00:00' } }] : [];
+    upcomingEventNames = upcomingEvents.map(e => e.title.toLowerCase());
+  }
+}
+
+function isUpcomingGuest(g) {
+  if (showAll) return true;
+  // MEC guests are already from upcoming events — always show
+  if (g._source === 'mec') return true;
+  // WC comp guests — show if no upcoming events loaded (fallback) or always show comps
+  if (g.isComp || g._source === 'wc') return true;
+  return true;
+}
+
+async function fetchMecAttendees(events) {
+  // For each upcoming event, fetch attendees from each occurrence
+  const mecGuests = {};
+  for (const ev of events) {
+    try {
+      const occurrences = ev.occurrences || [];
+      for (const occ of occurrences) {
+        // Use attendees already embedded in the occurrence if available
+        if (occ.attendees && occ.attendees.attendees && occ.attendees.attendees.length > 0) {
+          for (const a of occ.attendees.attendees) {
+            const key = `mec-${a.booking_id}-${a.attendee_key}`;
+            const ticketId = String(a.ticket_id || '1');
+            const ticket   = ev.tickets ? ev.tickets.find(t => String(t.id) === ticketId) : null;
+            const ticketName = ticket ? ticket.name : (a.ticket_name || ev.title || 'MEC Ticket');
+            mecGuests[key] = {
+              id:              `${a.booking_id}-${a.attendee_key}`,
+              orderNumber:     String(a.invoice_id || a.booking_id),
+              name:            a.name || [a.first_name, a.last_name].filter(Boolean).join(' ') || 'Guest',
+              email:           (a.email || '').toLowerCase(),
+              ticketName,
+              isVip:           /vip/i.test(ticketName),
+              isTM:            false,
+              isComp:          false,
+              table:           null,
+              guestOf:         null,
+              hostCategory:    null,
+              guestNotes:      null,
+              qty:             1,
+              checkedInTickets: a.checkin_status ? [`${a.booking_id}-${a.attendee_key}`] : [],
+              checkedIn:       !!a.checkin_status,
+              eventDay:        detectDay(ev.title || ''),
+              orderDate:       ev.mec_data ? ev.mec_data.start_date : null,
+              _mecTicket:      true,
+              _bookingId:      String(a.booking_id),
+              _attendeeKey:    String(a.attendee_key),
+              _invoiceID:      String(a.invoice_id || a.booking_id),
+              _eventId:        String(ev.id),
+              _eventTitle:     ev.title || '',
+              _source:         'mec'
+            };
+          }
+        } else {
+          // Fetch attendees for this occurrence from API
+          const r = await fetch(
+            `${cfg.u}/wp-json/mec-utility/v1/events/${ev.id}/occurrences/${occ.start_timestamp}/attendees?include_details=true`,
+            { headers: { 'X-MEC-KEY': cfg.m } }
+          );
+          if (!r.ok) continue;
+          const data = await r.json();
+          let attendees = Array.isArray(data) ? data : (data.attendees || []);
+
+          // Fallback: if attendees empty, try without occurrence timestamp
+          if (attendees.length === 0) {
+            try {
+              const br = await fetch(
+                `${cfg.u}/wp-json/mec-utility/v1/events/${ev.id}/attendees?include_details=true&per_page=200`,
+                { headers: { 'X-MEC-KEY': cfg.m } }
+              );
+              if (br.ok) {
+                const bd = await br.json();
+                const fallbackAttendees = Array.isArray(bd) ? bd : (bd.attendees || []);
+                if (fallbackAttendees.length > 0) attendees = fallbackAttendees;
+              }
+            } catch(e) { console.warn('MEC attendees fallback failed:', e.message); }
+          }
+
+          for (const a of attendees) {
+            const key = `mec-${a.booking_id}-${a.attendee_key}`;
+            const ticketId   = String(a.ticket_id || '1');
+            const ticket     = ev.tickets ? ev.tickets.find(t => String(t.id) === ticketId) : null;
+            const ticketName = ticket ? ticket.name : (a.ticket_name || ev.title || 'MEC Ticket');
+            mecGuests[key] = {
+              id:              `${a.booking_id}-${a.attendee_key}`,
+              orderNumber:     String(a.invoice_id || a.booking_id),
+              name:            a.name || [a.first_name, a.last_name].filter(Boolean).join(' ') || 'Guest',
+              email:           (a.email || '').toLowerCase(),
+              ticketName,
+              isVip:           /vip/i.test(ticketName),
+              isTM:            false,
+              isComp:          false,
+              table:           null,
+              guestOf:         null,
+              hostCategory:    null,
+              guestNotes:      null,
+              qty:             1,
+              checkedInTickets: a.checkin_status ? [`${a.booking_id}-${a.attendee_key}`] : [],
+              checkedIn:       !!a.checkin_status,
+              eventDay:        detectDay(ev.title || ''),
+              orderDate:       ev.mec_data ? ev.mec_data.start_date : null,
+              _mecTicket:      true,
+              _bookingId:      String(a.booking_id),
+              _attendeeKey:    String(a.attendee_key),
+              _invoiceID:      String(a.invoice_id || a.booking_id),
+              _eventId:        String(ev.id),
+              _eventTitle:     ev.title || '',
+              _source:         'mec'
+            };
+          }
+        }
+      }
+    } catch(e) {
+      console.warn('MEC attendee fetch failed for event', ev.id, e.message);
+    }
+  }
+  // Build bookingMap from MEC guests
+  Object.values(mecGuests).forEach(g => {
+    const bid = g._bookingId;
+    if (!bookingMap[bid]) {
+      bookingMap[bid] = {
+        bookingId:   bid,
+        invoiceID:   g._invoiceID,
+        name:        g.name,
+        email:       g.email,
+        eventTitle:  g._eventTitle
+          ? g._eventTitle
+            .replace(/copy of /i, '')
+            .replace(/funky dory\s*/i, '')
+            .replace(/during henley\s*(royal\s*)?regatta\s*/i, '')
+            .replace(/\(SCAN TEST[^)]*\)/i, '')
+            .replace(/\s{2,}/g, ' ').trim()
+          : '',
+        eventDay:    g.eventDay,
+        _eventId:    g._eventId,
+        tickets:     [],
+        source:      'mec'
+      };
+      // Index by invoice ID for QR code lookup — use consistent uppercase _invoiceID
+      if (g._invoiceID) invoiceMap[g._invoiceID] = bookingMap[bid];
+      // Also index by booking ID directly
+      invoiceMap[bid] = bookingMap[bid];
+    }
+    bookingMap[bid].tickets.push({
+      key:          `${bid}-${g._attendeeKey}`,
+      attendeeKey:  g._attendeeKey,
+      name:         g.name !== bookingMap[bid].name ? g.name : g.name, // keep individual name
+      ticketName:   g.ticketName,
+      isVip:        g.isVip,
+      checkedIn:    g.checkedIn
+    });
+  });
+
+  console.log(`MEC attendees fetched: ${Object.keys(mecGuests).length}, bookings: ${Object.keys(bookingMap).length}`);
+  return mecGuests;
+}
+
+async function loadGuestList() {
+  document.getElementById('gl-list').innerHTML = '<div class="gl-loading"><span class="spin"></span>&nbsp; Loading…</div>';
+  guestMap = {}; bookingMap = {}; invoiceMap = {}; emailMap = {}; idMap = {};
+  if (cfg.demo) { loadDemoGuests(); renderGuestList(); updateGLStats(); return; }
+  try {
+    // 1. Fetch upcoming MEC events
+    await fetchUpcomingEvents();
+
+    // 2. Fetch MEC attendees, WC orders, and bulk checkins in parallel
+    // bulk2 is large and slow — fetch independently and re-render when it arrives
+    const bulk2Promise = fetch(`${cfg.u}/wp-json/fd2/v1/bulk2?_=${Date.now()}`, {cache: 'no-store'})
+      .then(r => { console.log('bulk2 status:', r.status); return r.ok ? r.json() : {checkins:[]}; })
+      .catch(e => { console.warn('bulk2 fetch error:', e); return {checkins:[]}; });
+
+    const wcTimeout = new Promise(resolve => setTimeout(() => { console.warn('WC fetch timed out'); resolve([]); }, 8000));
+    const wcPromise = fetchWooOrders();
+
+    // Wait for WC only (with timeout) — render initial guest list from WC + sheets
+    const [mecGuests, wcGuests] = await Promise.all([
+      Promise.resolve({}),
+      Promise.race([wcPromise, wcTimeout])
+    ]);
+
+    // Placeholder so bulk2 processing below has a bulkData variable
+    const bulkData = {checkins:[]};
+
+    // When WC completes late, re-render
+    wcPromise.then(lateWcGuests => {
+      if (lateWcGuests && lateWcGuests.length > wcGuests.length) {
+        console.log('WC completed late — re-rendering with', lateWcGuests.length, 'orders');
+        lateWcGuests.forEach(g => {
+          const wcKey = `wc-${g.orderNumber}`;
+          // Skip if already in bulk2/MEC by invoice ID or email
+          const alreadyMec = invoiceMap[String(g.orderNumber)] && invoiceMap[String(g.orderNumber)].source === 'mec';
+          const alreadyByEmail = g.email && emailMap[g.email] && emailMap[g.email].source === 'mec';
+          if (!bookingMap[wcKey] && !alreadyMec && !alreadyByEmail) {
+            g._source = 'wc';
+            guestMap[`wc-${g.orderNumber}`] = g;
+            if (g.email && !emailMap[g.email]) emailMap[g.email] = g;
+            bookingMap[wcKey] = {
+              bookingId: wcKey, invoiceID: g.orderNumber,
+              name: g.name, email: g.email,
+              eventTitle: g.ticketName, eventDay: g.eventDay,
+              tickets: Array.from({length: g.qty || 1}, (_, i) => ({
+                key: `${wcKey}-${i+1}`, attendeeKey: String(i+1),
+                name: g.name, ticketName: g.ticketName,
+                isVip: false, checkedIn: false
+              })),
+              source: 'wc', isComp: false, isTM: false
+            };
+            if (g.orderNumber) invoiceMap[String(g.orderNumber)] = bookingMap[wcKey];
+          }
+        });
+        renderGuestList(); updateGLStats();
+      }
+    }).catch(() => {});
+
+    // 2b. bulk2 is processed inline after main render below
+
+    // 2c. Enrich multi-ticket bookings with individual attendee names from MEC
+    if (cfg.m) {
+      const multiTicketBookings = Object.values(bookingMap).filter(b => b.source === 'mec' && b.tickets.length > 1 && b.tickets.some(t => !t.name || t.name === 'Guest'));
+      await Promise.all(multiTicketBookings.map(async b => {
+        try {
+          const enrichHdrs = { 'X-MEC-KEY': cfg.m };
+          if (cfg.k && cfg.s) enrichHdrs['Authorization'] = 'Basic ' + btoa(cfg.k + ':' + cfg.s);
+          const r = await fetch(`${cfg.u}/wp-json/mec-utility/v1/invoices/${b.invoiceID}/attendees?per_page=100`, { headers: enrichHdrs });
+          if (!r.ok) { console.warn(`Invoice ${b.invoiceID} attendees: ${r.status}`); return; }
+          const data = await r.json();
+          const attendees = Array.isArray(data) ? data : (data.attendees || data.data || []);
+          if (!attendees.length) return;
+          // Update lead name
+          const leadAtt = attendees[0];
+          const leadName = [leadAtt.first_name||'', leadAtt.last_name||''].filter(Boolean).join(' ').trim() || leadAtt.name || b.name;
+          if (leadName && leadName !== 'Guest') b.name = leadName;
+          // Update each ticket name
+          attendees.forEach((a, idx) => {
+            const name = [a.first_name||'', a.last_name||''].filter(Boolean).join(' ').trim() || a.name || '';
+            if (!name || name === 'Guest') return;
+            // Match by place field or array index
+            const ticket = b.tickets.find(t => String(t.attendeeKey) === String(a.place || a.id)) || b.tickets[idx];
+            if (ticket) ticket.name = name;
+          });
+        } catch(e) {}
+      }));
+    }
+
+    // 3. Add MEC guests first (source of truth for ticketed attendees)
+    Object.entries(mecGuests).forEach(([key, g]) => {
+      guestMap[key] = g;
+      if (g.email) emailMap[g.email] = g;
+    });
+
+    // 3b. Enrich bookingMap ticket names from individual guestMap attendee entries
+    // This ensures Kurt/Marc etc show up in search and in ticket rows
+    Object.values(guestMap).forEach(g => {
+      if (!g._bookingId || !g._attendeeKey) return;
+      const booking = bookingMap[g._bookingId];
+      if (!booking) return;
+      const ticket = booking.tickets.find(t => String(t.attendeeKey) === String(g._attendeeKey));
+      if (ticket && g.name) ticket.name = g.name;
+    });
+
+    // 4. Add WC guests — only those NOT already covered by MEC (comps, TM, Remenham Farm)
+    const mecInvoiceIds = new Set(Object.values(bookingMap).map(b => String(b.invoiceID)));
+    wcGuests.forEach(g => {
+      if (mecInvoiceIds.has(String(g.orderNumber))) return;
+      if (upcomingEvents.length > 0) {
+        const ticketLower = (g.ticketName || '').replace(/&#8211;|&ndash;/g, '–').toLowerCase();
+        const KEYWORDS = ['ladies day', 'ibiza', 'white party', 'studio 54', 'brunch on the banks', 'henley royal regatta'];
+        if (!KEYWORDS.some(kw => ticketLower.includes(kw))) return;
+      }
+      g._source = 'wc';
+      guestMap[`wc-${g.orderNumber}`] = g;
+      if (g.email && !emailMap[g.email]) emailMap[g.email] = g;
+      if (g.id) idMap[g.id] = g;
+      const wcKey = `wc-${g.orderNumber}`;
+      if (!bookingMap[wcKey]) {
+        bookingMap[wcKey] = {
+          bookingId: wcKey, invoiceID: g.orderNumber,
+          name: g.name, email: g.email,
+          eventTitle: g.ticketName, eventDay: g.eventDay,
+          orderDate: g.orderDate || null,
+          tickets: Array.from({length: g.qty || 1}, (_, i) => ({
+            key: `${wcKey}-${i+1}`, attendeeKey: String(i+1),
+            name: g.name, ticketName: g.ticketName,
+            isVip: g.isVip,
+            checkedIn: g.checkedInTickets.includes(String(i)) || g.checkedInTickets.includes(String(i+1))
+          })),
+          source: 'wc', isComp: g.isComp, isTM: g.isTM
+        };
+        if (g.orderNumber) invoiceMap[String(g.orderNumber)] = bookingMap[wcKey];
+      }
+    });
+
+    console.log(`Guest list: ${Object.keys(guestMap).length} total (MEC: ${Object.keys(mecGuests).length}, WC: ${wcGuests.length})`);
+    await loadCompGuests();
+    renderFilterPills();
+    renderGuestList(); updateGLStats();
+
+    // Now process bulk2 (may already be resolved or still pending)
+    const bd = await bulk2Promise;
+    const keepEventIds = new Set([String(window.activeEvent ? window.activeEvent.mec_id : '0')]);
+    console.log('bulk2 total checkins:', (bd.checkins||[]).length);
+    const bulkByBooking = {};
+    (bd.checkins || []).forEach(c => {
+      if (!keepEventIds.has(String(c.event_id))) return;
+      const bid = String(c.booking_id);
+      if (!bulkByBooking[bid]) bulkByBooking[bid] = { inv: String(c.invoice_id), mecInv: String(c.mec_invoice_id || ''), eventId: String(c.event_id), attendees: [] };
+      bulkByBooking[bid].attendees.push(c);
+    });
+    console.log('bulk2 HRR bookings found:', Object.keys(bulkByBooking).length);
+    let bulk2Changed = false;
+    Object.entries(bulkByBooking).forEach(([bid, data]) => {
+      if (!bookingMap[bid]) {
+        // Remove any existing WC entry with the same invoice ID
+        const existingWcKey = `wc-${data.inv}`;
+        if (bookingMap[existingWcKey]) {
+          console.log('bulk2: replacing WC entry', existingWcKey, 'with MEC booking', bid);
+          delete bookingMap[existingWcKey];
+          const wcGuestKey = `wc-${data.inv}`;
+          if (guestMap[wcGuestKey]) delete guestMap[wcGuestKey];
+        }
+        const leadName = data.attendees[0]?.name || '';
+        const eventDay = detectDay('', data.eventId);
+        const firstTicketName = data.attendees[0]?.ticket_name || 'MEC Ticket';
+        const isVipBooking = /vip/i.test(firstTicketName);
+        bookingMap[bid] = {
+          bookingId: bid, invoiceID: data.inv,
+          mecInvoiceID: data.mecInv,
+          name: leadName, email: data.attendees[0]?.email || '',
+          eventTitle: firstTicketName, eventDay: eventDay,
+          _eventId: data.eventId,
+          tickets: [], source: 'mec', isComp: false, isTM: false
+        };
+        invoiceMap[data.inv] = bookingMap[bid];
+        if (data.mecInv && data.mecInv !== data.inv) invoiceMap[data.mecInv] = bookingMap[bid];
+        data.attendees.forEach((a, idx) => {
+          const ticketName = a.ticket_name || firstTicketName;
+          const isVip = /vip/i.test(ticketName);
+          bookingMap[bid].tickets.push({
+            key: `${bid}-${idx+1}`, attendeeKey: String(idx+1),
+            name: a.name || '', ticketName: ticketName,
+            isVip: isVip, checkedIn: !!a.checked_in
+          });
+          // Cache name by mec_invoice_id + place for fast scan lookup
+          if (data.mecInv && a.name) mecAttendeeCache[`${data.mecInv}:${idx+1}`] = a.name;
+        });
+        // Set booking-level VIP if any ticket is VIP
+        if (bookingMap[bid].tickets.some(t => t.isVip)) bookingMap[bid].isVip = true;
+        // Add to guestMap so guest list renders this booking
+        const qty = data.attendees.length || 1;
+        const checkedInTickets = data.attendees
+          .map((a, idx) => a.checked_in ? `${bid}-${idx+1}` : null)
+          .filter(Boolean);
+        guestMap[bid] = {
+          id: bid, name: leadName, email: data.attendees[0]?.email || '',
+          ticketName: firstTicketName, eventDay: eventDay,
+          qty: qty, checkedIn: checkedInTickets.length >= qty,
+          checkedInTickets: checkedInTickets,
+          isVip: isVipBooking, isComp: false, isTM: false,
+          orderNumber: data.inv, _eventId: data.eventId,
+          source: 'mec'
+        };
+        if (data.attendees[0]?.email && !emailMap[data.attendees[0].email]) {
+          emailMap[data.attendees[0].email] = guestMap[bid];
+        }
+        bulk2Changed = true;
+      } else {
+        data.attendees.forEach((a, idx) => {
+          const t = bookingMap[bid].tickets[idx];
+          if (t && a.checked_in) t.checkedIn = true;
+          if (t && a.name && !t.name) t.name = a.name;
+        });
+      }
+    });
+    console.log('bulk2Changed:', bulk2Changed, 'bookingMap size:', Object.keys(bookingMap).length);
+
+    // Apply any pending checkins from scans that happened before bulk2 loaded
+    let pendingApplied = false;
+    Object.entries(pendingCheckins).forEach(([key, pc]) => {
+      const booking = invoiceMap[pc.invId] || bookingMap[pc.invId];
+      if (booking) {
+        const ticket = booking.tickets.find(t => String(t.attendeeKey) === String(pc.placeNo))
+                    || booking.tickets[parseInt(pc.placeNo) - 1];
+        if (ticket && !ticket.checkedIn) {
+          ticket.checkedIn = true;
+          if (pc.name) ticket.name = pc.name;
+          pendingApplied = true;
+        }
+        delete pendingCheckins[key];
+      }
+    });
+    if (pendingApplied) { renderGuestList(); updateGLStats(); }
+    else { renderGuestList(); updateGLStats(); }
+    console.log('bulk2 processed, bookingMap size:', Object.keys(bookingMap).length);
+
+    // Load real check-in state from our database proxy
+    // MEC's API doesn't reflect our direct writes, so we read back from fd2/v1/checkins
+    await loadCheckinState();
+
+  } catch(e) {
+    console.error('Guest list load error:', e);
+    document.getElementById('gl-list').innerHTML =
+      `<div class="gl-empty">⚠️ Could not load guest list<br><small style="opacity:.5">${e.message}</small></div>`;
+  }
+}
+
+// ── Google Sheet integration ────────────────────────────────────────────────
+const SHEET_ID = '1qy9_HFxFZg9L3M2UzV_cSMesZp6UdYJZmlR-k9d3OCc';
+const SHEET_TABS = {
+  guests:    '0',
+  djs:       '1627244189',
+  resources: '734386291',
+  remenham:  '630690329',
+};
+
+function sheetEventToId(eventStr) {
+  if (!eventStr) return [];
+  const s = eventStr.trim().toLowerCase();
+  if (s === 'all') return upcomingEvents.map(e => String(e.id));
+  if (window.activeEvent) return [String(window.activeEvent.mec_id)];
+  return [];
+}
+
+function parseEntryType(val) {
+  if (!val) return 'GE';
+  const v = val.trim().toUpperCase();
+  if (v === 'VIP') return 'VIP';
+  if (v === 'AAA') return 'AAA';
+  if (v === 'STAFF') return 'Staff';
+  return 'GE';
+}
+
+function sectionToEntry(section) {
+  const s = (section || '').trim();
+  switch (s) {
+    case 'Artist':        return { entryType: 'AAA', guestType: 'DJ',            hasLanyard: true  };
+    case 'Visuals':       return { entryType: 'AAA', guestType: 'Production',    hasLanyard: false };
+    case 'Sponsor':       return { entryType: 'GE',  guestType: 'Sponsor',       hasLanyard: false };
+    case 'Caterer':       return { entryType: 'GE',  guestType: 'Caterer',       hasLanyard: false };
+    case 'Retailer':      return { entryType: 'GE',  guestType: 'Retailer',      hasLanyard: false };
+    case 'Entertainment': return { entryType: 'GE',  guestType: 'Entertainment', hasLanyard: false };
+    case 'Bar':           return { entryType: 'GE',  guestType: 'Bar Staff',     hasLanyard: false };
+    case 'Crew':          return { entryType: 'GE',  guestType: 'Crew',          hasLanyard: false };
+    case 'Supplier':      return { entryType: 'GE',  guestType: 'Supplier',      hasLanyard: false, isSupplier: true };
+    default:              return { entryType: 'GE',  guestType: s || 'Staff',    hasLanyard: false };
+  }
+}
+
+async function fetchSheetTab(gid) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Sheet fetch failed gid=${gid}: ${r.status}`);
+  return parseCSV(await r.text());
+}
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else field += c;
+    } else {
+      if (c === '"') { inQ = true; }
+      else if (c === ',') { row.push(field.trim()); field = ''; }
+      else if (c === '\n') { row.push(field.trim()); rows.push(row); row = []; field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else field += c;
+    }
+  }
+  if (field || row.length) { row.push(field.trim()); rows.push(row); }
+  return rows;
+}
+
+function addSheetBooking({ key, name, email, entryType, guestType, hasLanyard, eventIds, ticketName, isComp, isRemenham, isEntertainment, isSupplier, guestOf, source, rfItemId, rfQty, rfTicketNum }) {
+  if (!name) return;
+  email = (email || '').toLowerCase().trim();
+  eventIds.forEach((eventId, idx) => {
+    const bKey = `${key}-${idx}`;
+    if (bookingMap[bKey]) return;
+    const ev = upcomingEvents.find(e => String(e.id) === String(eventId));
+    const evTitle = ev ? ev.title : (ticketName || 'Guest');
+    const ticket = {
+      key: `${bKey}-0`, attendeeKey: '0',
+      name, ticketName: ticketName || evTitle,
+      entryType, guestType, hasLanyard,
+      isVip: entryType === 'VIP', checkedIn: false
+    };
+    const booking = {
+      bookingId: bKey, invoiceID: bKey,
+      name, email, eventTitle: evTitle, eventDay: '',
+      _eventId: String(eventId), guestOf: guestOf || '',
+      entryType, guestType, hasLanyard,
+      tickets: [ticket],
+      source: source || 'sheet',
+      rfQty: rfQty || 1, rfTicketNum: rfTicketNum || 1,
+      isComp: !!isComp, isRemenham: !!isRemenham, isEntertainment: !!isEntertainment, isSupplier: !!isSupplier, isTM: false,
+      rfItemId: rfItemId || null,
+      orderDate: new Date().toISOString()
+    };
+    bookingMap[bKey] = booking;
+    invoiceMap[bKey] = booking;
+    const gKey = email || bKey;
+    if (!guestMap[gKey]) {
+      guestMap[gKey] = {
+        id: bKey, orderNumber: bKey, name, email,
+        ticketName: ticketName || evTitle,
+        entryType, guestType, hasLanyard,
+        isVip: entryType === 'VIP', isComp: !!isComp, isTM: false,
+        checkedInTickets: [], checkedIn: false,
+        _eventId: String(eventId), guestOf: guestOf || '',
+        orderDate: new Date().toISOString()
+      };
+    }
+    if (email) emailMap[email] = guestMap[gKey];
+  });
+}
+
+async function loadCompGuests() {
+  let total = 0;
+  try {
+    // Tab 1: Guests — Name | Email | Event | Entry Type | Guest Type | Notes
+    try {
+      const rows = await fetchSheetTab(SHEET_TABS.guests);
+      let n = 0;
+      rows.slice(1).forEach((r, i) => {
+        const [name, email, event, entryTypeRaw, guestType] = r;
+        if (!name) return;
+        const eventIds = sheetEventToId(event);
+        if (!eventIds.length) return;
+        addSheetBooking({ key: `gs-${i}`, name, email, entryType: parseEntryType(entryTypeRaw), guestType: (guestType||'Comp Guest').trim(), hasLanyard: false, eventIds, ticketName: guestType||'Guest', isComp: true, source: 'sheet' });
+        n++;
+      });
+      console.log(`✓ Sheet Guests: ${n}`); total += n;
+    } catch(e) { console.warn('Sheet Guests failed:', e.message); }
+
+    // Tab 2: DJs and Guests — First Name(0)|Last Name(1)|Date(2)|Theme(3)|...|Email(6)|...|Guest1(18)|Guest2(20)...
+    try {
+      const rows = await fetchSheetTab(SHEET_TABS.djs);
+      let n = 0;
+      rows.slice(1).forEach((r, i) => {
+        const firstName = (r[0]||'').trim(), lastName = (r[1]||'').trim();
+        const theme = (r[3]||'').trim(), email = (r[6]||'').toLowerCase().trim();
+        const name = [firstName, lastName].filter(Boolean).join(' ');
+        if (!name) return;
+        const eventIds = sheetEventToId(theme);
+        if (!eventIds.length) return;
+
+        // Build tickets array: DJ first, then guests
+        const tickets = [{
+          key: `dj-${i}-0`, attendeeKey: '1',
+          name: name, ticketName: 'DJ',
+          isVip: false, checkedIn: false, hasLanyard: true, entryType: 'AAA'
+        }];
         let guestCount = 1;
         for (let g = 0; g < 10; g++) {
           const gName = (r[12 + g]||'').trim();
@@ -1194,7 +1816,7 @@ async function fetchUpcomingEvents() {
     } catch(e) { console.warn('Sheet DJs failed:', e.message); }
 
     // Tab 3: Resources — Section(0)|Status(1)|First Name(2)|Last Name(3)|...|Thu(11,12,13)|Fri(14,15,16)|Sat(17,18,19)
-    const DAY_COLS = []; // Loaded from 3RD_PARTY sheet tab
+    const DAY_COLS = [];
     try {
       const rows = await fetchSheetTab(SHEET_TABS.resources);
       let n = 0;
@@ -2927,7 +3549,7 @@ function showEnt(g) {
   const iconEl = el.querySelector('.eb-icon');
   const imgHtml = wbSrc ? `<img src="${wbSrc}">` : null;
 
-  const evColours = window.activeEvent ? {[String(window.activeEvent.mec_id)]: '#FF4B7B'} : {};
+  const evColours = {};
 
   if (entryType === 'VIP') {
     el.className = 'ent-banner vip';
@@ -3108,7 +3730,7 @@ function renderDoorStats() {
   const rows = Object.entries(DOOR_TICKETS).map(([code, dt]) => {
     const count = counts[code] || 0;
     const pct = Math.round(count / dt.limit * 100);
-    const evColours = window.activeEvent ? {[String(window.activeEvent.mec_id)]: '#FF4B7B'} : {};
+    const evColours = {};
     const col = evColours[dt.event] || '#22224C';
     return `<div style="background:var(--card);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;">
       <div style="width:12px;height:12px;border-radius:50%;background:${col};flex-shrink:0;"></div>
@@ -3683,7 +4305,7 @@ function vibrate(p) {
 // ═══════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════
-// Startup handled by tapgateInit() abovetLoaded handles all credential loading below
+// DOMContentLoaded handles all credential loading below
 window.addEventListener('DOMContentLoaded', () => {
   // 1. Check URL for QR-encoded credentials (?fd=base64payload)
   const params = new URLSearchParams(window.location.search);
@@ -3715,7 +4337,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (saved) {
     try {
       const c = JSON.parse(saved);
-      if ((c.u || c.siteUrl) && (c.k || c.wcKey)) {
+      if ((c.u||c.siteUrl) && (c.k||c.wcKey)) {
         cfg = { u:c.u||c.siteUrl||'', k:c.k||c.wcKey||'', s:c.s||c.wcSecret||'', m:c.m||c.mecKey||'', events:c.events||[], sheet:c.sheet||'', demo:false };
         ['site-url','s-url'].forEach(id => document.getElementById(id).value = c.siteUrl);
         ['wc-key','s-key'].forEach(id => document.getElementById(id).value = c.wcKey);
