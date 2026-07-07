@@ -788,6 +788,7 @@ input::placeholder { color: #999; }
     <button class="filter-pill" onclick="setGlFilter('mec',this)">🎟 Tickets</button>
     <button class="filter-pill" onclick="setGlFilter('dj',this)">🎧 DJ Guests</button>
     <button class="filter-pill" onclick="setGlFilter('sheet',this)">📋 Guest List</button>
+    <button class="filter-pill" onclick="setGlFilter('comp',this)">🎁 Comps</button>
     <button class="filter-pill" onclick="setGlFilter('in',this)">✓ In</button>
     <button class="filter-pill" onclick="setGlFilter('out',this)">⏳ Not In</button>
   </div>
@@ -994,7 +995,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.1.4';
+const APP_VERSION = '2.1.5';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -2390,6 +2391,7 @@ function renderGuestList() {
     if (glFilter === 'mec')   return b.source === 'mec';
     if (glFilter === 'sheet') return b.source === 'sheet';
     if (glFilter === 'dj')    return b.source === 'sheet' && (b.entryType === 'AAA' || (b.eventTitle||'').toLowerCase() === 'dj');
+    if (glFilter === 'comp')  return b.source === 'sheet' && b.entryType !== 'AAA' && (b.eventTitle||'').toLowerCase() !== 'dj';
     if (glFilter === 'in')    return b.checkedIn || (b.checkedInTickets && b.checkedInTickets.length > 0);
     if (glFilter === 'out')   return !b.checkedIn && !(b.checkedInTickets && b.checkedInTickets.length > 0);
     // Event filter — search stays within the active event
