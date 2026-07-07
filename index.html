@@ -292,8 +292,6 @@ input::placeholder { color: #999; }
 #scan-flash.flash-ok   { background: #00C875; animation: flash-ok  .45s ease-out forwards; }
 #scan-flash.flash-err  { background: #D0000A; animation: flash-err .45s ease-out forwards; }
 #scan-flash.flash-warn { background: #FF9500; animation: flash-warn 1.2s ease-out forwards; }
-#scan-flash.flash-pink { background: #FF4B7B; animation: flash-ok  .45s ease-out forwards; }
-#scan-flash.flash-blue { background: #0050B3; animation: flash-ok  .45s ease-out forwards; }
 
 /* ── Guest list ── */
 #guests-screen { display: flex; flex-direction: column; overflow: hidden; width: 100%; }
@@ -1137,9 +1135,7 @@ function useDemoMode() { cfg = { siteUrl:'', wcKey:'', wcSecret:'', demo:true };
       const parsed = JSON.parse(atob(padded));
       if (parsed.u && parsed.k && parsed.s) {
         localStorage.setItem('fdScanConfig', JSON.stringify(parsed));
-        if (parsed.events && parsed.events.length) {
-          window._qrEvents = parsed.events;
-        }
+        if (parsed.events && parsed.events.length) window._qrEvents = parsed.events;
         window.history.replaceState({}, '', window.location.pathname);
       }
     } catch(e) { console.warn('QR parse failed', e); }
@@ -1214,7 +1210,7 @@ async function fetchUpcomingEvents() {
     } catch(e) { console.warn('Sheet DJs failed:', e.message); }
 
     // Tab 3: Resources — Section(0)|Status(1)|First Name(2)|Last Name(3)|...|Thu(11,12,13)|Fri(14,15,16)|Sat(17,18,19)
-    const DAY_COLS = []; // Not used — RF data loaded from 3RD_PARTY sheet tab
+    const DAY_COLS = []; // RF sheet columns loaded from 3RD_PARTY tab
     try {
       const rows = await fetchSheetTab(SHEET_TABS.resources);
       let n = 0;
@@ -1451,10 +1447,19 @@ async function refreshGuests() {
 let showAll = false;
 
 function showWristbandToast(booking, ticket) {
-  // Use EVENT_CONFIG for wristband colour — no hardcoded event IDs
-  const et     = ticket.entryType || booking.entryType || 'GE';
-  const ecCfg  = (eventConfig || {})[et] || {};
-  let evCol    = { bg: ecCfg.wristband_colour || '#FF4B7B', name: ecCfg.entry_label || et };
+  const toastEvId = String(booking._eventId || '');
+  const toastCols = {
+    '35616': { bg: '#5BB8E8', name: 'Sky Blue · Ladies Day' },
+    '35636': { bg: '#F04E30', name: 'Coral · Ibiza' },
+    '35637': { bg: '#E91E8C', name: 'Hot Pink · Studio 54' },
+  };
+  let evCol = toastCols[toastEvId];
+  if (!evCol) {
+    const t = ((ticket.ticketName||'') + ' ' + (booking.eventTitle||'')).toLowerCase();
+    if (t.includes('ladies')) evCol = toastCols['35616'];
+    else if (t.includes('ibiza') || t.includes('white party')) evCol = toastCols['35636'];
+    else if (t.includes('studio')) evCol = toastCols['35637'];
+  }
   const entryType = ticket.entryType || booking.entryType || (ticket.isVip ? 'VIP' : (/vip/i.test(ticket.ticketName || booking.eventTitle || '') ? 'VIP' : 'GE'));
   const isEvening = (function(s){return /evening/i.test(s)||/access only/i.test(s);})(ticket.ticketName || booking.eventTitle || '');
   let msg = '';
@@ -2461,8 +2466,6 @@ async function lookupTicket(code) {
             const now = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
             const detail = [
               mecGuest.isVip ? '⭐ VIP' : null,
-              (mecGuest.entryType === 'VIP-No Food' || mecGuest.entryType === 'VIP-1 Token') ? '🍾 Drinks Package' : null,
-              mecGuest.entryType === 'VIP-No Food' ? '🚫 No Food Tokens' : mecGuest.entryType === 'VIP-1 Token' ? '1️⃣ 1 Food Token' : null,
               mecGuest.ticketName && mecGuest.ticketName !== 'MEC Ticket' ? mecGuest.ticketName : null,
               now
             ].filter(Boolean).join('  ·  ');
@@ -2900,17 +2903,7 @@ function setResult(state, icon, name, detail, pulse) {
   if (flash && state) {
     flash.className = '';
     void flash.offsetWidth; // force reflow to restart animation
-    if (state === 'ok') {
-        // Special entry types get different flash colours
-        const specialEntry = (mecGuest && mecGuest.entryType) ? mecGuest.entryType : '';
-        if (specialEntry === 'VIP-No Food') {
-          flash.className = 'flash-pink';
-        } else if (specialEntry === 'VIP-1 Token') {
-          flash.className = 'flash-blue';
-        } else {
-          flash.className = 'flash-ok';
-        }
-      }
+    if (state === 'ok')   flash.className = 'flash-ok';
     if (state === 'err')  flash.className = 'flash-err';
     if (state === 'warn') flash.className = 'flash-warn';
     if (state === 'tm')   flash.className = 'flash-warn';
@@ -2953,21 +2946,14 @@ function showEnt(g) {
     if (activeEvent) evId = String(activeEvent.mec_id);
   }
 
-  // Determine entry type — check ticket name too for MEC bookings
-  const _tn = (g.ticketName || g.eventTitle || '').toLowerCase();
-  const _et = (g.entryType || '').toUpperCase();
-  let entryType;
-  if (_et === 'VIP-NO FOOD' || _et === 'VIP-1 TOKEN') entryType = _et;
-  else if (_et === 'VIP' || g.isVip || _tn.includes('vip')) entryType = 'VIP';
-  else if (_et === 'EVENING' || _et === 'EVE' || /evening|access only/i.test(_tn)) entryType = 'EVENING';
-  else entryType = 'GE';
-  const isEvening = entryType === 'EVENING' || /evening|access only/i.test(_tn);
+  const entryType = (g.entryType || (g.isVip ? 'VIP' : 'GE')).toUpperCase();
+  const isEvening = (function(s){return /evening/i.test(s)||/access only/i.test(s);})(g.ticketName || g.eventTitle || '');
   const wbKey = getWristbandKey(evId, entryType);
   const wbSrc = wbKey ? WRISTBAND_IMGS[wbKey] : null;
   const iconEl = el.querySelector('.eb-icon');
   const imgHtml = wbSrc ? `<img src="${wbSrc}">` : null;
 
-  const evColours = activeEvent ? {[String(activeEvent.mec_id)]: (eventConfig[activeEvent.entry_code||'GE']||{}).wristband_colour || '#FF4B7B'} : {};
+  const evColours = activeEvent ? {[String(activeEvent.mec_id)]: '#FF4B7B'} : {};
 
   if (entryType === 'VIP') {
     el.className = 'ent-banner vip';
@@ -3148,7 +3134,7 @@ function renderDoorStats() {
   const rows = Object.entries(DOOR_TICKETS).map(([code, dt]) => {
     const count = counts[code] || 0;
     const pct = Math.round(count / dt.limit * 100);
-    const evColours = activeEvent ? {[String(activeEvent.mec_id)]: (eventConfig[activeEvent.entry_code||'GE']||{}).wristband_colour || '#FF4B7B'} : {};
+    const evColours = activeEvent ? {[String(activeEvent.mec_id)]: '#FF4B7B'} : {};
     const col = evColours[dt.event] || '#22224C';
     return `<div style="background:var(--card);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;">
       <div style="width:12px;height:12px;border-radius:50%;background:${col};flex-shrink:0;"></div>
@@ -3242,47 +3228,6 @@ function renderEventCards() {
   const themes = ['Ladies Day','Ibiza White Party','Studio 54','Brunch on the Banks'];
   const themeColors = {'Ladies Day':'#0050B3','Ibiza White Party':'var(--pink)','Studio 54':'#00A85A','Brunch on the Banks':'#C06000'};
 
-  function getTicketCategory(b) {
-    // For MEC/WC tickets use ticket name, for sheet use entryType
-    const tn = (b.tickets && b.tickets[0] ? b.tickets[0].ticketName : b.eventTitle || '').toLowerCase();
-    const et = (b.entryType || '').toLowerCase();
-    if (et === 'vip' || tn.includes('vip')) return 'VIP';
-    if (et === 'evening' || tn.includes('evening') || tn.includes('access only')) return 'Evening';
-    return 'General Entry';
-  }
-
-  function renderBreakdown(bookings, isRF, col) {
-    const cats = {};
-    bookings.forEach(b => {
-      const cat = getTicketCategory(b);
-      if (!cats[cat]) cats[cat] = { tickets: 0, admitted: 0 };
-      const tix = isRF ? ((b.rfTicketNum||1)===1 ? (b.rfQty||1) : 0) : b.tickets.length;
-      cats[cat].tickets += tix;
-      cats[cat].admitted += getBookingAdmittedCount(b);
-    });
-    const order = ['VIP', 'General Entry', 'Evening'];
-    const rows = order.filter(c => cats[c] && cats[c].tickets > 0).map(c => {
-      const {tickets, admitted} = cats[c];
-      const rem = tickets - admitted;
-      return `<tr>
-        <td style="padding:3px 8px;font-size:11px;color:#555">${c}</td>
-        <td style="padding:3px 8px;font-size:11px;text-align:center;color:${col}">${admitted}</td>
-        <td style="padding:3px 8px;font-size:11px;text-align:center;font-weight:700">${rem}</td>
-        <td style="padding:3px 8px;font-size:11px;text-align:center;color:#888">${tickets}</td>
-      </tr>`;
-    }).join('');
-    if (!rows) return '';
-    return `<table style="width:100%;border-collapse:collapse;margin-top:8px;border-top:1px solid #eee">
-      <tr style="background:#f5f5f7">
-        <th style="padding:3px 8px;font-size:10px;text-align:left;color:#888;font-weight:600">TYPE</th>
-        <th style="padding:3px 8px;font-size:10px;text-align:center;color:#888;font-weight:600">IN</th>
-        <th style="padding:3px 8px;font-size:10px;text-align:center;color:#888;font-weight:600">REM</th>
-        <th style="padding:3px 8px;font-size:10px;text-align:center;color:#888;font-weight:600">TOTAL</th>
-      </tr>
-      ${rows}
-    </table>`;
-  }
-
   function renderStatCard(ev, col) {
     // For RF bookings: use rfQty for ticket count, rfTicketNum===1 for booking count
     const isRF = ev.bookings.length > 0 && ev.bookings[0].isRemenham;
@@ -3296,7 +3241,6 @@ function renderEventCards() {
       .replace(/during henley\s*(royal\s*)?regatta\s*/i,'')
       .replace(/meets\s*/i,'\u00d7 ').replace(/\s*[-\u2013]\s*\d{2}[./]\d{2}([./]\d{2,4})?/g,'')
       .replace(/\(SCAN TEST[^)]*\)/i,'').replace(/\s{2,}/g,' ').trim();
-    const breakdown = renderBreakdown(ev.bookings, isRF, col);
     return `<div class="ev-card">
   <div class="ev-card-header">
     <div class="ev-card-title" style="color:${col}">${shortTitle || ev.title}</div>
@@ -3308,7 +3252,6 @@ function renderEventCards() {
     <div class="ev-stat"><div class="ev-stat-num" style="color:${col}">${pct}%</div><div class="ev-stat-lbl">Admitted</div></div>
   </div>
   <div class="ev-progress-wrap"><div class="ev-progress-bar" style="width:${pct}%;background:${col}"></div></div>
-  ${breakdown}
 </div>`;
   }
 
