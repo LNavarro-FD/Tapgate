@@ -643,7 +643,9 @@ async function loadBulk2() {
   const url  = `${cfg.u}/wp-json/fd2/v1/bulk2?event_id=${activeEvent.mec_id}&per_page=500`;
   const r    = await fetch(url, { headers: { 'Authorization': `Basic ${auth}` }, signal: AbortSignal.timeout(15000) });
   if (!r.ok) throw new Error(`bulk2 ${r.status}`);
-  const bookings = await r.json();
+  const raw = await r.json();
+  console.log('bulk2 raw response type:', typeof raw, Array.isArray(raw), JSON.stringify(raw).slice(0,200));
+  const bookings = Array.isArray(raw) ? raw : (raw.bookings || raw.data || raw.attendees || Object.values(raw) || []);
   bookings.forEach(b => {
     const key = b.invoice_id || b.id || b.key;
     if (!key) return;
