@@ -1806,72 +1806,7 @@ async function loadCompGuests() {
       renderGuestList(); updateGLStats();
     } catch(e) { console.warn('Sheet DJs failed:', e.message); }
 
-    // Tab 3: Resources — Section(0)|Status(1)|First Name(2)|Last Name(3)|...|Thu(11,12,13)|Fri(14,15,16)|Sat(17,18,19)
-    const DAY_COLS = [];
-    try {
-      const rows = await fetchSheetTab(SHEET_TABS.thirdParty);
-      let n = 0;
-      const staffAdded = new Set(); // track name+day to avoid duplicates
-      rows.slice(1).forEach((r, i) => {
-        const section = (r[0]||'').trim();
-        // Use first word of first name + last name to avoid middle names
-        const firstName = (r[2]||'').trim().split(' ')[0];
-        const lastName  = (r[3]||'').trim();
-        const name = [firstName, lastName].filter(Boolean).join(' ');
-        if (!name) return;
-        const { entryType, guestType, hasLanyard, isSupplier } = sectionToEntry(section);
-        // Add one entry per day they work — deduplicate by name+day
-        DAY_COLS.forEach((d, di) => {
-          if (!d.indices.some(idx => (r[idx]||'').trim() !== '')) return;
-          const dedupKey = `${name}|${d.eventId}`;
-          if (staffAdded.has(dedupKey)) return;
-          staffAdded.add(dedupKey);
-          addSheetBooking({ key: `res-${i}-${di}`, name, email: '', entryType, guestType, hasLanyard, eventIds: [d.eventId], ticketName: guestType, isComp: false, isEntertainment: guestType === 'Entertainment', isSupplier: !!isSupplier, source: 'sheet' });
-          n++;
-        });
-      });
-      console.log(`✓ Sheet Resources: ${n}`); total += n;
-    } catch(e) { console.warn('Sheet Resources failed:', e.message); }
-
-    // Tab 4: Remenham Farm — WC order export: First(16)|Last(17)|Email(20)|item_name(40)
-    try {
-      const rows = await fetchSheetTab(SHEET_TABS.thirdParty);
-      let n = 0;
-      rows.slice(1).forEach((r, i) => {
-        const name = [(r[16]||'').trim(), (r[17]||'').trim()].filter(Boolean).join(' ');
-        const email = (r[20]||'').toLowerCase().trim();
-        const itemName = (r[40]||'').trim();
-        if (!name) return;
-        const eventIds = sheetEventToId(itemName);
-        if (!eventIds.length) return;
-        const rfEntryType = /vip/i.test(itemName) ? 'VIP' : (/evening|access only/i.test(itemName) ? 'Evening' : 'GE');
-        // Expand by quantity — one booking per ticket
-      const rfItemIdBase = (r[38]||'').trim();
-      const rfQty = parseInt(r[43]||'1') || 1;
-      for (let rfQ = 1; rfQ <= rfQty; rfQ++) {
-        const rfTicketKey = rfQty > 1 ? rfItemIdBase + '_' + rfQ : rfItemIdBase;
-        const rfDisplayName = rfQty > 1 ? `${name} (Ticket ${rfQ} of ${rfQty})` : name;
-        addSheetBooking({ key: `rf-${i}-${rfQ}`, name: rfDisplayName, email, entryType: rfEntryType, guestType: 'Remenham Farm', hasLanyard: false, rfQty, rfTicketNum: rfQ, eventIds, ticketName: itemName||'Remenham Farm', isComp: false, isRemenham: true, rfItemId: rfTicketKey, source: 'sheet' });
-        n++;
-      }
-      });
-      console.log(`✓ Sheet Remenham Farm: ${n}`); total += n;
-    // Apply Firebase RF checkin state
-    if (window._rfCheckins) {
-      Object.entries(window._rfCheckins).forEach(([itemId, fbData]) => {
-        if (fbData.checkedIn) {
-          const b = Object.values(bookingMap).find(bk => bk.source === 'sheet' && bk.isRemenham && String(bk.rfItemId) === String(itemId));
-          if (b && b.tickets[0]) {
-            b.tickets[0].checkedIn = true;
-            if (guestMap[b.bookingId]) { guestMap[b.bookingId].checkedIn = true; guestMap[b.bookingId].checkedInTickets = [b.bookingId + '-1']; }
-          }
-        }
-      });
-      console.log('RF Firebase checkins applied');
-    }
-    } catch(e) { console.warn('Sheet Remenham Farm failed:', e.message); }
-
-    // Restore sheet guest checkins from Firebase
+        // Restore sheet guest checkins from Firebase
     if (window._sheetCheckins) {
       Object.entries(window._sheetCheckins).forEach(([key, fbData]) => {
         if (fbData.checkedIn && bookingMap[key]) {
