@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.2.3';
+const APP_VERSION = '2.2.4';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1036,67 +1036,61 @@ const TICKET_META_KEY = '_fd_checked_in_tickets';
 // ═══════════════════════════════════════════
 //  SYNC ENGINE
 // ═══════════════════════════════════════════
-async function writeCheckIn(orderId, ticketSuffix, checkedInTickets) {
-  if (cfg.demo) return true;
+async async function writeCheckIn(invoiceId, place, ticketName) {
+  // Writes checkin to MEC via fd2/v1/checkin
+  if (cfg.demo || !cfg.u) return true;
   try {
-    const creds = btoa(`${cfg.k}:${cfg.s}`);
-    const allChecked = checkedInTickets;
-    const r = await fetch(`${cfg.u}/wp-json/wc/v3/orders/${orderId}`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        meta_data: [
-          { key: TICKET_META_KEY, value: JSON.stringify(allChecked) },
-          { key: META_KEY, value: allChecked.length > 0 ? '1' : '' }
-        ]
-      })
-    });
-    if (!r.ok) throw new Error(`Write failed ${r.status}`);
+    const url = `${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${place || 1}${ticketName ? '&ticket_name=' + encodeURIComponent(ticketName) : ''}`;
+    const r = await fetch(url, { method: 'POST' });
+    if (!r.ok) throw new Error(`Checkin write failed ${r.status}`);
+    const data = await r.json();
+    if (!data.success) throw new Error(data.message || 'Checkin failed');
+    showSyncStatus('ok');
     return true;
   } catch(e) {
     console.warn('Check-in write failed, queuing:', e.message);
-    offlineQueue.push({ orderId, ticketSuffix, checkedInTickets });
+    offlineQueue.push({ invoiceId, place, ticketName });
     showSyncStatus('offline');
     return false;
   }
 }
 
 async function syncCheckedIn() {
-  if (cfg.demo || isSyncing || !Object.keys(guestMap).length) return;
+  // Sync checkin state from bulk2 — reads mec_attendees directly
+  // Any checkin written by any device via fd2/v1/checkin will appear here
+  if (cfg.demo || isSyncing || !cfg.u) return;
   isSyncing = true;
   try {
-    const creds = btoa(`${cfg.k}:${cfg.s}`);
-    const r = await fetch(
-      `${cfg.u}/wp-json/wc/v3/orders?status=completed,processing,on-hold&per_page=100&meta_key=${META_KEY}&meta_value=1&_fields=id,number,meta_data`,
-      { headers: { 'Authorization': `Basic ${creds}` } }
-    );
-    if (!r.ok) throw new Error(`Sync ${r.status}`);
-    const checked = await r.json();
+    const r = await fetch(`${cfg.u}/wp-json/fd2/v1/bulk2?_=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) throw new Error(`Sync bulk2 ${r.status}`);
+    const bd = await r.json();
+    const checkins = bd.checkins || [];
     let changed = false;
-    checked.forEach(o => {
-      const g = guestMap[String(o.number)] || idMap[o.id];
-      if (g) {
-        const ticketMeta = o.meta_data && o.meta_data.find(m => m.key === TICKET_META_KEY);
-        if (ticketMeta && ticketMeta.value) {
-          try {
-            const tickets = JSON.parse(ticketMeta.value);
-            if (tickets.length > g.checkedInTickets.length) {
-              g.checkedInTickets = tickets;
-              g.checkedIn = tickets.length >= g.qty;
-              changed = true;
-            }
-          } catch(e) {}
-        }
+    checkins.forEach(c => {
+      const bid = String(c.invoice_id || c.booking_id || '');
+      if (!bid) return;
+      const booking = bookingMap[bid] || invoiceMap[bid];
+      if (!booking) return;
+      const ticket = booking.tickets && booking.tickets.find(t => String(t.attendeeKey) === String(c.attendee_key));
+      if (ticket && !!c.checked_in !== !!ticket.checkedIn) {
+        ticket.checkedIn = !!c.checked_in;
+        // Update booking level
+        const allIn = booking.tickets.every(t => t.checkedIn);
+        const anyIn = booking.tickets.some(t => t.checkedIn);
+        booking.checkedIn = allIn;
+        booking.admittedCount = booking.tickets.filter(t => t.checkedIn).length;
+        changed = true;
       }
     });
     // Flush offline queue
     if (offlineQueue.length) {
       const toFlush = [...offlineQueue]; offlineQueue = [];
-      for (const id of toFlush) { await writeCheckIn(id); }
+      for (const item of toFlush) { await writeCheckIn(item.invoiceId, item.place, item.ticketName); }
     }
     if (changed) { renderGuestList(); updateGLStats(); updateStats(); }
     showSyncStatus('ok');
   } catch(e) {
+    console.warn('Sync failed:', e.message);
     showSyncStatus('offline');
   } finally {
     isSyncing = false;
