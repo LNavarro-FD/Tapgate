@@ -597,7 +597,6 @@ input::placeholder { color: #999; }
   document.dispatchEvent(new Event('firebaseReady'));
   console.log('Firebase REST ready');
 </script>
-<script src="warnings.js"></script>
 </head>
 <body>
 <div id="ios-install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1a2744;color:#fff;padding:12px 16px;flex-direction:row;align-items:center;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,0.3);">
@@ -956,23 +955,7 @@ input::placeholder { color: #999; }
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
 const APP_VERSION = '2.0.5'; // build
-(function checkForUpdate() {
-  fetch(window.location.href.split('?')[0] + '?_v=' + Date.now(), { cache: 'no-store' })
-    .then(r => r.text())
-    .then(html => {
-      const m = html.match(/APP_VERSION = '([\d.]+)'/);
-      if (m && m[1] !== APP_VERSION) {
-        console.log('New version available:', m[1], '— reloading');
-        const fdParam = new URLSearchParams(window.location.search).get('fd');
-        if (fdParam) {
-          window.location.href = window.location.pathname + '?fd=' + encodeURIComponent(fdParam);
-        } else {
-          window.location.reload(true);
-        }
-      }
-    })
-    .catch(() => {});
-})();
+// auto-update removed;
 
 // ═══════════════════════════════════════════
 //  STATE
