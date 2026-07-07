@@ -163,6 +163,7 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 .gmeta{font-size:12px;color:var(--muted);margin-top:1px}
 .gstatus{width:9px;height:9px;border-radius:50%;background:var(--border);flex-shrink:0}
 .gstatus.in{background:#00C875}
+.gstatus.partial{background:#FF9500}
 
 /* Stats & Settings pages */
 #pg-stats,#pg-settings{background:var(--bg);padding:14px 14px calc(var(--safe-b) + 70px)}
@@ -1038,13 +1039,17 @@ function renderGuests() {
     const initials = (b.name||' ').split(' ').map(w=>w[0]||'?').join('').slice(0,2).toUpperCase();
     const et       = resolveEntryType(b);
     const color    = (eventConfig[et]||{}).wristband_colour || '#22224C';
+    const qty      = b.qty || 1;
+    const admitted = b.admittedCount || (b.checkedIn ? qty : 0);
+    const qtyLabel = qty > 1 ? ` · ${admitted} of ${qty} in` : (b.checkedIn ? ' · ✓ In' : '');
+    const statusCls = b.checkedIn ? 'in' : (admitted > 0 ? 'partial' : '');
     return `<div class="guest-row">
       <div class="gav" style="background:${color}">${initials}</div>
       <div class="ginfo">
         <div class="gname">${b.name}</div>
-        <div class="gmeta">${et} · ${b.source==='mec'?'Ticket':(b.category||'Guest')}${b.email?' · '+b.email:''}</div>
+        <div class="gmeta">${et}${qtyLabel} · ${b.source==='mec'?'Ticket':(b.category||'Guest')}</div>
       </div>
-      <div class="gstatus ${b.checkedIn?'in':''}"></div>
+      <div class="gstatus ${statusCls}"></div>
     </div>`;
   }).join('');
 }
