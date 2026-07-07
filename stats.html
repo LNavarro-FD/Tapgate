@@ -234,9 +234,26 @@ async function loadStats(ev) {
       if (fc.sheet) Object.assign(checkins, fc.sheet);
     }
 
-    // Load bookingMap from sessionStorage if available
+    // Load bookingMap from sessionStorage, or fetch from bulk2
     const cached = sessionStorage.getItem('tg_bookingmap');
-    if (cached) bookingMap = JSON.parse(cached);
+    if (cached) {
+      bookingMap = JSON.parse(cached);
+    } else if (cfg.u && ev.mec_id) {
+      // Fetch directly from bulk2
+      const br = await fetch(`${cfg.u}/wp-json/fd2/v1/bulk2?_=${Date.now()}`, { cache: 'no-store' });
+      if (br.ok) {
+        const bd = await br.json();
+        const checkinsList = bd.checkins || [];
+        checkinsList.forEach(c => {
+          const bid = String(c.invoice_id || c.booking_id || '');
+          if (!bid || String(c.event_id) !== String(ev.mec_id)) return;
+          if (!bookingMap[bid]) {
+            bookingMap[bid] = { key: bid, name: c.name || 'Unknown', tickets: [], source: 'mec', entryType: c.entry_type || 'GE' };
+          }
+          bookingMap[bid].tickets.push({ attendeeKey: c.attendee_key, checkedIn: !!c.checked_in, ticketName: c.ticket_name || 'MEC Ticket' });
+        });
+      }
+    }
 
     // Load event config
     await loadEventConfig(ev);
