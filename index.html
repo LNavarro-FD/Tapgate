@@ -994,7 +994,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.1.3';
+const APP_VERSION = '2.1.4';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1365,6 +1365,8 @@ async function fetchMecAttendees(events) {
 }
 
 async function loadGuestList() {
+  window._guestListLoading = true;
+  renderGuestList(); // show loading state immediately
   document.getElementById('gl-list').innerHTML = '<div class="gl-loading"><span class="spin"></span>&nbsp; Loading…</div>';
   guestMap = {}; bookingMap = {}; invoiceMap = {}; emailMap = {}; idMap = {};
   if (cfg.demo) { loadDemoGuests(); renderGuestList(); updateGLStats(); return; }
@@ -1609,6 +1611,12 @@ async function loadGuestList() {
     if (pendingApplied) { renderGuestList(); updateGLStats(); }
     else { renderGuestList(); updateGLStats(); }
     console.log('bulk2 processed, bookingMap size:', Object.keys(bookingMap).length);
+    window._guestListLoading = false;
+    const totalBookings = Object.keys(bookingMap).length;
+    if (totalBookings > 0) {
+      showWarning('✅ ' + totalBookings + ' guests loaded', 'green', null);
+      setTimeout(clearWarning, 4000);
+    }
 
     // Load real check-in state from our database proxy
     // MEC's API doesn't reflect our direct writes, so we read back from fd2/v1/checkins
@@ -2433,8 +2441,10 @@ function renderGuestList() {
   if (evBar) evBar.style.display = upcomingEventNames.length > 0 ? 'block' : 'none';
 
   if (!filtered.length) {
-    document.getElementById('gl-list').innerHTML =
-      `<div class="gl-empty">No guests match${q ? ` "<strong>${q}</strong>"` : ' this filter'}${glFilter.startsWith('event:') ? '<br><small style="color:var(--muted)">Try tapping "See all" above</small>' : ''}</div>`;
+    const isLoading = window._guestListLoading === true;
+    document.getElementById('gl-list').innerHTML = isLoading
+      ? '<div class="gl-empty" style="color:var(--muted)">⏳ Loading guest list...</div>'
+      : `<div class="gl-empty">No guests match${q ? ` "<strong>${q}</strong>"` : ' this filter'}</div>`;
     return;
   }
 
