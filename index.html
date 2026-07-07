@@ -596,7 +596,37 @@ input::placeholder { color: #999; }
   document.dispatchEvent(new Event('firebaseReady'));
   console.log('Firebase REST ready');
 </script>
-<script src="warnings.js"></script>
+<script>
+// Tapgate — warnings.js
+// Warning banner system — completely isolated from scanner
+// A bug here will never crash the scanner
+
+(function() {
+
+  function showWarning(msg, level, retryFn) {
+    try {
+      var b = document.getElementById('warning-banner');
+      if (!b) return;
+      b.className = level || 'amber';
+      b.innerHTML = msg + (retryFn ? ' <button class="warn-retry" onclick="' + retryFn + '()">Tap to retry</button>' : '');
+      b.style.display = 'block';
+    } catch(e) {}
+  }
+
+  function clearWarning() {
+    try {
+      var b = document.getElementById('warning-banner');
+      if (b) { b.style.display = 'none'; b.innerHTML = ''; }
+    } catch(e) {}
+  }
+
+  // Expose globally — if this file fails to load, index.html has safe fallbacks
+  window.showWarning  = showWarning;
+  window.clearWarning = clearWarning;
+
+})();
+
+</script>
 </head>
 <body>
 <div id="ios-install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1a2744;color:#fff;padding:12px 16px;flex-direction:row;align-items:center;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,0.3);">
@@ -954,7 +984,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.0.6';
+const APP_VERSION = '2.0.7';
 (function checkForUpdate() {
   fetch(window.location.href.split('?')[0] + '?_v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
