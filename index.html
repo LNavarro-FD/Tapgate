@@ -3731,8 +3731,17 @@ window.addEventListener('DOMContentLoaded', () => {
   if (saved) {
     try {
       const c = JSON.parse(saved);
-      if (c.siteUrl && c.wcKey) {
-        cfg = c;
+      if ((c.u || c.siteUrl) && (c.k || c.wcKey)) {
+        // Normalise to new field names
+        cfg = {
+          u: c.u || c.siteUrl || '',
+          k: c.k || c.wcKey   || '',
+          s: c.s || c.wcSecret|| '',
+          m: c.m || c.mecKey  || '',
+          events: c.events || [],
+          sheet:  c.sheet  || '',
+          demo:   c.demo   || false,
+        };
         ['site-url','s-url'].forEach(id => document.getElementById(id).value = c.siteUrl);
         ['wc-key','s-key'].forEach(id => document.getElementById(id).value = c.wcKey);
         ['wc-secret','s-secret'].forEach(id => document.getElementById(id).value = c.wcSecret);
