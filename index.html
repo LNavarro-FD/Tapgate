@@ -1124,23 +1124,7 @@ function connect() {
   saveConfig(); launch();
 }
 function useDemoMode() { cfg = { siteUrl:'', wcKey:'', wcSecret:'', demo:true }; launch(); }
-// Auto-login from ?tg= QR param
-(function() {
-  const params = new URLSearchParams(window.location.search);
-  const tg = params.get('tg') || params.get('fd');
-  if (tg) {
-    try {
-      const b64    = decodeURIComponent(tg).replace(/-/g,'+').replace(/_/g,'/');
-      const padded = b64 + '=='.slice(0,(4-b64.length%4)%4);
-      const parsed = JSON.parse(atob(padded));
-      if (parsed.u && parsed.k && parsed.s) {
-        localStorage.setItem('fd_cfg', JSON.stringify(parsed));
-        if (parsed.events && parsed.events.length) window._qrEvents = parsed.events;
-        window.history.replaceState({}, '', window.location.pathname);
-      }
-    } catch(e) { console.warn('QR parse failed', e); }
-  }
-})();
+// Auto-login handled in tapgateInit() below
 
 function launch() {
   document.getElementById('setup-screen').classList.add('hidden');
@@ -3726,13 +3710,40 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch(e) { console.warn('QR decode failed', e); }
   }
 
-  // 2. Fall back to saved config
+  // Startup handled by tapgateInit()
+  // 3. Show setup screen
+});
+
+function tapgateInit() {
+  // 1. Check for ?tg= QR auto-login param
+  const params = new URLSearchParams(window.location.search);
+  const tg = params.get('tg') || params.get('fd');
+  if (tg) {
+    try {
+      const b64    = decodeURIComponent(tg).replace(/-/g,'+').replace(/_/g,'/');
+      const padded = b64 + '=='.slice(0,(4-b64.length%4)%4);
+      const parsed = JSON.parse(atob(padded));
+      if (parsed.u && parsed.k && parsed.s) {
+        localStorage.setItem('fd_cfg', JSON.stringify(parsed));
+        window.history.replaceState({}, '', window.location.pathname);
+        cfg = {
+          u: parsed.u, k: parsed.k, s: parsed.s,
+          m: parsed.m || '', events: parsed.events || [],
+          sheet: parsed.sheet || '', demo: false,
+        };
+        if (parsed.events && parsed.events.length) window._qrEvents = parsed.events;
+        launch();
+        return;
+      }
+    } catch(e) { console.warn('QR parse failed', e); }
+  }
+
+  // 2. Load saved config
   const saved = localStorage.getItem('fd_cfg');
   if (saved) {
     try {
       const c = JSON.parse(saved);
       if ((c.u || c.siteUrl) && (c.k || c.wcKey)) {
-        // Normalise to new field names
         cfg = {
           u: c.u || c.siteUrl || '',
           k: c.k || c.wcKey   || '',
@@ -3740,20 +3751,20 @@ window.addEventListener('DOMContentLoaded', () => {
           m: c.m || c.mecKey  || '',
           events: c.events || [],
           sheet:  c.sheet  || '',
-          demo:   c.demo   || false,
+          demo:   false,
         };
-        ['site-url','s-url'].forEach(id => document.getElementById(id).value = c.siteUrl);
-        ['wc-key','s-key'].forEach(id => document.getElementById(id).value = c.wcKey);
-        ['wc-secret','s-secret'].forEach(id => document.getElementById(id).value = c.wcSecret);
-        ['mec-key','s-mec-key'].forEach(id => { const el = document.getElementById(id); if(el) el.value = c.mecKey||''; });
-        // Auto-launch if we have saved creds
+        if (c.events && c.events.length) window._qrEvents = c.events;
         launch();
         return;
       }
-    } catch(e){}
+    } catch(e) {}
   }
+
   // 3. Show setup screen
-});
+  document.getElementById('setup-screen').style.display = '';
+}
+
+window.addEventListener('load', tapgateInit);
 </script>
   <div class="wb-toast" id="wb-toast"><img class="wb-toast-img" id="wb-toast-img" src="" style="display:none;"><div class="wb-toast-body"><div class="wb-toast-dot" id="wb-toast-dot"></div><span id="wb-toast-msg"></span></div></div>
 </body>
