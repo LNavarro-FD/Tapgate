@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.2.2';
+const APP_VERSION = '2.2.3';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1805,12 +1805,13 @@ async function loadCompGuests() {
         }
       });
       console.log(`✓ Sheet DJs: ${n}`); total += n;
+      renderGuestList(); updateGLStats();
     } catch(e) { console.warn('Sheet DJs failed:', e.message); }
 
     // Tab 3: Resources — Section(0)|Status(1)|First Name(2)|Last Name(3)|...|Thu(11,12,13)|Fri(14,15,16)|Sat(17,18,19)
     const DAY_COLS = [];
     try {
-      const rows = await fetchSheetTab(SHEET_TABS.resources);
+      const rows = await fetchSheetTab(SHEET_TABS.thirdParty);
       let n = 0;
       const staffAdded = new Set(); // track name+day to avoid duplicates
       rows.slice(1).forEach((r, i) => {
@@ -1836,7 +1837,7 @@ async function loadCompGuests() {
 
     // Tab 4: Remenham Farm — WC order export: First(16)|Last(17)|Email(20)|item_name(40)
     try {
-      const rows = await fetchSheetTab(SHEET_TABS.remenham);
+      const rows = await fetchSheetTab(SHEET_TABS.thirdParty);
       let n = 0;
       rows.slice(1).forEach((r, i) => {
         const name = [(r[16]||'').trim(), (r[17]||'').trim()].filter(Boolean).join(' ');
