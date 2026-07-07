@@ -640,30 +640,62 @@ async function loadAllData() {
 async function reloadData() { await loadAllData(); }
 
 async function loadBulk2() {
-  const auth = btoa(`${cfg.k}:${cfg.s}`);
-  const url  = `${cfg.u}/wp-json/fd2/v1/bulk2?event_id=${activeEvent.mec_id}&per_page=500`;
-  const r    = await fetch(url, { headers: { 'Authorization': `Basic ${auth}` }, signal: AbortSignal.timeout(15000) });
-  if (!r.ok) throw new Error(`bulk2 ${r.status}`);
+  const siteUrl = cfg.u || cfg.siteUrl || '';
+  const wcKey   = cfg.k || cfg.wcKey   || '';
+  const wcSec   = cfg.s || cfg.wcSecret|| '';
+  if (!siteUrl || !wcKey || !wcSec) throw new Error('Missing credentials');
+
+  const auth = btoa(`${wcKey}:${wcSec}`);
+  const url  = `${siteUrl}/wp-json/fd2/v1/bulk2?_=${Date.now()}`;
+  console.log('bulk2 calling:', url);
+
+  const r = await fetch(url, {
+    cache: 'no-store',
+    headers: { 'Authorization': `Basic ${auth}` },
+    signal: AbortSignal.timeout(20000)
+  });
+  console.log('bulk2 status:', r.status);
+  if (!r.ok) throw new Error(`bulk2 HTTP ${r.status}`);
+
   const raw = await r.json();
-  console.log('bulk2 raw response type:', typeof raw, Array.isArray(raw), JSON.stringify(raw).slice(0,200));
-  const bookings = Array.isArray(raw) ? raw : (raw.bookings || raw.data || raw.attendees || Object.values(raw) || []);
+  console.log('bulk2 raw type:', typeof raw, 'isArray:', Array.isArray(raw), 'keys:', raw ? Object.keys(raw).slice(0,5) : 'null');
+
+  // Handle various response formats
+  let bookings = [];
+  if (Array.isArray(raw)) {
+    bookings = raw;
+  } else if (raw && raw.bookings) {
+    bookings = raw.bookings;
+  } else if (raw && raw.data) {
+    bookings = raw.data;
+  } else if (raw && typeof raw === 'object') {
+    bookings = Object.values(raw);
+  }
+
+  console.log('bulk2 bookings to process:', bookings.length);
+
   bookings.forEach(b => {
-    const key = b.invoice_id || b.id || b.key;
+    const key = String(b.invoice_id || b.id || b.key || '');
     if (!key) return;
+    // Filter to active event if mec_id available
+    const bEventId = String(b.event_id || b.mec_event_id || '');
+    if (activeEvent.mec_id && bEventId && bEventId !== String(activeEvent.mec_id)) return;
+
     bookingMap[key] = {
       key,
       source:      'mec',
-      name:        b.name || b.attendee_name || 'Unknown',
+      name:        b.name || b.attendee_name || b.first_name || 'Unknown',
       email:       b.email || '',
       tickets:     b.tickets || [],
       isVip:       b.is_vip || false,
-      entryType:   b.entry_type || 'GE',
-      ticketName:  b.ticket_name || 'MEC Ticket',
+      entryType:   b.entry_type || b.entryType || 'GE',
+      ticketName:  b.ticket_name || b.ticketName || 'MEC Ticket',
       checkedIn:   false,
       _mecInvoice: key,
+      _eventId:    bEventId,
     };
   });
-  console.log(`bulk2: loaded ${bookings.length} bookings`);
+  console.log('bulk2 done — bookingMap size:', Object.keys(bookingMap).length);
 }
 
 async function loadSheetGuests() {
