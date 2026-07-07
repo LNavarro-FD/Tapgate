@@ -645,7 +645,7 @@ input::placeholder { color: #999; }
 <header id="main-header" class="hidden">
   <div>
     <div class="brand-name">Funky Dory</div>
-    <div class="brand-sub">FD Scanner v2.1.1</div>
+    <div class="brand-sub">FD Scanner v<span class="app-ver"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
     <span id="sync-dot" class="sync-dot" title="Sync status"></span>
@@ -662,7 +662,7 @@ input::placeholder { color: #999; }
   <div style="padding:28px 22px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;flex:1;background:var(--bg);">
     <div>
       <div class="brand-name" style="font-size:24px;">Funky Dory</div>
-      <div class="brand-sub" style="font-size:11px;margin-top:4px;color:var(--navy);opacity:.7;">FD Scanner v2.1.1</div>
+      <div class="brand-sub" style="font-size:11px;margin-top:4px;color:var(--navy);opacity:.7;">FD Scanner v<span class="app-ver"></span></div>
     </div>
 
     <!-- QR Login — preferred method -->
@@ -1163,7 +1163,7 @@ if (!window.showWarning)  window.showWarning  = function(msg, level) { console.w
 if (!window.clearWarning) window.clearWarning = function() {};
 function launch() {
   // Set version display dynamically
-  document.querySelectorAll('#hdr-version').forEach(el => el.textContent = APP_VERSION);
+  document.querySelectorAll('.app-ver, #hdr-version').forEach(el => el.textContent = APP_VERSION);
   // Set activeEvent from saved config if not already set from QR
   if (!window.activeEvent) {
     const saved = localStorage.getItem('fd_cfg');
