@@ -543,6 +543,7 @@ async function loadAllData() {
 
   try {
     // 1. MEC + WooCommerce — PRIMARY SOURCE OF TRUTH
+    console.log('cfg fields:', {u:cfg.u, k:cfg.k?'set':'missing', s:cfg.s?'set':'missing', mec_id:activeEvent.mec_id});
     const siteUrl = cfg.u || cfg.siteUrl || '';
     const wcKey   = cfg.k || cfg.wcKey   || '';
     const wcSec   = cfg.s || cfg.wcSecret|| '';
