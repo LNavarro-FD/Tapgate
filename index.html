@@ -522,80 +522,72 @@ input::placeholder { color: #999; }
 .sync-dot.offline { background: #FF9500; animation: pulse-warn 1.5s ease-in-out infinite; }
 @keyframes pulse-warn { 0%,100%{opacity:1} 50%{opacity:.4} }
 </style>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  window._fbConfig = {
-    apiKey: "AIzaSyAM15tgoOUAgJcFxJ_pcXM-lLQb9PL1zu4",
-    databaseURL: "https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "funky-dory-fdscan",
-    appId: "1:459595303067:web:00e1f195dd0a1d659a9e3e"
-  };
-  const app = initializeApp(window._fbConfig);
-  const db = getDatabase(app);
-  window._fb = { db, ref, set, get, child };
-  document.dispatchEvent(new Event('firebaseReady'));
-  console.log('Firebase ready');
+<script>
+  // Firebase REST API — no module imports (Safari compatible)
+  const _FB_URL = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
+
+  async function fbGet(path) {
+    try {
+      const r = await fetch(_FB_URL + '/' + path + '.json');
+      if (!r.ok) return null;
+      return await r.json();
+    } catch(e) { console.warn('FB GET failed:', e.message); return null; }
+  }
+
+  async function fbSet(path, data) {
+    try {
+      const r = await fetch(_FB_URL + '/' + path + '.json', {
+        method: 'PUT', body: JSON.stringify(data),
+        headers: {'Content-Type': 'application/json'}
+      });
+      return r.ok;
+    } catch(e) { console.warn('FB SET failed:', e.message); return false; }
+  }
 
   // Load RF checkins on start
   document.addEventListener('DOMContentLoaded', async () => {
     try {
-      const snap = await get(child(ref(db), 'rfCheckins'));
-      if (snap.exists()) {
-        window._rfCheckins = snap.val();
-        console.log('RF checkins loaded from Firebase:', Object.keys(window._rfCheckins).length);
-      } else {
-        window._rfCheckins = {};
-      }
+      const data = await fbGet('rfCheckins');
+      window._rfCheckins = data || {};
+      console.log('RF checkins loaded:', Object.keys(window._rfCheckins).length);
     } catch(e) {
       window._rfCheckins = {};
-      console.warn('Firebase RF checkins load failed:', e.message);
     }
   });
 
-  // Global function to write RF checkin to Firebase
+  // Write RF checkin to Firebase
   window.fbWriteRFCheckin = async function(itemId, name, eventTitle) {
     try {
-      await set(ref(db, `rfCheckins/${itemId}`), {
-        name, eventTitle,
-        checkedIn: true,
+      await fbSet('rfCheckins/' + itemId, {
+        name, eventTitle, checkedIn: true,
         checkedInTime: new Date().toISOString()
       });
       if (!window._rfCheckins) window._rfCheckins = {};
       window._rfCheckins[itemId] = { name, eventTitle, checkedIn: true };
-    } catch(e) {
-      console.warn('Firebase RF write failed:', e.message);
-    }
+    } catch(e) { console.warn('Firebase RF write failed:', e.message); }
   };
 
-  // Global function to write sheet guest checkin to Firebase
+  // Write sheet guest checkin to Firebase
   window.fbWriteSheetCheckin = async function(key, name) {
     try {
-      await set(ref(db, `sheetCheckins/${key}`), {
-        name,
-        checkedIn: true,
+      await fbSet('sheetCheckins/' + key, {
+        name, checkedIn: true,
         checkedInTime: new Date().toISOString()
       });
-    } catch(e) {
-      console.warn('Firebase sheet write failed:', e.message);
-    }
+    } catch(e) { console.warn('Firebase sheet write failed:', e.message); }
   };
 
   // Load sheet checkins on start
   document.addEventListener('DOMContentLoaded', async () => {
     try {
-      const snap = await get(child(ref(db), 'sheetCheckins'));
-      if (snap.exists()) {
-        window._sheetCheckins = snap.val();
-        console.log('Sheet checkins loaded from Firebase:', Object.keys(window._sheetCheckins).length);
-      } else {
-        window._sheetCheckins = {};
-      }
-    } catch(e) {
-      window._sheetCheckins = {};
-      console.warn('Firebase sheet checkins load failed:', e.message);
-    }
+      const data = await fbGet('sheetCheckins');
+      window._sheetCheckins = data || {};
+      console.log('Sheet checkins loaded:', Object.keys(window._sheetCheckins).length);
+    } catch(e) { window._sheetCheckins = {}; }
   });
+
+  document.dispatchEvent(new Event('firebaseReady'));
+  console.log('Firebase REST ready');
 </script>
 </head>
 <body>
