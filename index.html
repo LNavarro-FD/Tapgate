@@ -584,7 +584,21 @@ async function loadAllData() {
   document.getElementById('scan-hint').textContent = 'Loading guest data...';
 
   try {
-    // 1. Load Firebase checkins first (fast)
+    // 1. Load MEC bookings via bulk2 — PRIMARY SOURCE OF TRUTH
+    if (activeEvent.mec_id && cfg.u && cfg.k && cfg.s) {
+      try {
+        console.log('Loading bulk2 for event:', activeEvent.mec_id);
+        await loadBulk2();
+        console.log('bulk2 loaded:', Object.keys(bookingMap).length, 'bookings');
+      } catch(e) {
+        console.error('bulk2 failed:', e.message);
+        document.getElementById('scan-hint').textContent = 'bulk2 error: ' + e.message;
+      }
+    } else {
+      console.warn('bulk2 skipped — missing:', {mec_id: activeEvent.mec_id, u: !!cfg.u, k: !!cfg.k, s: !!cfg.s});
+    }
+
+    // 2. Load Firebase checkins (overlay on bookingMap)
     try {
       const fc = await fbGet(`checkins/${activeEvent.id}`);
       if (fc) {
@@ -593,22 +607,15 @@ async function loadAllData() {
       }
     } catch(e) { console.warn('FB checkins load failed', e); }
 
-    // 2. Load MEC bookings via bulk2
-    if (activeEvent.mec_id && cfg.u && cfg.k && cfg.s) {
-      try {
-        await loadBulk2();
-      } catch(e) { console.warn('bulk2 failed', e); }
-    }
-
-    // 3. Load Google Sheet guests
+    // 3. Load Google Sheet guests — SUPPLEMENTARY ONLY
     try {
       await loadSheetGuests();
-    } catch(e) { console.warn('Sheet guests failed', e); }
+    } catch(e) { console.warn('Sheet guests failed (non-critical):', e.message); }
 
-    // 4. Load EVENT_CONFIG
+    // 4. Load EVENT_CONFIG from sheet — SUPPLEMENTARY ONLY
     try {
       await loadEventConfig();
-    } catch(e) { console.warn('Event config failed', e); }
+    } catch(e) { console.warn('Event config failed (non-critical):', e.message); }
 
     // Apply Firebase checkin state to bookingMap
     applyCheckinState();
