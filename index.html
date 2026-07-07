@@ -576,7 +576,8 @@ function changeEvent() { show('evtsel'); renderEventList(); }
 
 // ── DATA LOADING ──
 async function loadAllData() {
-  if (!activeEvent || !cfg) return;
+  console.log('loadAllData called, activeEvent:', JSON.stringify(activeEvent), 'cfg.u:', cfg ? cfg.u : 'no cfg');
+  if (!activeEvent || !cfg) { console.warn('loadAllData aborted — missing activeEvent or cfg'); return; }
   setLoading(true);
   dataLoaded = false;
   bookingMap = {};
