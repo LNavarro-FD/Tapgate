@@ -301,10 +301,11 @@ async function loadEventConfig(ev) {
 
 // ── RENDER STATS ──
 function renderStats() {
-  const allCheckins = Object.values(checkins);
-  const checkedIn   = allCheckins.filter(c => c.checkedIn);
-  const total       = Math.max(Object.keys(bookingMap).length, allCheckins.length);
-  const inCount     = checkedIn.length;
+  // Count at TICKET level not booking level
+  const allBookings = Object.values(bookingMap);
+  const allTickets  = allBookings.flatMap(b => b.tickets || [{ checkedIn: b.checkedIn, entryType: b.entryType }]);
+  const total       = allTickets.length;
+  const inCount     = allTickets.filter(t => t.checkedIn).length;
   const pct         = total > 0 ? Math.round(inCount/total*100) : 0;
 
   // Hero
@@ -319,21 +320,31 @@ function renderStats() {
   document.getElementById('prog-pct').textContent  = `${pct}%`;
   document.getElementById('prog-rem').textContent  = `${total-inCount} remaining`;
 
-  // By entry type
+  // By entry type — count all tickets (in and not in)
   const typeCounts = {};
-  checkedIn.forEach(c => {
-    const et = resolveET(c);
-    typeCounts[et] = (typeCounts[et]||0) + 1;
+  const typeIn     = {};
+  allBookings.forEach(b => {
+    const tickets = b.tickets || [{ checkedIn: b.checkedIn, entryType: b.entryType }];
+    tickets.forEach(t => {
+      const et = b.entryType || t.entryType || 'GE';
+      typeCounts[et] = (typeCounts[et]||0) + 1;
+      if (t.checkedIn) typeIn[et] = (typeIn[et]||0) + 1;
+    });
   });
+  const maxType = Math.max(...Object.values(typeCounts), 1);
   const maxType = Math.max(...Object.values(typeCounts), 1);
   document.getElementById('type-rows').innerHTML = Object.entries(typeCounts)
     .sort((a,b)=>b[1]-a[1])
-    .map(([k,v]) => `
+    .map(([k,v]) => {
+      const admIn = typeIn[k] || 0;
+      const pctT  = Math.round(admIn/v*100);
+      return `
     <div class="trow">
       <div class="trow-key">${(eventConfig[k]||{}).label || k}</div>
       <div class="trow-bar"><div class="trow-bar-inner" style="width:${Math.round(v/maxType*100)}%"></div></div>
-      <div class="trow-val">${v}</div>
-    </div>`).join('') || '<div class="empty">No data yet</div>';
+      <div class="trow-val">${admIn}/${v} (${pctT}%)</div>
+    </div>`;
+    }).join('') || '<div class="empty">No data yet</div>';
 
   // By source
   const srcCounts = {};
