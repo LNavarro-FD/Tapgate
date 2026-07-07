@@ -954,7 +954,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.0.3';
+const APP_VERSION = '2.0.4';
 (function checkForUpdate() {
   fetch(window.location.href.split('?')[0] + '?_v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1411,7 +1411,7 @@ async function loadGuestList() {
       return {checkins:[]};
     });
 
-    const wcTimeout = new Promise(resolve => setTimeout(() => { console.warn('WC fetch timed out'); showWarning('⚠️ Some ticket data took too long to load. Some guests may be missing — tap to retry.', 'amber', 'loadGuestList'); resolve([]); }, 8000));
+    const wcTimeout = new Promise(resolve => setTimeout(() => { console.warn('WC fetch timed out'); showWarning('⚠️ Some ticket data took too long to load. Some guests may be missing — tap to retry.', 'amber', 'loadGuestList'); resolve([]); }, 30000));
     const wcPromise = fetchWooOrders();
 
     // Wait for WC only (with timeout) — render initial guest list from WC + sheets
