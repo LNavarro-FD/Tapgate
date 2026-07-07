@@ -4309,7 +4309,7 @@ function vibrate(p) {
 window.addEventListener('DOMContentLoaded', () => {
   // 1. Check URL for QR-encoded credentials (?fd=base64payload)
   const params = new URLSearchParams(window.location.search);
-  const fd = params.get('tg') || params.get('fd');
+  const fd = params.get('fd');
   if (fd) {
     try {
       // Decode URL encoding and fix base64 padding
