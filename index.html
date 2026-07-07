@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.2.4';
+const APP_VERSION = '2.2.5';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1036,7 +1036,7 @@ const TICKET_META_KEY = '_fd_checked_in_tickets';
 // ═══════════════════════════════════════════
 //  SYNC ENGINE
 // ═══════════════════════════════════════════
-async async function writeCheckIn(invoiceId, place, ticketName) {
+async function writeCheckIn(invoiceId, place, ticketName) {
   // Writes checkin to MEC via fd2/v1/checkin
   if (cfg.demo || !cfg.u) return true;
   try {
