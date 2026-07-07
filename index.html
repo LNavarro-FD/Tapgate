@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.3.1';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -2231,9 +2231,7 @@ function renderSubPills(evId, col) {
     { key: 'tickets',       label: '🎫 Tickets' },
     { key: 'guests',        label: '🎁 Guests' },
     { key: 'djs',           label: '🎧 DJs' },
-    { key: 'entertainers',  label: '🎭 Entertainers' },
-    { key: 'staff',         label: '👷 Staff' },
-  ];
+      ];
   cats.forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'sub-pill' + (glSubFilter === c.key ? ' active' : '');
@@ -2370,8 +2368,7 @@ function renderGuestList() {
         if (glSubFilter === 'tickets')      return b.source === 'mec' || b.source === 'wc';
         if (glSubFilter === 'guests')       return key.startsWith('gs-');
         if (glSubFilter === 'djs')          return key.startsWith('dj-');
-        if (glSubFilter === 'entertainers') return !!b.isEntertainment;
-        if (glSubFilter === 'staff')        return key.startsWith('res-') && !b.isEntertainment;
+              if (glSubFilter === 'staff')        return key.startsWith('res-') && !b.isEntertainment;
         if (glSubFilter === '')     return !!b.isRemenham;
       }
       // Hide staff/crew and entertainers from main event pill unless searching or their sub-pill active
