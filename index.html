@@ -614,7 +614,7 @@ input::placeholder { color: #999; }
 <header id="main-header" class="hidden">
   <div>
     <div class="brand-name">Funky Dory</div>
-    <div class="brand-sub">FD Scanner v2.0.3</div>
+    <div class="brand-sub">FD Scanner v2.0.6</div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
     <span id="sync-dot" class="sync-dot" title="Sync status"></span>
@@ -631,7 +631,7 @@ input::placeholder { color: #999; }
   <div style="padding:28px 22px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;flex:1;background:var(--bg);">
     <div>
       <div class="brand-name" style="font-size:24px;">Funky Dory</div>
-      <div class="brand-sub" style="font-size:11px;margin-top:4px;color:var(--navy);opacity:.7;">FD Scanner v2.0.3</div>
+      <div class="brand-sub" style="font-size:11px;margin-top:4px;color:var(--navy);opacity:.7;">FD Scanner v2.0.6</div>
     </div>
 
     <!-- QR Login — preferred method -->
@@ -954,7 +954,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.0.5'; // build
+const APP_VERSION = '2.0.6';
 (function checkForUpdate() {
   fetch(window.location.href.split('?')[0] + '?_v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1165,20 +1165,12 @@ let upcomingEventNames = [];
 let upcomingEvents = [];
 
 async function fetchUpcomingEvents() {
-  // Event comes from QR payload — no need to fetch from MEC
+  // Event comes from QR payload — no MEC API call needed
   if (window.activeEvent) {
     upcomingEvents = [{ id: Number(window.activeEvent.mec_id), title: window.activeEvent.name, mec_data: { start_date: window.activeEvent.date } }];
     upcomingEventNames = [window.activeEvent.name.toLowerCase()];
-    console.log('Using event from QR payload:', window.activeEvent.name, 'mec_id:', window.activeEvent.mec_id);
+    console.log('Event from QR:', window.activeEvent.name, window.activeEvent.mec_id);
   }
-}
-function isUpcomingGuest(g) {
-  if (showAll) return true;
-  // MEC guests are already from upcoming events — always show
-  if (g._source === 'mec') return true;
-  // WC comp guests — show if no upcoming events loaded (fallback) or always show comps
-  if (g.isComp || g._source === 'wc') return true;
-  return true;
 }
 
 async function fetchMecAttendees(events) {
@@ -1344,7 +1336,7 @@ async function loadGuestList() {
       return {checkins:[]};
     });
 
-    const wcTimeout = new Promise(resolve => setTimeout(() => { console.warn('WC fetch timed out'); showWarning('⚠️ Some ticket data took too long to load. Some guests may be missing — tap to retry.', 'amber', 'loadGuestList'); resolve([]); }, 30000));
+    const wcTimeout = new Promise(resolve => setTimeout(() => { console.warn('WC fetch timed out'); showWarning('⚠️ Some ticket data took too long to load. Some guests may be missing — tap to retry.', 'amber', 'loadGuestList'); resolve([]); }, 8000));
     const wcPromise = fetchWooOrders();
 
     // Wait for WC only (with timeout) — render initial guest list from WC + sheets
