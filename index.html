@@ -785,19 +785,11 @@ input::placeholder { color: #999; }
   <div class="gl-sub-filter-bar" id="gl-sub-filter-bar"></div>
   <div class="gl-pills" id="gl-pills" style="display:none;flex-wrap:wrap;gap:6px;padding:8px 14px;">
     <button class="filter-pill on" onclick="setGlFilter('all',this)">All</button>
-    <button class="filter-pill" onclick="setGlFilter('mec',this)">🎟 Tickets</button>
+    <button class="filter-pill" onclick="setGlFilter('tickets',this)">🎟 Tickets</button>
+    <button class="filter-pill" onclick="setGlFilter('guests',this)">📋 Guests</button>
     <button class="filter-pill" onclick="setGlFilter('dj',this)">🎧 DJ Guests</button>
-    <button class="filter-pill" onclick="setGlFilter('sheet',this)">📋 Guest List</button>
-    <button class="filter-pill" onclick="setGlFilter('comp',this)">🎁 Comps</button>
-    <button class="filter-pill" onclick="setGlFilter('in',this)">✓ In</button>
-    <button class="filter-pill" onclick="setGlFilter('out',this)">⏳ Not In</button>
   </div>
-  <div class="gl-filter-bar" id="gl-filter-bar" style="display:none">
-    <!-- Event pills injected dynamically by renderFilterPills() -->
-    <div style="flex:1 1 auto;min-width:8px"></div>
-    <button class="filter-pill" onclick="setFilter('in',this)">✓ In</button>
-    <button class="filter-pill" onclick="setFilter('pending',this)">👻 No Show</button>
-  </div>
+  <div class="gl-filter-bar" id="gl-filter-bar" style="display:none"></div>
   <div id="ptr-indicator" class="ptr-indicator" style="display:none">↓ Release to refresh</div>
   <div id="gl-list" class="gl-list">
     <div class="gl-loading"><span class="spin"></span>&nbsp; Loading…</div>
@@ -995,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.1.5';
+const APP_VERSION = '2.1.6';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -2388,12 +2380,9 @@ function renderGuestList() {
                 b.tickets.some(t => t.name && nameMatch(t.name, q));
     if (!mq) return false; // search query didn't match
     if (glFilter === 'none') return false;
-    if (glFilter === 'mec')   return b.source === 'mec';
-    if (glFilter === 'sheet') return b.source === 'sheet';
-    if (glFilter === 'dj')    return b.source === 'sheet' && (b.entryType === 'AAA' || (b.eventTitle||'').toLowerCase() === 'dj');
-    if (glFilter === 'comp')  return b.source === 'sheet' && b.entryType !== 'AAA' && (b.eventTitle||'').toLowerCase() !== 'dj';
-    if (glFilter === 'in')    return b.checkedIn || (b.checkedInTickets && b.checkedInTickets.length > 0);
-    if (glFilter === 'out')   return !b.checkedIn && !(b.checkedInTickets && b.checkedInTickets.length > 0);
+    if (glFilter === 'tickets') return b.source === 'mec' || b.source === 'wc';
+    if (glFilter === 'guests')  return b.source === 'sheet';
+    if (glFilter === 'dj')      return b.source === 'sheet' && (b.entryType === 'AAA' || (b.eventTitle||'').toLowerCase() === 'dj');
     // Event filter — search stays within the active event
     if (glFilter.startsWith('event:')) {
       const evId = glFilter.replace('event:', '');
