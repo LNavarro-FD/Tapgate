@@ -1448,18 +1448,8 @@ let showAll = false;
 
 function showWristbandToast(booking, ticket) {
   const toastEvId = String(booking._eventId || '');
-  const toastCols = {
-    '35616': { bg: '#5BB8E8', name: 'Sky Blue · Ladies Day' },
-    '35636': { bg: '#F04E30', name: 'Coral · Ibiza' },
-    '35637': { bg: '#E91E8C', name: 'Hot Pink · Studio 54' },
-  };
-  let evCol = toastCols[toastEvId];
-  if (!evCol) {
-    const t = ((ticket.ticketName||'') + ' ' + (booking.eventTitle||'')).toLowerCase();
-    if (t.includes('ladies')) evCol = toastCols['35616'];
-    else if (t.includes('ibiza') || t.includes('white party')) evCol = toastCols['35636'];
-    else if (t.includes('studio')) evCol = toastCols['35637'];
-  }
+  const ecCfg = (window.eventConfig || {})[ticket.entryType || booking.entryType || 'GE'] || {};
+  let evCol = { bg: ecCfg.wristband_colour || '#FF4B7B', name: ecCfg.entry_label || ticket.entryType || 'Entry' };
   const entryType = ticket.entryType || booking.entryType || (ticket.isVip ? 'VIP' : (/vip/i.test(ticket.ticketName || booking.eventTitle || '') ? 'VIP' : 'GE'));
   const isEvening = (function(s){return /evening/i.test(s)||/access only/i.test(s);})(ticket.ticketName || booking.eventTitle || '');
   let msg = '';
