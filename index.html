@@ -1872,13 +1872,6 @@ async function fetchWooOrders() {
   let all = [];
 
   // Step 1: Dynamically look up WC product IDs for current MEC events
-  const SKIP = ['funky','dory','during','henley','royal','regatta','meets','and','the','party','white'];
-  let productIds = [];
-  // Only search WC products for HRR events — filter out recurring/non-HRR events
-  const hrrEvents = upcomingEvents.filter(ev => {
-    const t = (ev.title || '').toLowerCase();
-    return t.includes('henley') || t.includes('regatta') || t.includes('ibiza') || t.includes('studio 54') || t.includes('brunch') || t.includes('ladies');
-  });
   // Fetch product IDs dynamically from fd2/v1/products — no hardcoding
   let productIds = [];
   if (window.activeEvent && window.activeEvent.mec_id) {
