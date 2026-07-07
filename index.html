@@ -521,6 +521,36 @@ input::placeholder { color: #999; }
 .sync-dot.ok      { background: #00C875; }
 .sync-dot.offline { background: #FF9500; animation: pulse-warn 1.5s ease-in-out infinite; }
 @keyframes pulse-warn { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── WARNING BANNER ── */
+#warning-banner {
+  display: none;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  position: relative;
+  z-index: 200;
+  box-sizing: border-box;
+  line-height: 1.4;
+}
+#warning-banner.red    { background: #D0000A; color: #fff; }
+#warning-banner.amber  { background: #FF9500; color: #fff; }
+#warning-banner.green  { background: #00A355; color: #fff; }
+#warning-banner .warn-retry {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 3px 10px;
+  background: rgba(255,255,255,0.25);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
 </style>
 <script>
   // Firebase REST API — no module imports (Safari compatible)
@@ -564,7 +594,7 @@ input::placeholder { color: #999; }
       });
       if (!window._rfCheckins) window._rfCheckins = {};
       window._rfCheckins[itemId] = { name, eventTitle, checkedIn: true };
-    } catch(e) { console.warn('Firebase RF write failed:', e.message); }
+    } catch(e) { console.warn('Firebase RF write failed:', e.message); showWarning('⚠️ Check-in saved locally — will sync when connection improves.', 'amber', null); setTimeout(clearWarning, 4000); }
   };
 
   // Write sheet guest checkin to Firebase
@@ -606,7 +636,7 @@ input::placeholder { color: #999; }
 <header id="main-header" class="hidden">
   <div>
     <div class="brand-name">Funky Dory</div>
-    <div class="brand-sub">FD Scanner v2.0</div>
+    <div class="brand-sub">FD Scanner v2.0.2</div>
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
     <span id="sync-dot" class="sync-dot" title="Sync status"></span>
@@ -616,13 +646,14 @@ input::placeholder { color: #999; }
     </div>
   </div>
 </header>
+<div id="warning-banner"></div>
 
 <!-- SETUP -->
 <div id="setup-screen" class="screen" style="display:flex;">
   <div style="padding:28px 22px;display:flex;flex-direction:column;gap:20px;overflow-y:auto;flex:1;background:var(--bg);">
     <div>
       <div class="brand-name" style="font-size:24px;">Funky Dory</div>
-      <div class="brand-sub" style="font-size:11px;margin-top:4px;color:var(--navy);opacity:.7;">FD Scanner v2.0</div>
+      <div class="brand-sub" style="font-size:11px;margin-top:4px;color:var(--navy);opacity:.7;">FD Scanner v2.0.2</div>
     </div>
 
     <!-- QR Login — preferred method -->
@@ -945,7 +976,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.0.2';
 (function checkForUpdate() {
   fetch(window.location.href.split('?')[0] + '?_v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.text())
@@ -1116,6 +1147,19 @@ function connect() {
   saveConfig(); launch();
 }
 function useDemoMode() { cfg = { siteUrl:'', wcKey:'', wcSecret:'', demo:true }; launch(); }
+
+// ── WARNING BANNER ──
+function showWarning(msg, level, retryFn) {
+  var b = document.getElementById('warning-banner');
+  if (!b) return;
+  b.className = level || 'amber';
+  b.innerHTML = msg + (retryFn ? ' <button class="warn-retry" onclick="(' + retryFn + ')()">Tap to retry</button>' : '');
+  b.style.display = 'block';
+}
+function clearWarning() {
+  var b = document.getElementById('warning-banner');
+  if (b) { b.style.display = 'none'; b.innerHTML = ''; }
+}
 function launch() {
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('main-header').classList.remove('hidden');
@@ -1392,9 +1436,13 @@ async function loadGuestList() {
     // bulk2 is large and slow — fetch independently and re-render when it arrives
     const bulk2Promise = fetch(`${cfg.u}/wp-json/fd2/v1/bulk2?_=${Date.now()}`, {cache: 'no-store'})
       .then(r => { console.log('bulk2 status:', r.status); return r.ok ? r.json() : {checkins:[]}; })
-      .catch(e => { console.warn('bulk2 fetch error:', e); return {checkins:[]}; });
+      .catch(e => {
+      console.warn('bulk2 fetch error:', e);
+      showWarning('⚠️ Ticket list could not be loaded. Check your connection and tap to retry.', 'red', 'loadGuestList');
+      return {checkins:[]};
+    });
 
-    const wcTimeout = new Promise(resolve => setTimeout(() => { console.warn('WC fetch timed out'); resolve([]); }, 8000));
+    const wcTimeout = new Promise(resolve => setTimeout(() => { console.warn('WC fetch timed out'); showWarning('⚠️ Some ticket data took too long to load. Some guests may be missing — tap to retry.', 'amber', 'loadGuestList'); resolve([]); }, 8000));
     const wcPromise = fetchWooOrders();
 
     // Wait for WC only (with timeout) — render initial guest list from WC + sheets
@@ -1524,6 +1572,11 @@ async function loadGuestList() {
     const bd = await bulk2Promise;
     const keepEventIds = new Set([String(window.activeEvent ? window.activeEvent.mec_id : '0')]);
     console.log('bulk2 total checkins:', (bd.checkins||[]).length);
+    if ((bd.checkins||[]).length === 0) {
+      showWarning('⚠️ No tickets loaded for this event. Check your connection and tap to retry.', 'red', 'loadGuestList');
+    } else {
+      clearWarning();
+    }
     const bulkByBooking = {};
     (bd.checkins || []).forEach(c => {
       if (!keepEventIds.has(String(c.event_id))) return;
