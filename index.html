@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.2.6';
+const APP_VERSION = '2.2.7';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3649,13 +3649,14 @@ function updateStats() {
   document.getElementById('hdr-count').textContent   = stats.admitted;
 }
 function updateGLStats() {
-  const bookings  = Object.values(bookingMap);
-  const allTickets = bookings.reduce((sum, b) => sum + b.tickets.length, 0);
+  const bookings = Object.values(bookingMap);
+  const allTickets      = bookings.reduce((sum, b) => sum + (b.tickets ? b.tickets.length : 1), 0);
   const admittedTickets = bookings.reduce((sum, b) => sum + getBookingAdmittedCount(b), 0);
-  document.getElementById('st-gl-total').textContent = bookings.length;
-  document.getElementById('st-gl-vip').textContent   = bookings.filter(b => b.tickets.some(t=>t.isVip)).length;
-  document.getElementById('st-gl-comp').textContent  = bookings.filter(b => b.isComp).length;
-  document.getElementById('st-gl-in').textContent    = admittedTickets + '/' + allTickets;
+  const el = id => document.getElementById(id);
+  if (el('st-gl-total')) el('st-gl-total').textContent = allTickets;
+  if (el('st-gl-vip'))   el('st-gl-vip').textContent   = bookings.filter(b => (b.tickets||[]).some(t=>t.isVip) || b.isVip).length;
+  if (el('st-gl-comp'))  el('st-gl-comp').textContent  = bookings.filter(b => b.isComp).length;
+  if (el('st-gl-in'))    el('st-gl-in').textContent    = admittedTickets + '/' + allTickets;
 }
 
 // ═══════════════════════════════════════════
