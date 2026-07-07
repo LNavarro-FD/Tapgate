@@ -562,6 +562,7 @@ async function loadAllData() {
           // bulk2 returns {checkins:[...]}
           const checkins = Array.isArray(bd) ? bd : (bd.checkins || []);
           console.log('bulk2 checkins:', checkins.length);
+          if (checkins.length > 0) console.log('bulk2 sample:', JSON.stringify(checkins[0]).slice(0,300));
           const byBooking = {};
           checkins.forEach(c => {
             const bid = String(c.invoice_id || c.booking_id || '');
