@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.3.1';
+const APP_VERSION = '2.3.2';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1630,7 +1630,7 @@ async function loadGuestList() {
       showWarning('✅ ' + totalTickets + ' attendees loaded', 'green', null);
       setTimeout(clearWarning, 4000);
       // Save bookingMap to sessionStorage for stats page
-      try { sessionStorage.setItem('tg_bookingmap', JSON.stringify(bookingMap)); sessionStorage.setItem('tg_bookingmap_ts', String(Date.now())); } catch(e) {}
+      try { try { localStorage.setItem('tg_bookingmap', JSON.stringify(bookingMap)); localStorage.setItem('tg_bookingmap_ts', String(Date.now())); } catch(e) { console.warn('bookingMap too large for localStorage:', e.message); } } catch(e) {}
       // Save active event for stats page
       if (window.activeEvent) try { localStorage.setItem('tg_event', JSON.stringify(window.activeEvent)); } catch(e) {}
     }
