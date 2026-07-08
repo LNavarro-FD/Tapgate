@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.3.2';
+const APP_VERSION = '2.3.3';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1647,7 +1647,7 @@ async function loadGuestList() {
 }
 
 // ── Google Sheet integration ────────────────────────────────────────────────
-const SHEET_ID = '1Sx1KxRcRu8uhzbLD5cmA75ugxrYLlOi6kG5hrRt7SRM';
+const SHEET_ID = (cfg && cfg.sheet) || '1Sx1KxRcRu8uhzbLD5cmA75ugxrYLlOi6kG5hrRt7SRM';
 const SHEET_TABS = {
   events:      '272492946',
   eventConfig: '1546702819',
