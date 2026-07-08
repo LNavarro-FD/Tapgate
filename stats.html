@@ -231,13 +231,25 @@ async function loadStats(ev) {
   checkins = {};
   bookingMap = {};
 
+  // Set a timeout — show whatever we have after 10s
+  const showTimeout = setTimeout(() => {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('stats-content').style.display = 'block';
+    renderStats();
+  }, 10000);
+
   try {
-    // Load Firebase checkins
-    const fc = await fbGet(`checkins/${ev.id}`);
-    if (fc) {
-      if (fc.mec)   Object.assign(checkins, fc.mec);
-      if (fc.sheet) Object.assign(checkins, fc.sheet);
-    }
+    // Load Firebase checkins (non-blocking — skip if slow)
+    try {
+      const fc = await Promise.race([
+        fbGet(`checkins/${ev.id}`),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), 3000))
+      ]);
+      if (fc) {
+        if (fc.mec)   Object.assign(checkins, fc.mec);
+        if (fc.sheet) Object.assign(checkins, fc.sheet);
+      }
+    } catch(e) { console.warn('Firebase skipped:', e.message); }
 
     // Load bookingMap from sessionStorage, or fetch from bulk2
     const cached = sessionStorage.getItem('tg_bookingmap');
@@ -263,6 +275,7 @@ async function loadStats(ev) {
     // Load event config
     await loadEventConfig(ev);
 
+    clearTimeout(showTimeout);
     renderStats();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('stats-content').style.display = 'block';
