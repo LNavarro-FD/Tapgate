@@ -87,7 +87,25 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 
 .empty{color:var(--muted);text-align:center;padding:30px 0;font-size:14px}
 </style>
-<script src="https://unpkg.com/docx@7.8.2/build/index.umd.js"></script>
+<script>
+const _STATS_FB_URL = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
+async function fbGet(path) {
+  try {
+    const r = await fetch(_STATS_FB_URL + '/' + path + '.json');
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) { return null; }
+}
+async function fbSet(path, data) {
+  try {
+    const r = await fetch(_STATS_FB_URL + '/' + path + '.json', {
+      method: 'PUT', body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return r.ok;
+  } catch(e) { return false; }
+}
+</script>
 </head>
 <body>
 
@@ -97,7 +115,7 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
   </div>
   <div style="text-align:right">
     <div class="topbar-title">Stats & Reports</div>
-    <div class="topbar-sub" id="tb-sub">Tapgate Stats v1.0.5</div>
+    <div class="topbar-sub" id="tb-sub">Tapgate Stats v1.0.6</div>
   </div>
 </div>
 
