@@ -987,7 +987,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.3.3';
+const APP_VERSION = '2.3.4';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3605,8 +3605,10 @@ function updateStats() {
 }
 function updateGLStats() {
   const bookings = Object.values(bookingMap);
-  const allTickets      = bookings.reduce((sum, b) => sum + (b.tickets ? b.tickets.length : 1), 0);
-  const admittedTickets = bookings.reduce((sum, b) => sum + getBookingAdmittedCount(b), 0);
+  // Ticket count = MEC + WC only (not sheet guests/DJs/comps)
+  const ticketBookings  = bookings.filter(b => b.source === 'mec' || b.source === 'wc');
+  const allTickets      = ticketBookings.reduce((sum, b) => sum + (b.tickets ? b.tickets.length : 1), 0);
+  const admittedTickets = ticketBookings.reduce((sum, b) => sum + getBookingAdmittedCount(b), 0);
   const el = id => document.getElementById(id);
   if (el('st-gl-total')) el('st-gl-total').textContent = allTickets;
   if (el('st-gl-vip'))   el('st-gl-vip').textContent   = bookings.filter(b => (b.tickets||[]).some(t=>t.isVip) || b.isVip).length;
