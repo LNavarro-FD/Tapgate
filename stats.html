@@ -115,7 +115,7 @@ async function fbSet(path, data) {
   </div>
   <div style="text-align:right">
     <div class="topbar-title">Stats & Reports</div>
-    <div class="topbar-sub" id="tb-sub">Tapgate Stats v1.0.8</div>
+    <div class="topbar-sub" id="tb-sub">Tapgate Stats v1.0.9</div>
   </div>
 </div>
 
@@ -189,7 +189,7 @@ async function fbSet(path, data) {
 'use strict';
 
 const FB_URL  = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
-const SHEET_ID_DEFAULT = '1Sx1KxRcRu8uhzbLD5cmA75ugxrYLlOi6kG5hrRt7SRM';
+const SHEET_ID_DEFAULT = (cfg && cfg.sheet) || '1Sx1KxRcRu8uhzbLD5cmA75ugxrYLlOi6kG5hrRt7SRM';
 
 let cfg         = null;
 let events      = [];
