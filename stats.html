@@ -89,6 +89,8 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 </style>
 <script>
 const _STATS_FB_URL = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
+const _FALLBACK_SHEET = '1Sx1KxRcRu8uhzbLD5cmA75ugxrYLlOi6kG5hrRt7SRM';
+function getSheetId() { return (window.cfg && window.cfg.sheet) || _FALLBACK_SHEET; }
 async function fbGet(path) {
   try {
     const r = await fetch(_STATS_FB_URL + '/' + path + '.json');
@@ -115,7 +117,7 @@ async function fbSet(path, data) {
   </div>
   <div style="text-align:right">
     <div class="topbar-title">Stats & Reports</div>
-    <div class="topbar-sub" id="tb-sub">Tapgate Stats v1.1.0</div>
+    <div class="topbar-sub" id="tb-sub">Tapgate Stats v1.1.1</div>
   </div>
 </div>
 
@@ -199,7 +201,6 @@ let eventConfig = {};
 // ── INIT ──
 window.addEventListener('load', async () => {
   cfg = JSON.parse(localStorage.getItem('tg_cfg') || localStorage.getItem('fd_cfg') || 'null');
-  const SHEET_ID_DEFAULT = (cfg && cfg.sheet) || '1Sx1KxRcRu8uhzbLD5cmA75ugxrYLlOi6kG5hrRt7SRM';
   if (!cfg) { document.getElementById('loading').innerHTML = '<div class="empty">Not logged in — <a href="index.html" style="color:var(--pink)">open scanner first</a></div>'; return; }
 
   // Load events from cfg payload (set by QR login)
@@ -303,8 +304,8 @@ async function loadStats(ev) {
 
 async function loadEventConfig(ev) {
   eventConfig = {};
-  const sheetId = cfg.sheet || SHEET_ID_DEFAULT;
-  const gids = ['2','3'];
+  const sheetId = getSheetId();
+  const gids = ['1546702819', '1907315003']; // EVENT_CONFIG, GUESTS
   for (const gid of gids) {
     try {
       const r = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&t=${Date.now()}`);
