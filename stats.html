@@ -250,58 +250,42 @@ async function loadStats(ev) {
   checkins = {};
   bookingMap = {};
 
-  // Set a timeout — show whatever we have after 10s
-  const showTimeout = setTimeout(() => {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('stats-content').style.display = 'block';
-    renderStats();
-  }, 10000);
-
   try {
-    // Load Firebase checkins (non-blocking — skip if slow)
-    try {
-      const fc = await Promise.race([
-        fbGet(`checkins/${ev.id}`),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), 3000))
-      ]);
-      if (fc) {
-        if (fc.mec)   Object.assign(checkins, fc.mec);
-        if (fc.sheet) Object.assign(checkins, fc.sheet);
+    // 1. Fetch from bulk2 directly — primary source, always fresh
+    if (!cfg.u || !ev.mec_id) throw new Error('Missing site URL or event ID');
+
+    const r = await fetch(`${cfg.u}/wp-json/fd2/v1/bulk2?_=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) throw new Error(`bulk2 failed: ${r.status}`);
+    const bd = await r.json();
+    const checkinsList = bd.checkins || [];
+
+    checkinsList.forEach(c => {
+      const bid = String(c.invoice_id || c.booking_id || '');
+      if (!bid || String(c.event_id) !== String(ev.mec_id)) return;
+      if (!bookingMap[bid]) {
+        bookingMap[bid] = { key: bid, name: c.name || 'Unknown', tickets: [], source: 'mec', entryType: c.entry_type || 'GE' };
       }
-    } catch(e) { console.warn('Firebase skipped:', e.message); }
+      bookingMap[bid].tickets.push({
+        attendeeKey: c.attendee_key,
+        checkedIn: !!c.checked_in,
+        ticketName: c.ticket_name || 'MEC Ticket',
+        entryType: c.entry_type || 'GE'
+      });
+    });
 
-    // Load bookingMap from sessionStorage, or fetch from bulk2
-    const cached = localStorage.getItem('tg_bookingmap');
-    if (cached) {
-      bookingMap = JSON.parse(cached);
-    } else if (cfg.u && ev.mec_id) {
-      // Fetch directly from bulk2
-      const br = await fetch(`${cfg.u}/wp-json/fd2/v1/bulk2?_=${Date.now()}`, { cache: 'no-store' });
-      if (br.ok) {
-        const bd = await br.json();
-        const checkinsList = bd.checkins || [];
-        checkinsList.forEach(c => {
-          const bid = String(c.invoice_id || c.booking_id || '');
-          if (!bid || String(c.event_id) !== String(ev.mec_id)) return;
-          if (!bookingMap[bid]) {
-            bookingMap[bid] = { key: bid, name: c.name || 'Unknown', tickets: [], source: 'mec', entryType: c.entry_type || 'GE' };
-          }
-          bookingMap[bid].tickets.push({ attendeeKey: c.attendee_key, checkedIn: !!c.checked_in, ticketName: c.ticket_name || 'MEC Ticket' });
-        });
-      }
-    }
+    // 2. Load event config in background — don't block render
+    loadEventConfig(ev).catch(e => console.warn('Event config failed:', e.message));
 
-    // Load event config
-    await loadEventConfig(ev);
-
-    clearTimeout(showTimeout);
+    // 3. Render immediately with what we have
     renderStats();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('stats-content').style.display = 'block';
+
   } catch(e) {
-    document.getElementById('loading').innerHTML = `<div class="empty">Error loading stats: ${e.message}</div>`;
+    document.getElementById('loading').innerHTML = `<div class="empty">⚠️ Could not load stats: ${e.message}<br><br><button onclick="loadStats(activeEvent)" style="margin-top:12px;padding:8px 16px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Tap to retry</button></div>`;
   }
 }
+
 
 async function loadEventConfig(ev) {
   eventConfig = {};
