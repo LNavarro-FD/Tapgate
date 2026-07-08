@@ -87,7 +87,7 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 
 .empty{color:var(--muted);text-align:center;padding:30px 0;font-size:14px}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.umd.min.js"></script>
+<script src="https://unpkg.com/docx@7.8.2/build/index.umd.js"></script>
 </head>
 <body>
 
@@ -97,7 +97,7 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
   </div>
   <div style="text-align:right">
     <div class="topbar-title">Stats & Reports</div>
-    <div class="topbar-sub" id="tb-sub">Tapgate Stats v1.0.4</div>
+    <div class="topbar-sub" id="tb-sub">Tapgate Stats v1.0.5</div>
   </div>
 </div>
 
@@ -448,7 +448,7 @@ function downloadCSV() {
 }
 
 // ── ARCHIVE ──
-async async function downloadWord() {
+async function downloadWord() {
   if (!window.docx) { alert('Word library not loaded — try again in a moment'); return; }
   const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, AlignmentType, HeadingLevel, BorderStyle } = window.docx;
 
