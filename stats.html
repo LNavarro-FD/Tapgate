@@ -115,7 +115,7 @@ async function fbSet(path, data) {
   </div>
   <div style="text-align:right">
     <div class="topbar-title">Stats & Reports</div>
-    <div class="topbar-sub" id="tb-sub">Tapgate Stats v1.0.6</div>
+    <div class="topbar-sub" id="tb-sub">Tapgate Stats v1.0.7</div>
   </div>
 </div>
 
@@ -545,7 +545,7 @@ async function downloadWord() {
   URL.revokeObjectURL(url);
 }
 
-function archiveEvent() {
+async function archiveEvent() {
   if (!activeEvent) { alert('No event selected'); return; }
   if (!confirm(`Archive "${activeEvent.name}"?\n\nThis will:\n• Save a permanent copy of all checkin data\n• Clear live checkins from Firebase\n• Mark event as archived\n\nThis cannot be undone.`)) return;
 
