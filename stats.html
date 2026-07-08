@@ -383,13 +383,9 @@ function renderStats() {
       <div class="trow-val">${v}</div>
     </div>`).join('') || '<div class="empty">No checkins yet</div>';
 
-  // Hourly timeline
+  // Hourly timeline — not available without checkin timestamps from MEC
   const hours = {};
-  checkedIn.forEach(c => {
-    if (!c.time) return;
-    const h = new Date(c.time).getHours();
-    hours[h] = (hours[h]||0) + 1;
-  });
+  // checkin timestamps not yet available in bulk2 data
   if (Object.keys(hours).length > 0) {
     const minH = Math.min(...Object.keys(hours).map(Number));
     const maxH = Math.max(...Object.keys(hours).map(Number));
