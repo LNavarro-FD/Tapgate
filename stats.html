@@ -123,7 +123,7 @@ async function fbSet(path, data) {
 <div class="topbar">
   <div>
     <a class="topbar-back" href="index.html">← Scanner</a>
-   <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.3.2</div>
+   <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.3.3</div>
   </div>
   <div style="text-align:right">
     <div class="topbar-title">Stats & Reports</div>
@@ -448,30 +448,7 @@ function downloadExcel() {
   if (typeof XLSX === 'undefined') { alert('Excel library not loaded — try again in a moment'); return; }
 
   const rows = [['First Name','Last Name','Ticket Type','Category','Guest Of','Entry Code','Checked In']];
-
-  const allBookings = Object.values(bookingMap);
-  allBookings.sort((a,b) => (a.name||'').localeCompare(b.name||''));
-
-  allBookings.forEach(b => {
-    const tickets = b.tickets && b.tickets.length ? b.tickets : [{ checkedIn: b.checkedIn, ticketName: b.ticketName || '' }];
-    const nameParts = (b.name||'').trim().split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName  = nameParts.slice(1).join(' ') || '';
-    const entryCode = b.entryType || '';
-    const guestOf   = b.guestOf   || '';
-    const category  = b.source === 'mec' ? 'Ticket' : b.source === 'wc' ? 'Ticket' : (b.isDJGuest ? 'DJ Guest' : b.guestType || 'Comp');
-    tickets.forEach(t => {
-      rows.push([
-        firstName,
-        lastName,
-        t.ticketName || b.ticketName || (b.source === 'mec' ? 'MEC Ticket' : ''),
-        category,
-        guestOf,
-        entryCode,
-        t.checkedIn ? 'Yes' : 'No'
-      ]);
-    });
-  });
+  buildGuestRows().forEach(r => rows.push([r.firstName, r.lastName, r.ticketType, r.category, r.guestOf, r.entryCode, r.checkedIn ? 'Yes' : 'No']));
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
   // Style header row
@@ -532,6 +509,34 @@ async function downloadWord() {
 }
 
 
+function buildGuestRows() {
+  const allBookings = Object.values(bookingMap);
+  allBookings.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  const result = [];
+  allBookings.forEach(b => {
+    const isMEC    = b.source === 'mec' || b.source === 'wc';
+    const tickets  = b.tickets && b.tickets.length ? b.tickets : [{ checkedIn: b.checkedIn, ticketName: b.ticketName || '' }];
+    const nameParts = (b.name||'').trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName  = nameParts.slice(1).join(' ') || '';
+    const category  = isMEC ? 'Ticket' : (b.isDJGuest ? 'DJ Guest' : b.guestType || 'Comp');
+    const guestOf   = b.guestOf   || '';
+    const entryCode = isMEC ? '' : (b.entryCode || b.entryType || ''); // entry code from sheet only
+    tickets.forEach(t => {
+      result.push({
+        firstName,
+        lastName,
+        ticketType: isMEC ? (t.ticketName || b.ticketName || 'MEC Ticket') : '',
+        category,
+        guestOf,
+        entryCode,
+        checkedIn: !!t.checkedIn
+      });
+    });
+  });
+  return result;
+}
+
 function toggleGuestListOptions() {
   const el = document.getElementById('gl-options');
   el.style.display = el.style.display === 'none' ? 'flex' : 'none';
@@ -542,17 +547,7 @@ function toggleGuestListOptions() {
 
 function viewGuestList() {
   if (!Object.keys(bookingMap).length) { alert('No data loaded yet'); return; }
-  const allBookings = Object.values(bookingMap);
-  allBookings.sort((a,b) => (a.name||'').localeCompare(b.name||''));
-  
-  const rows = allBookings.flatMap(b => {
-    const tickets = b.tickets && b.tickets.length ? b.tickets : [{ checkedIn: b.checkedIn, ticketName: b.ticketName||'' }];
-    const nameParts = (b.name||'').trim().split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName  = nameParts.slice(1).join(' ') || '';
-    const category  = b.source === 'mec' || b.source === 'wc' ? 'Ticket' : (b.isDJGuest ? 'DJ Guest' : b.guestType || 'Comp');
-    return tickets.map(t => ({ firstName, lastName, ticketType: t.ticketName || b.ticketName || '', category, guestOf: b.guestOf||'', entryCode: b.entryType||'', checkedIn: t.checkedIn }));
-  });
+  const rows = buildGuestRows();
 
   const el = document.getElementById('gl-view');
   el.style.display = 'block';
