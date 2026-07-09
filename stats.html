@@ -86,6 +86,14 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 .section-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;padding-left:2px}
 
 .empty{color:var(--muted);text-align:center;padding:30px 0;font-size:14px}
+
+/* Stat cards — stats.html only */
+.stat-grid     { display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-bottom:4px; }
+.stat-card-num { background:var(--white); border:2px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
+.stat-card-num.accent { border-color:var(--pink); }
+.stat-big-num  { font-size:36px; font-weight:900; line-height:1; color:var(--text); }
+.stat-card-num.accent .stat-big-num { color:var(--pink); }
+.stat-big-lbl  { font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:4px; }
 </style>
 <script>
 const _STATS_FB_URL = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
@@ -115,7 +123,7 @@ async function fbSet(path, data) {
 <div class="topbar">
   <div>
     <a class="topbar-back" href="index.html">← Scanner</a>
-   <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.3.0</div>
+   <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.3.1</div>
   </div>
   <div style="text-align:right">
     <div class="topbar-title">Stats & Reports</div>
@@ -140,7 +148,12 @@ async function fbSet(path, data) {
   <div id="stats-content" style="display:none">
 
     <!-- Hero numbers -->
-    <div class="stat-hero" id="hero-nums"></div>
+    <div class="stat-grid">
+      <div class="stat-card-num accent"><div class="stat-big-num" id="st-checked-in">—</div><div class="stat-big-lbl">Checked In</div></div>
+      <div class="stat-card-num"><div class="stat-big-num" id="st-remaining">—</div><div class="stat-big-lbl">Remaining</div></div>
+      <div class="stat-card-num"><div class="stat-big-num" id="st-total">—</div><div class="stat-big-lbl">Total</div></div>
+      <div class="stat-card-num"><div class="stat-big-num" id="st-pct">—</div><div class="stat-big-lbl">Admitted</div></div>
+    </div>
 
     <!-- Progress -->
     <div class="stat-card" id="card-progress">
@@ -337,10 +350,11 @@ function renderStats() {
   const pct         = total > 0 ? Math.round(inCount/total*100) : 0;
 
   // Hero
-  document.getElementById('hero-nums').innerHTML = `
-    <div class="stat-hero-item"><div class="stat-hero-num pink">${inCount}</div><div class="stat-hero-lbl">Checked In</div></div>
-    <div class="stat-hero-item"><div class="stat-hero-num">${total - inCount}</div><div class="stat-hero-lbl">Remaining</div></div>
-    <div class="stat-hero-item"><div class="stat-hero-num">${pct}%</div><div class="stat-hero-lbl">Admitted</div></div>`;
+  const _el = id => document.getElementById(id);
+  if (_el('st-checked-in')) _el('st-checked-in').textContent = inCount;
+  if (_el('st-remaining'))  _el('st-remaining').textContent  = total - inCount;
+  if (_el('st-total'))      _el('st-total').textContent      = total;
+  if (_el('st-pct'))        _el('st-pct').textContent        = pct + '%';
 
   // Progress
   document.getElementById('prog-bar').style.width = pct + '%';
