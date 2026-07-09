@@ -649,9 +649,10 @@ input::placeholder { color: #999; }
   </div>
   <div style="display:flex;align-items:center;gap:12px;">
     <span id="sync-dot" class="sync-dot" title="Sync status"></span>
-    <div class="hdr-right">
-      <strong id="hdr-count">0</strong>
-      admitted
+    <div class="hdr-right" style="display:flex;gap:10px;align-items:center;font-size:13px;">
+      <span>🎟 <strong id="hdr-tickets">—</strong></span>
+      <span>👥 <strong id="hdr-guests">—</strong></span>
+      <span>🎧 <strong id="hdr-djs">—</strong></span>
     </div>
   </div>
 </header>
@@ -987,7 +988,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.3.4';
+const APP_VERSION = '2.3.5';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3601,7 +3602,7 @@ function updateStats() {
   document.getElementById('st-total').textContent    = stats.total;
   document.getElementById('st-dupe').textContent     = stats.dupe;
   document.getElementById('st-invalid').textContent  = stats.invalid;
-  document.getElementById('hdr-count').textContent   = stats.admitted;
+  // hdr-count removed — counts now in updateGLStats
 }
 function updateGLStats() {
   const bookings = Object.values(bookingMap);
@@ -3614,6 +3615,12 @@ function updateGLStats() {
   if (el('st-gl-vip'))   el('st-gl-vip').textContent   = bookings.filter(b => (b.tickets||[]).some(t=>t.isVip) || b.isVip).length;
   if (el('st-gl-comp'))  el('st-gl-comp').textContent  = bookings.filter(b => b.isComp).length;
   if (el('st-gl-in'))    el('st-gl-in').textContent    = admittedTickets + '/' + allTickets;
+  // Header counts
+  const guestCount = bookings.filter(b => b.source === 'sheet' && (b.eventTitle||'').toLowerCase() !== 'dj').length;
+  const djCount    = bookings.filter(b => b.source === 'sheet' && (b.eventTitle||'').toLowerCase() === 'dj').length;
+  if (el('hdr-tickets')) el('hdr-tickets').textContent = allTickets;
+  if (el('hdr-guests'))  el('hdr-guests').textContent  = guestCount;
+  if (el('hdr-djs'))     el('hdr-djs').textContent     = djCount;
 }
 
 // ═══════════════════════════════════════════
