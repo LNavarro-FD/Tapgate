@@ -988,7 +988,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.3.6';
+const APP_VERSION = '2.3.7';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1767,16 +1767,38 @@ function addSheetBooking({ key, name, email, entryType, guestType, hasLanyard, e
 async function loadCompGuests() {
   let total = 0;
   try {
-    // Tab 1: Guests — Name | Email | Event | Entry Type | Guest Type | Notes
+    // Tab: GUESTS — header-based column mapping (white-label safe)
+    // Headers: Event ID | First Name | Last Name | Email | Entry Code | Category | Guest Of | Notes
     try {
       const rows = await fetchSheetTab(SHEET_TABS.guests);
+      if (rows.length < 2) throw new Error('No guest data');
+      const headers = rows[0].map(h => (h||'').toLowerCase().trim());
+      const col = name => headers.indexOf(name.toLowerCase());
       let n = 0;
       rows.slice(1).forEach((r, i) => {
-        const [name, email, event, entryTypeRaw, guestType] = r;
-        if (!name) return;
-        const eventIds = sheetEventToId(event);
+        const eventId   = (r[col('event id')]   || r[col('event')] || '').trim();
+        const firstName = (r[col('first name')]  || '').trim();
+        const lastName  = (r[col('last name')]   || '').trim();
+        const email     = (r[col('email')]        || '').toLowerCase().trim();
+        const entryCode = (r[col('entry code')]  || '').trim();
+        const category  = (r[col('category')]    || 'Comp Guest').trim();
+        const guestOf   = (r[col('guest of')]    || '').trim();
+        const notes     = (r[col('notes')]       || '').trim();
+        const name = [firstName, lastName].filter(Boolean).join(' ');
+        if (!firstName && !lastName) return;
+        const eventIds = sheetEventToId(eventId);
         if (!eventIds.length) return;
-        addSheetBooking({ key: `gs-${i}`, name, email, entryType: parseEntryType(entryTypeRaw), guestType: (guestType||'Comp Guest').trim(), hasLanyard: false, eventIds, ticketName: guestType||'Guest', isComp: true, source: 'sheet' });
+        const isDJGuest = category.toLowerCase().includes('dj');
+        addSheetBooking({
+          key: `gs-${i}`, name, email,
+          entryType: parseEntryType(entryCode),
+          guestType: category,
+          guestOf, notes,
+          hasLanyard: false, eventIds,
+          ticketName: category || 'Guest',
+          isComp: true, isDJGuest,
+          source: 'sheet'
+        });
         n++;
       });
       console.log(`✓ Sheet Guests: ${n}`); total += n;
@@ -1789,8 +1811,18 @@ async function loadCompGuests() {
       let n = 0;
       // Build a map of performer name → bookingMap key for guest linking
       window._djMap = {};
+      const djHeaders = djRows[0].map(h => (h||'').toLowerCase().trim());
+      const djCol = name => djHeaders.indexOf(name.toLowerCase());
       djRows.slice(1).forEach((r, i) => {
-        const [eventId, performerName, type, email, entryCode, setTime, stage, lanyard, notes] = r;
+        const eventId       = (r[djCol('event id')]        || r[0] || '').trim();
+        const performerName = (r[djCol('performer name')]  || r[1] || '').trim();
+        const type          = (r[djCol('type')]            || r[2] || '').trim();
+        const email         = (r[djCol('email')]           || r[3] || '').trim();
+        const entryCode     = (r[djCol('entry code')]      || r[4] || '').trim();
+        const setTime       = (r[djCol('set time')]        || r[5] || '').trim();
+        const stage         = (r[djCol('stage')]           || r[6] || '').trim();
+        const lanyard       = (r[djCol('lanyard')]         || r[7] || '').trim();
+        const notes         = (r[djCol('notes')]           || r[8] || '').trim();
         const name = (performerName||'').trim();
         if (!name) return;
         const eventIds = sheetEventToId(eventId);
