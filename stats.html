@@ -425,17 +425,18 @@ function resolveET(c) {
 // ── DOWNLOAD CSV ──
 function downloadCSV() {
   if (!activeEvent) { alert('No event selected'); return; }
-  const rows = [['Name','Entry Type','Source','Checked In','Check-in Time','Door Position','Event']];
-  Object.entries(checkins).forEach(([key, c]) => {
-    rows.push([
-      c.name || key,
-      c.entryType || c.entry_type || '',
-      c.source || 'mec',
-      c.checkedIn ? 'Yes' : 'No',
-      c.time ? new Date(c.time).toLocaleString('en-GB') : '',
-      c.door || '',
-      activeEvent.name,
-    ]);
+  const rows = [['First Name','Last Name','Ticket Type','Category','Guest Of','Checked In']];
+  const allBookings = Object.values(bookingMap);
+  allBookings.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  allBookings.forEach(b => {
+    const tickets = b.tickets || [{ checkedIn: b.checkedIn, ticketName: b.ticketName || '' }];
+    tickets.forEach(t => {
+      const nameParts = (b.name||'').trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName  = nameParts.slice(1).join(' ') || '';
+      const category  = b.source === 'mec' ? 'Ticket' : (b.isDJGuest ? 'DJ Guest' : 'Comp');
+      rows.push([firstName, lastName, t.ticketName || b.ticketName || '', category, b.guestOf || '', t.checkedIn ? 'Yes' : 'No']);
+    });
   });
 
   // Also include unchecked-in from bookingMap
@@ -455,83 +456,43 @@ function downloadCSV() {
 
 // ── ARCHIVE ──
 async function downloadWord() {
-  if (!window.docx) { alert('Word library not loaded — try again in a moment'); return; }
-  const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, AlignmentType, HeadingLevel, BorderStyle } = window.docx;
+  if (!activeEvent) { alert('No event selected'); return; }
+  if (!Object.keys(bookingMap).length) { alert('No guest data loaded — please wait for data to load'); return; }
 
-  // Build sorted guest list
   const allBookings = Object.values(bookingMap);
-  const rows = [];
+  allBookings.sort((a,b) => (a.name||'').localeCompare(b.name||''));
 
+  let rows = [];
   allBookings.forEach(b => {
     const tickets = b.tickets || [{ checkedIn: b.checkedIn, ticketName: b.ticketName || '' }];
     tickets.forEach(t => {
-      const nameParts = (b.name || '').trim().split(' ');
+      const nameParts = (b.name||'').trim().split(' ');
       const firstName = nameParts[0] || '';
       const lastName  = nameParts.slice(1).join(' ') || '';
       const category  = b.source === 'mec' ? 'Ticket' : (b.isDJGuest ? 'DJ Guest' : 'Comp');
-      const ticketType = t.ticketName || b.ticketName || (b.source === 'mec' ? 'MEC Ticket' : 'Guest');
-      const guestOf   = b.guestOf || '';
-      rows.push({ firstName, lastName, ticketType, category, guestOf });
+      rows.push({ firstName, lastName, ticketType: t.ticketName || b.ticketName || 'MEC Ticket', category, guestOf: b.guestOf || '' });
     });
   });
 
-  // Sort A-Z by first name
-  rows.sort((a, b) => a.firstName.localeCompare(b.firstName));
-
-  const colWidths = [1800, 1800, 2200, 1400, 2000];
-  const totalW    = 9200;
-
-  const headerRow = new TableRow({
-    tableHeader: true,
-    children: ['First Name','Last Name','Ticket Type','Category','Guest Of'].map((h, i) =>
-      new TableCell({
-        width: { size: colWidths[i], type: WidthType.DXA },
-        shading: { fill: '22224C' },
-        children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, color: 'FFFFFF', size: 18 })] })]
-      })
-    )
+  // Build plain text content for Word-compatible download
+  const evName = activeEvent.name;
+  const evDate = activeEvent.date || '';
+  let text = evName + ' — Guest List\n' + evDate + ' · ' + rows.length + ' attendees\n';
+  text += '\n' + 'First Name'.padEnd(20) + 'Last Name'.padEnd(20) + 'Ticket Type'.padEnd(25) + 'Category'.padEnd(15) + 'Guest Of\n';
+  text += '-'.repeat(90) + '\n';
+  rows.forEach(r => {
+    text += (r.firstName||'').padEnd(20) + (r.lastName||'').padEnd(20) + (r.ticketType||'').padEnd(25) + (r.category||'').padEnd(15) + (r.guestOf||'') + '\n';
   });
 
-  const dataRows = rows.map((r, idx) =>
-    new TableRow({
-      children: [r.firstName, r.lastName, r.ticketType, r.category, r.guestOf].map((v, i) =>
-        new TableCell({
-          width: { size: colWidths[i], type: WidthType.DXA },
-          shading: { fill: idx % 2 === 0 ? 'FFFFFF' : 'F5F5F8' },
-          children: [new Paragraph({ children: [new TextRun({ text: v || '', size: 18 })] })]
-        })
-      )
-    })
-  );
-
-  const evName = activeEvent ? activeEvent.name : 'Event';
-  const evDate = activeEvent ? activeEvent.date : '';
-
-  const doc = new Document({
-    sections: [{
-      properties: {},
-      children: [
-        new Paragraph({ text: 'Funky Dory', heading: HeadingLevel.HEADING_1 }),
-        new Paragraph({ children: [new TextRun({ text: evName + ' — Guest List', bold: true, size: 28 })] }),
-        new Paragraph({ children: [new TextRun({ text: evDate + ' · ' + rows.length + ' attendees', size: 20, color: '666666' })] }),
-        new Paragraph({ text: '' }),
-        new Table({
-          width: { size: totalW, type: WidthType.DXA },
-          columnWidths: colWidths,
-          rows: [headerRow, ...dataRows]
-        })
-      ]
-    }]
-  });
-
-  const blob = await Packer.toBlob(doc);
+  const blob = new Blob([text], { type: 'text/plain' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = evName.replace(/\s+/g, '_') + '_Guest_List.docx';
+  a.download = evName.replace(/\s+/g,'_') + '_Guest_List.txt';
   a.click();
   URL.revokeObjectURL(url);
 }
+
 
 async function archiveEvent() {
   if (!activeEvent) { alert('No event selected'); return; }
