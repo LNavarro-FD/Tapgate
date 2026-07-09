@@ -123,7 +123,7 @@ async function fbSet(path, data) {
 <div class="topbar">
   <div>
     <a class="topbar-back" href="index.html">← Scanner</a>
-   <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.3.1</div>
+   <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.3.2</div>
   </div>
   <div style="text-align:right">
     <div class="topbar-title">Stats & Reports</div>
@@ -189,7 +189,12 @@ async function fbSet(path, data) {
     <!-- Actions -->
     <div class="section-lbl">Export & Archive</div>
     <div class="action-row">
-      <button class="btn-action btn-dl"   onclick="downloadExcel()" style="background:#1D6F42;color:#fff;">📊 Download Excel</button>
+      <button class="btn-action btn-dl" onclick="toggleGuestListOptions()" style="background:#1D6F42;color:#fff;">📋 Download Guest List</button>
+      <div id="gl-options" style="display:none;gap:8px;margin-top:8px;display:none;">
+        <button class="btn-action" onclick="viewGuestList()" style="flex:1;background:#22224C;color:#fff;">👁 View</button>
+        <button class="btn-action" onclick="downloadExcel()" style="flex:1;background:#1D6F42;color:#fff;">⬇ Download</button>
+      </div>
+      <div id="gl-view" style="display:none;max-height:400px;overflow-y:auto;margin-top:12px;border:1px solid var(--border);border-radius:8px;font-size:13px;"></div>
       <button class="btn-action btn-arch" onclick="archiveEvent()">📦 Archive Event</button>
     </div>
     <div style="margin-top:14px;padding:12px 14px;background:#FFF8E1;border-radius:8px;border-left:4px solid #FF9500;">
@@ -526,6 +531,54 @@ async function downloadWord() {
   URL.revokeObjectURL(url);
 }
 
+
+function toggleGuestListOptions() {
+  const el = document.getElementById('gl-options');
+  el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+  if (el.style.display === 'none') {
+    document.getElementById('gl-view').style.display = 'none';
+  }
+}
+
+function viewGuestList() {
+  if (!Object.keys(bookingMap).length) { alert('No data loaded yet'); return; }
+  const allBookings = Object.values(bookingMap);
+  allBookings.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  
+  const rows = allBookings.flatMap(b => {
+    const tickets = b.tickets && b.tickets.length ? b.tickets : [{ checkedIn: b.checkedIn, ticketName: b.ticketName||'' }];
+    const nameParts = (b.name||'').trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName  = nameParts.slice(1).join(' ') || '';
+    const category  = b.source === 'mec' || b.source === 'wc' ? 'Ticket' : (b.isDJGuest ? 'DJ Guest' : b.guestType || 'Comp');
+    return tickets.map(t => ({ firstName, lastName, ticketType: t.ticketName || b.ticketName || '', category, guestOf: b.guestOf||'', entryCode: b.entryType||'', checkedIn: t.checkedIn }));
+  });
+
+  const el = document.getElementById('gl-view');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <thead style="position:sticky;top:0;background:#22224C;color:#fff;">
+        <tr>
+          <th style="padding:8px 6px;text-align:left;font-size:11px;">First</th>
+          <th style="padding:8px 6px;text-align:left;font-size:11px;">Last</th>
+          <th style="padding:8px 6px;text-align:left;font-size:11px;">Type</th>
+          <th style="padding:8px 6px;text-align:left;font-size:11px;">Cat</th>
+          <th style="padding:8px 6px;text-align:left;font-size:11px;">✓</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((r,i) => `
+          <tr style="background:${i%2===0?'#fff':'#f5f5f8'}">
+            <td style="padding:6px;">${r.firstName}</td>
+            <td style="padding:6px;">${r.lastName}</td>
+            <td style="padding:6px;color:#666;">${r.ticketType}</td>
+            <td style="padding:6px;color:#666;">${r.category}</td>
+            <td style="padding:6px;">${r.checkedIn ? '✅' : ''}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
 
 async function archiveEvent() {
   if (!activeEvent) { alert('No event selected'); return; }
