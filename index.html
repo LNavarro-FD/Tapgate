@@ -988,7 +988,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.3.5';
+const APP_VERSION = '2.3.6';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1360,8 +1360,8 @@ async function loadGuestList() {
 
   // Restore from sessionStorage if returning from stats (data < 10 mins old)
   try {
-    const cached    = sessionStorage.getItem('tg_bookingmap');
-    const cachedAt  = parseInt(sessionStorage.getItem('tg_bookingmap_ts') || '0');
+    const cached    = localStorage.getItem('tg_bookingmap');
+    const cachedAt  = parseInt(localStorage.getItem('tg_bookingmap_ts') || '0');
     const age       = Date.now() - cachedAt;
     if (cached && age < 10 * 60 * 1000) {
       bookingMap = JSON.parse(cached);
