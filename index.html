@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.3';
+const APP_VERSION = '2.4.4';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -4376,7 +4376,14 @@ document.addEventListener('visibilitychange', () => {
     const opt = document.getElementById('opt-wakelock');
     if (opt && opt.checked) requestWakeLock();
   } else {
-    // Page hidden — pause camera to save battery
+    // Page hidden — save bookingMap so stats/back navigation restores instantly
+    if (Object.keys(bookingMap).length > 0) {
+      try {
+        localStorage.setItem('tg_bookingmap', JSON.stringify(bookingMap));
+        localStorage.setItem('tg_bookingmap_ts', String(Date.now()));
+      } catch(e) { console.warn('bookingMap save on hide failed:', e.message); }
+    }
+    // Pause camera to save battery
     if (video && !video.paused) video.pause();
   }
 });
