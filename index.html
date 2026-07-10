@@ -3756,7 +3756,7 @@ function renderEventCards() {
       const evLabel = evName || 'All Events';
       const sheetTod = getTimeOfDay(b.eventTitle || '');
       const sheetTodSuffix = sheetTod ? ' — ' + sheetTod : '';
-      if (b.isRemenham) key = '🏡 RF — ' + evLabel;
+      if (b.isRemenham) key = '🎟️ 3rd Party — ' + evLabel;
       else if (b.entryType === 'AAA' || (b.guestType && (b.guestType.toLowerCase().includes('dj') || b.guestType.toLowerCase().includes('artist')))) key = '🎧 DJs — ' + evLabel;
       else if (b.isEntertainment || (b.guestType && b.guestType.toLowerCase().includes('entertain'))) key = '🎭 Entertainers — ' + evLabel;
       else if (b.guestType && (b.guestType.toLowerCase().includes('staff') || b.guestType.toLowerCase().includes('crew') || b.guestType.toLowerCase().includes('resource') || b.guestType.toLowerCase().includes('bar') || b.guestType.toLowerCase().includes('production'))) key = '👷 Staff — ' + evLabel;
