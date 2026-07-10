@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.1';
+const APP_VERSION = '2.4.2';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3579,7 +3579,9 @@ function showEnt(g) {
   const items = document.getElementById('ent-items');
 
   const entryType = (g.entryType || (g.isVip ? 'VIP' : 'GE')).toUpperCase();
-  const isEvening = (function(s){return /evening/i.test(s)||/access only/i.test(s);})(g.ticketName || g.eventTitle || '');
+  const ticketStr = (g.ticketName || g.eventTitle || '');
+  const isSeated  = /seated/i.test(ticketStr);
+  const isEvening = /evening/i.test(ticketStr) || /access only/i.test(ticketStr);
   const iconEl = el.querySelector('.eb-icon');
 
   if (entryType === 'VIP') {
@@ -3600,6 +3602,12 @@ function showEnt(g) {
     el.style.borderColor = '#22224C';
     iconEl.innerHTML = '👷';
     el.querySelector('.eb-title').textContent = 'Staff — Admit:';
+    items.innerHTML = '';
+  } else if (isSeated) {
+    el.className = 'ent-banner std';
+    el.style.borderColor = 'var(--border)';
+    iconEl.innerHTML = '🪑';
+    el.querySelector('.eb-title').textContent = 'Seated — Admit:';
     items.innerHTML = '';
   } else if (isEvening) {
     el.className = 'ent-banner std';
