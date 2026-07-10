@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.6';
+const APP_VERSION = '2.4.7';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -2951,30 +2951,8 @@ async function lookupTicket(code) {
           mecGuest.name = mecAttendeeCache[cacheKey];
           checkinName = mecAttendeeCache[cacheKey];
         }
-        if (cfg.u && invoiceId && place) {
-          try {
-            console.timeLog('SCAN_TOTAL', 'before checkins fetch');
-      const cr = await fetch(`${cfg.u}/wp-json/fd2/v1/checkins?invoice_id=${encodeURIComponent(invoiceId)}`);
-      console.timeLog('SCAN_TOTAL', 'after checkins fetch');
-            if (cr.ok) {
-              const cd = await cr.json();
-              if (cd.found && cd.attendees) {
-                const att = cd.attendees.find(a => String(a.place) === String(place));
-                if (att) {
-                  if (att.name) { mecGuest.name = att.name; checkinName = att.name; }
-                  if (att.checked_in && !alreadyInLocal) {
-                    alreadyInDb = true;
-                    if (localTicket) {
-          localTicket.checkedIn = true;
-          // Persist sheet guest checkin to Firebase
-          if (window.fbWriteSheetCheckin) window.fbWriteSheetCheckin(booking.bookingId, booking.name);
-        }
-                  }
-                }
-              }
-            }
-          } catch(e) { console.warn('checkins fetch error:', e); }
-        }
+        // checkins fetch removed — duplicate detection now handled by Firebase sync
+        // attendee name comes from bulk2 via bookingMap
         // Always enrich mecGuest from bookingMap before displaying result
         const invId   = mecGuest._invoiceID || mecGuest.orderNumber;
         const placeNo = mecGuest._place;
