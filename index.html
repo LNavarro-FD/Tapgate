@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.7';
+const APP_VERSION = '2.4.8';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3070,9 +3070,10 @@ async function lookupTicket(code) {
             const invId   = mecGuest._invoiceID || mecGuest.orderNumber;
             const placeNo = mecGuest._place;
 
-            // 1. Update local state instantly
-            let booking = invoiceMap[invId] || bookingMap[invId];
-            if (!booking) booking = Object.values(bookingMap).find(b => String(b.invoiceID) === String(invId));
+            // 1. Update local state instantly — reuse booking from enrichment block above
+            // booking is already resolved above; re-lookup only if needed
+            if (!booking) booking = invoiceMap[invId] || bookingMap[invId];
+            if (!booking) booking = Object.values(bookingMap).find(b => String(b.invoiceID) === String(invId) || String(b.mecInvoiceID) === String(invId));
             if (booking) {
               const ticket = booking.tickets.find(t => String(t.attendeeKey) === String(placeNo))
                           || booking.tickets[parseInt(placeNo) - 1];
