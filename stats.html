@@ -187,6 +187,12 @@ async function fbSet(path, data) {
       <div id="ticket-type-rows"></div>
     </div>
 
+    <!-- By guest type -->
+    <div class="stat-card" id="card-guest-types">
+      <div class="stat-card-title">By Guest Type</div>
+      <div id="guest-type-rows"></div>
+    </div>
+
     <!-- By source -->
     <div class="stat-card" id="card-sources">
       <div class="stat-card-title">By Source</div>
@@ -347,6 +353,38 @@ async function loadStats(ev) {
       console.log('Sample mecAttendeeTicketMap keys:', Object.keys(mecAttendeeTicketMap).slice(0,3));
     }
 
+    // 3. Load sheet guests (comps, DJs, staff) in background
+    const sheetId = getSheetId();
+    const guestGids = [
+      { gid: '1907315003', type: 'guest' },
+      { gid: '1508769014', type: 'dj' }
+    ];
+    Promise.all(guestGids.map(async ({ gid, type }) => {
+      try {
+        const r = await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&t=${Date.now()}`);
+        if (!r.ok) return;
+        const rows = parseCSV(await r.text());
+        if (!rows.length) return;
+        const h = rows[0].map(x => (x||'').trim().toLowerCase());
+        const col = name => h.findIndex(x => x.includes(name));
+        const nameI = col('name'), entryI = col('entry'), guestTypeI = col('guest type'), guestOfI = col('guest of'), eventI = col('event');
+        if (nameI === -1) return;
+        rows.slice(1).forEach((r, i) => {
+          const name = (r[nameI]||'').trim(); if (!name) return;
+          const evId = eventI > -1 ? (r[eventI]||'').trim() : '';
+          if (evId && ev.id && evId !== ev.id && evId !== ev.mec_id) return;
+          const guestType = type === 'dj' ? 'DJ' : (guestTypeI > -1 ? (r[guestTypeI]||'Guest') : 'Guest');
+          const entryCode = entryI > -1 ? (r[entryI]||'GE') : 'GE';
+          const guestOf   = guestOfI > -1 ? (r[guestOfI]||'') : '';
+          const key = `sheet-${type}-${i}`;
+          bookingMap[key] = {
+            key, name, source: 'sheet', guestType, entryType: entryCode, guestOf,
+            tickets: [{ checkedIn: false, ticketName: guestType, entryType: entryCode }]
+          };
+        });
+      } catch(e) { console.warn('Sheet guest load failed:', e.message); }
+    })).then(() => renderStats());
+
     // 2. Load event config in background — don't block render
     loadEventConfig(ev).catch(e => console.warn('Event config failed:', e.message));
 
@@ -470,6 +508,30 @@ function renderStats() {
       <div class="trow-val">${admIn}/${v} (${pctT}%)</div>
     </div>`;
     }).join('') || '<div class="empty">No data yet</div>';
+
+  // By guest type (sheet guests only)
+  const guestTypeCounts = {};
+  const guestTypeIn     = {};
+  allBookings.filter(b => b.source === 'sheet').forEach(b => {
+    const gt = b.guestType || 'Guest';
+    guestTypeCounts[gt] = (guestTypeCounts[gt]||0) + 1;
+    if (b.tickets && b.tickets.some(t => t.checkedIn)) guestTypeIn[gt] = (guestTypeIn[gt]||0) + 1;
+  });
+  const maxGuest = Math.max(...Object.values(guestTypeCounts), 1);
+  const guestTypeEl = document.getElementById('guest-type-rows');
+  if (guestTypeEl) {
+    guestTypeEl.innerHTML = Object.keys(guestTypeCounts).length
+      ? Object.entries(guestTypeCounts).sort((a,b)=>b[1]-a[1]).map(([k,v]) => {
+          const admIn = guestTypeIn[k] || 0;
+          const pctT  = Math.round(admIn/v*100);
+          return `<div class="trow">
+            <div class="trow-key">${k}</div>
+            <div class="trow-bar"><div class="trow-bar-inner" style="width:${Math.round(v/maxGuest*100)}%"></div></div>
+            <div class="trow-val">${admIn}/${v} (${pctT}%)</div>
+          </div>`;
+        }).join('')
+      : '<div class="empty">No sheet guests loaded yet</div>';
+  }
 
   // By source
   const srcCounts = {};
