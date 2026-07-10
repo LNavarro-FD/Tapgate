@@ -15,12 +15,15 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh}
 
-.topbar{background:var(--navy);padding:calc(var(--safe-t)+12px) 18px 10px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;border-bottom:2px solid var(--pink);}
-.brand-name{font-size:17px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--pink);line-height:1;}
-.brand-sub{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#fff;opacity:.75;margin-top:3px;}
-.topbar-back{color:var(--pink);font-size:13px;font-weight:600;text-decoration:none;}
-.hdr-right{text-align:right;font-size:11px;color:#fff;opacity:.8;}
-.hdr-right strong{display:block;font-size:22px;font-weight:900;color:#fff;opacity:1;line-height:1;}
+.topbar{background:var(--navy);padding:calc(var(--safe-t)+10px) 16px 10px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;border-bottom:2px solid var(--pink);}
+.brand-name{font-size:15px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);line-height:1;}
+.brand-sub{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#fff;opacity:.6;margin-top:3px;}
+.topbar-back{color:var(--pink);font-size:12px;font-weight:600;text-decoration:none;}
+.hdr-right{text-align:right;color:#fff;}
+.hdr-event{font-size:11px;opacity:.6;margin-bottom:3px;}
+.hdr-counts{display:flex;gap:12px;align-items:baseline;justify-content:flex-end;}
+.hdr-counts span{font-size:11px;opacity:.7;}
+.hdr-counts strong{font-size:18px;font-weight:900;opacity:1;margin-left:3px;}
 
 .wrap{padding:14px 14px calc(var(--safe-b)+80px)}
 
@@ -123,14 +126,14 @@ async function fbSet(path, data) {
 
 <div class="topbar">
   <div>
-    <div class="brand-name">Tapgate</div>
-    <div class="brand-sub">Stats v1.3.4 &nbsp;·&nbsp; <a class="topbar-back" href="index.html">← Scanner</a></div>
+    <div class="brand-name">Tapgate Stats</div>
+    <div class="brand-sub"><a class="topbar-back" href="index.html">← Scanner</a> &nbsp;v1.3.4</div>
   </div>
   <div class="hdr-right">
-    <div id="tb-sub" style="font-size:12px;opacity:.7;margin-bottom:4px;"></div>
-    <div style="display:flex;gap:10px;align-items:center;font-size:13px;">
-      <span>🎟 <strong id="hdr-total">—</strong></span>
-      <span>✅ <strong id="hdr-checkin">—</strong></span>
+    <div class="hdr-event" id="tb-sub"></div>
+    <div class="hdr-counts">
+      <span>🎟<strong id="hdr-total">—</strong></span>
+      <span>✅<strong id="hdr-checkin">—</strong></span>
     </div>
   </div>
 </div>
