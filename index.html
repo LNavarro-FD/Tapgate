@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.5';
+const APP_VERSION = '2.4.6';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3078,8 +3078,8 @@ async function lookupTicket(code) {
                 { label: `Valid before ${lateBlock.validBefore}`, cls:'hi' },
                 { label: lateBlock.upgradePrice ? `Upgrade: ${lateBlock.upgradePrice}` : 'Upgrade required', cls:'hi' }
               ]);
-              // Still write check-in — door staff makes the call
-              await mecWriteCheckin(code, mecGuest);
+              // Still write check-in in background — don't await, show result immediately
+              mecWriteCheckin(code, mecGuest).catch(e => console.warn('MEC late checkin write failed:', e));
               addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} — LATE (past ${lateBlock.validBefore})`, status:'warn', code });
               stats.admitted++; stats.total++;
               updateStats();
@@ -3088,69 +3088,39 @@ async function lookupTicket(code) {
               showEnt(mecGuest);
               isScanning = false;
             } else {
-            // Valid MEC ticket — write check-in and get ticket info back
-            await mecWriteCheckin(code, mecGuest);
-            addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} (${code})`, status:'ok', code });
-            stats.admitted++; stats.total++;
-            
-            // Enrich mecGuest with bookingMap ticket data for correct VIP/entitlement display
+            // Valid MEC ticket — update UI immediately, write to server in background
             const invId   = mecGuest._invoiceID || mecGuest.orderNumber;
             const placeNo = mecGuest._place;
-            // Try multiple lookup strategies to find the booking
+
+            // 1. Update local state instantly
             let booking = invoiceMap[invId] || bookingMap[invId];
-            if (!booking) {
-              // Search all bookings by invoiceID field
-              booking = Object.values(bookingMap).find(b => String(b.invoiceID) === String(invId));
-            }
+            if (!booking) booking = Object.values(bookingMap).find(b => String(b.invoiceID) === String(invId));
             if (booking) {
               const ticket = booking.tickets.find(t => String(t.attendeeKey) === String(placeNo))
                           || booking.tickets[parseInt(placeNo) - 1];
               if (ticket) {
                 ticket.checkedIn = true;
-                // Write real attendee name from MEC scan result back to booking
-                if (mecGuest.name && mecGuest.name !== 'Guest' && mecGuest.name !== booking.name) {
-                  ticket.name = mecGuest.name;
-                }
+                if (mecGuest.name && mecGuest.name !== 'Guest' && mecGuest.name !== booking.name) ticket.name = mecGuest.name;
               }
-              // Also sync to guestMap WC entry if present (covers MEC bookings paid via WC)
               const wcInvoiceId = booking.invoiceID || invId;
               const wcGuestKey = `wc-${wcInvoiceId}`;
               if (guestMap[wcGuestKey]) {
                 const wcTicketCode = `${wcGuestKey}-${placeNo}`;
                 if (!guestMap[wcGuestKey].checkedInTickets) guestMap[wcGuestKey].checkedInTickets = [];
-                if (!guestMap[wcGuestKey].checkedInTickets.includes(wcTicketCode)) {
-                  guestMap[wcGuestKey].checkedInTickets.push(wcTicketCode);
-                }
+                if (!guestMap[wcGuestKey].checkedInTickets.includes(wcTicketCode)) guestMap[wcGuestKey].checkedInTickets.push(wcTicketCode);
                 guestMap[wcGuestKey].checkedIn = guestMap[wcGuestKey].checkedInTickets.length >= (guestMap[wcGuestKey].qty || 1);
-              }
-              // Update lead booking name if this was ticket 1 (place 1)
-              if ((placeNo === '1' || placeNo === 1) && mecGuest.name && mecGuest.name !== 'Guest') {
-                // Don't overwrite lead name — keep Louise as lead, only update ticket name
               }
               renderGuestList(); updateGLStats();
             } else {
-              // Booking not yet in bookingMap (bulk2 still loading) — store pending checkin
-              pendingCheckins[`${invId}:${placeNo}`] = {
-                name: mecGuest.name, ticketName: mecGuest.ticketName || '',
-                isVip: mecGuest.isVip, invId, placeNo
-              };
-              // Also add a temporary booking so duplicate detection works next scan
-              const newTicket = {
-                key: `${invId}-${placeNo}`, attendeeKey: String(placeNo),
-                name: mecGuest.name, ticketName: mecGuest.ticketName || 'General Admission',
-                isVip: mecGuest.isVip, checkedIn: true
-              };
-              const newBooking = {
-                bookingId: String(invId), invoiceID: String(invId),
-                name: mecGuest.name, email: mecGuest.email || '',
-                eventTitle: mecGuest.ticketName || '', eventDay: '',
-                _eventId: String(mecGuest._eventId || ''),
-                tickets: [newTicket], source: 'mec', isComp: false, isTM: false
-              };
+              pendingCheckins[`${invId}:${placeNo}`] = { name: mecGuest.name, ticketName: mecGuest.ticketName || '', isVip: mecGuest.isVip, invId, placeNo };
+              const newTicket = { key: `${invId}-${placeNo}`, attendeeKey: String(placeNo), name: mecGuest.name, ticketName: mecGuest.ticketName || 'General Admission', isVip: mecGuest.isVip, checkedIn: true };
+              const newBooking = { bookingId: String(invId), invoiceID: String(invId), name: mecGuest.name, email: mecGuest.email || '', eventTitle: mecGuest.ticketName || '', eventDay: '', _eventId: String(mecGuest._eventId || ''), tickets: [newTicket], source: 'mec', isComp: false, isTM: false };
               bookingMap[String(invId)] = newBooking;
               invoiceMap[String(invId)] = newBooking;
               renderGuestList(); updateGLStats();
             }
+
+            // 2. Show result immediately — do NOT wait for server
             const now = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
             const detail = [
               mecGuest.isVip ? '⭐ VIP' : null,
@@ -3158,11 +3128,17 @@ async function lookupTicket(code) {
               now
             ].filter(Boolean).join('  ·  ');
             setResult('ok','✓', mecGuest.name, detail, true);
-            window._scanInProgress = false;
-    console.timeEnd('SCAN_TOTAL');
-    console.log('SCAN RESULT: name=', mecGuest.name, 'checkinName=', checkinName);
             showEnt(mecGuest);
+            addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} (${code})`, status:'ok', code });
+            stats.admitted++; stats.total++;
             updateStats();
+            isScanning = false;
+            window._scanInProgress = false;
+            console.timeEnd('SCAN_TOTAL');
+
+            // 3. Write to WordPress and Firebase in background
+            mecWriteCheckin(code, mecGuest).catch(e => console.warn('MEC checkin write failed:', e));
+            if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(invId, placeNo, true);
           } // end lateBlock else
           } // end timeBlock else
         }
