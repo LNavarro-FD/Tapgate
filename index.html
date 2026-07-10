@@ -602,17 +602,20 @@ input::placeholder { color: #999; }
   window.fbApplyMECCheckins = function() {
     if (!window.bookingMap || !window._mecCheckins) return;
     let changed = false;
+    let applied = 0; let missed = 0;
     Object.values(window._mecCheckins).forEach(function(c) {
       const bid = String(c.bookingId);
       const b = window.bookingMap[bid];
-      if (!b) return;
+      if (!b) { missed++; return; }
       const t = b.tickets.find(function(t) { return String(t.attendeeKey) === String(c.attendeeKey); });
-      if (!t) return;
+      if (!t) { missed++; return; }
       if (!!t.checkedIn !== !!c.checkedIn) {
         t.checkedIn = !!c.checkedIn;
+        applied++;
         changed = true;
       }
     });
+    console.log('fbApplyMECCheckins: applied=' + applied + ' missed=' + missed + ' total=' + Object.keys(window._mecCheckins).length);
     if (changed) {
       if (typeof renderGuestList === 'function') renderGuestList();
       if (typeof updateGLStats === 'function') updateGLStats();
@@ -2448,14 +2451,14 @@ function clearEventFilter() {
 }
 
 function isTicketCheckedIn(booking, ticket) {
+  // ticket.checkedIn is the authoritative source — set by Firebase sync, admitSpecific, or bulk2 load
   if (ticket.checkedIn) return true;
-  // Also check guestMap — scanner may have admitted via guestMap path
+  // Fallback: check guestMap for WC bookings only (MEC bookings use ticket.checkedIn exclusively)
+  if (booking.source === 'mec') return false;
   const gm = guestMap[booking.bookingId] || guestMap[`wc-${booking.invoiceID}`] ||
     Object.values(guestMap).find(g => g.name === booking.name && g._eventId === booking._eventId);
   if (!gm) return false;
-  // For single-ticket bookings just check checkedIn flag
   if (gm.qty <= 1) return gm.checkedIn || gm.checkedInTickets.length > 0;
-  // For multi-ticket, match by attendeeKey position
   const idx = booking.tickets.indexOf(ticket);
   return gm.checkedInTickets.length > idx;
 }
