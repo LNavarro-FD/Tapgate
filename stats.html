@@ -177,8 +177,14 @@ async function fbSet(path, data) {
 
     <!-- By entry type -->
     <div class="stat-card" id="card-types">
-      <div class="stat-card-title">By Entry Type</div>
+      <div class="stat-card-title">By Entry Type (GE / VIP)</div>
       <div id="type-rows"></div>
+    </div>
+
+    <!-- By ticket type -->
+    <div class="stat-card" id="card-ticket-types">
+      <div class="stat-card-title">By Ticket Release</div>
+      <div id="ticket-type-rows"></div>
     </div>
 
     <!-- By source -->
@@ -437,6 +443,30 @@ function renderStats() {
     <div class="trow">
       <div class="trow-key">${(eventConfig[k]||{}).label || k}</div>
       <div class="trow-bar"><div class="trow-bar-inner" style="width:${Math.round(v/maxType*100)}%"></div></div>
+      <div class="trow-val">${admIn}/${v} (${pctT}%)</div>
+    </div>`;
+    }).join('') || '<div class="empty">No data yet</div>';
+
+  // By ticket release tier
+  const ticketCounts = {};
+  const ticketIn     = {};
+  allBookings.forEach(b => {
+    (b.tickets || []).forEach(t => {
+      const tn = t.ticketName || 'Unknown';
+      ticketCounts[tn] = (ticketCounts[tn]||0) + 1;
+      if (t.checkedIn) ticketIn[tn] = (ticketIn[tn]||0) + 1;
+    });
+  });
+  const maxTicket = Math.max(...Object.values(ticketCounts), 1);
+  document.getElementById('ticket-type-rows').innerHTML = Object.entries(ticketCounts)
+    .sort((a,b) => b[1]-a[1])
+    .map(([k,v]) => {
+      const admIn = ticketIn[k] || 0;
+      const pctT  = Math.round(admIn/v*100);
+      return `
+    <div class="trow">
+      <div class="trow-key">${k}</div>
+      <div class="trow-bar"><div class="trow-bar-inner" style="width:${Math.round(v/maxTicket*100)}%"></div></div>
       <div class="trow-val">${admIn}/${v} (${pctT}%)</div>
     </div>`;
     }).join('') || '<div class="empty">No data yet</div>';
