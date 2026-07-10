@@ -18,7 +18,7 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 .topbar{background:var(--navy);padding:calc(var(--safe-t)+10px) 16px 10px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;border-bottom:2px solid var(--pink);}
 .brand-name{font-size:15px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);line-height:1;}
 .brand-sub{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#fff;opacity:.6;margin-top:3px;}
-.topbar-back{color:var(--pink);font-size:12px;font-weight:600;text-decoration:none;}
+.topbar-back{color:var(--pink);font-size:15px;font-weight:700;text-decoration:none;padding:4px 0;display:inline-block;}
 .hdr-right{text-align:right;color:#fff;}
 .hdr-event{font-size:11px;opacity:.6;margin-bottom:3px;}
 .hdr-counts{display:flex;gap:12px;align-items:baseline;justify-content:flex-end;}
@@ -125,9 +125,10 @@ async function fbSet(path, data) {
 <body>
 
 <div class="topbar">
-  <div>
+  <div style="display:flex;flex-direction:column;gap:4px;">
+    <a class="topbar-back" href="index.html">← Scanner</a>
     <div class="brand-name">Tapgate Stats</div>
-    <div class="brand-sub"><a class="topbar-back" href="index.html">← Scanner</a> &nbsp;v1.3.4</div>
+    <div class="brand-sub">v1.3.4</div>
   </div>
   <div class="hdr-right">
     <div class="hdr-event" id="tb-sub"></div>
