@@ -1584,7 +1584,8 @@ async function loadGuestList() {
         }
         const leadName = data.attendees[0]?.name || '';
         const eventDay = detectDay('', data.eventId);
-        const firstTicketName = data.attendees[0]?.ticket_name || 'MEC Ticket';
+        const firstTicketId = String(data.attendees[0]?.ticket_id || '');
+        const firstTicketName = window.mecTicketMap[firstTicketId] || data.attendees[0]?.ticket_name || 'MEC Ticket';
         const isVipBooking = /vip/i.test(firstTicketName);
         bookingMap[bid] = {
           bookingId: bid, invoiceID: data.inv,
@@ -1597,12 +1598,14 @@ async function loadGuestList() {
         invoiceMap[data.inv] = bookingMap[bid];
         if (data.mecInv && data.mecInv !== data.inv) invoiceMap[data.mecInv] = bookingMap[bid];
         data.attendees.forEach((a, idx) => {
-          const ticketName = a.ticket_name || firstTicketName;
+          const aTicketId = String(a.ticket_id || '');
+          const ticketName = window.mecTicketMap[aTicketId] || a.ticket_name || firstTicketName;
           const isVip = /vip/i.test(ticketName);
           bookingMap[bid].tickets.push({
             key: `${bid}-${idx+1}`, attendeeKey: String(idx+1),
             name: a.name || '', ticketName: ticketName,
-            isVip: isVip, checkedIn: !!a.checked_in
+            isVip: isVip, checkedIn: !!a.checked_in,
+            _mecTicketId: aTicketId || null
           });
           // Cache name by mec_invoice_id + place for fast scan lookup
           if (data.mecInv && a.name) mecAttendeeCache[`${data.mecInv}:${idx+1}`] = a.name;
