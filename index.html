@@ -1153,7 +1153,7 @@ function launch() {
   document.querySelectorAll('.app-ver, #hdr-version').forEach(el => el.textContent = APP_VERSION);
   // Set activeEvent from saved config if not already set from QR
   if (!window.activeEvent) {
-    const saved = localStorage.getItem('fd_cfg');
+    const saved = localStorage.getItem('tg_cfg');
     if (saved) {
       try {
         const c = JSON.parse(saved);
@@ -1554,7 +1554,7 @@ async function loadGuestList() {
       if (!bulkByBooking[bid]) bulkByBooking[bid] = { inv: String(c.invoice_id), mecInv: String(c.mec_invoice_id || ''), eventId: String(c.event_id), attendees: [] };
       bulkByBooking[bid].attendees.push(c);
     });
-    console.log('bulk2 HRR bookings found:', Object.keys(bulkByBooking).length);
+    console.log('bulk2 bookings found:', Object.keys(bulkByBooking).length);
     let bulk2Changed = false;
     Object.entries(bulkByBooking).forEach(([bid, data]) => {
       if (!bookingMap[bid]) {
@@ -3637,7 +3637,7 @@ function exportCSV() {
   const a    = document.createElement('a');
   const date = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
   a.href     = url;
-  a.download = `FD-HRR-checkins-${date}.csv`;
+  a.download = `TG-checkins-${date}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
