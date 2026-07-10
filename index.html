@@ -3378,7 +3378,8 @@ async function mecLookupAndCheckin(code) {
 
   console.log(`mecLookupAndCheckin (bulk2 mode): invoice=${invoiceID} place=${place} name=${name}`);
   // DEBUG — show invoice/place in scan detail so visible on phone (remove after diagnosis)
-  window._lastScanDebug = `inv:${invoiceID} pl:${place} bm:${bookingMapEntry?'✓':'✗'}`;
+  const _dbgTicketKeys = bookingMapEntry?.tickets?.map(t => t.attendeeKey).join(',') || 'none';
+  window._lastScanDebug = `inv:${invoiceID} pl:${place} bm:${bookingMapEntry?'✓':'✗'} tks:[${_dbgTicketKeys}]`;
 
   return {
     id: invoiceID,
