@@ -2074,7 +2074,7 @@ function admitSpecific(bookingId, attendeeKey) {
 
   addLog({ name: ticket.name || b.name, ticket: `${ticket.ticketName} (${admitted} of ${b.tickets.length})`, status:'ok', note:'Individual' });
   stats.admitted++; stats.total++;
-  document.getElementById('hdr-count').textContent = stats.admitted;
+  
   updateStats(); updateGLStats(); renderGuestList();
   vibrate([80]);
 }
@@ -2125,7 +2125,7 @@ function undoSpecific(bookingId, attendeeKey) {
 
   addLog({ name: ticket.name || b.name, ticket: `${ticket.ticketName} — UNDONE`, status:'warn', note:'Undo' });
   stats.admitted = Math.max(0, stats.admitted - 1);
-  document.getElementById('hdr-count').textContent = stats.admitted;
+  
   updateStats(); updateGLStats(); renderGuestList();
   vibrate([100, 50, 100]);
 }
@@ -2160,7 +2160,7 @@ function undoAllBooking(bookingId) {
 
   addLog({ name: b.name, ticket: `All ${count} tickets — UNDONE`, status:'warn', note:'Undo all' });
   stats.admitted = Math.max(0, stats.admitted - count);
-  document.getElementById('hdr-count').textContent = stats.admitted;
+  
   updateStats(); updateGLStats(); renderGuestList();
   vibrate([100, 50, 100]);
 }
@@ -2182,7 +2182,7 @@ function admitAllBooking(bookingId) {
     }
     stats.admitted++; stats.total++;
   });
-  document.getElementById('hdr-count').textContent = stats.admitted;
+  
   addLog({ name:b.name, ticket:`All ${b.tickets.length} tickets admitted`, status:'ok', note:'Check in all' });
   updateStats(); updateGLStats(); renderGuestList();
   vibrate([50, 30, 80]);
@@ -2687,7 +2687,7 @@ function admitFromDrawer() {
   showWristbandToast(drawerBooking, { name: g.name, ticketName: g.ticketName, entryType: isVip ? 'VIP' : 'GE', isVip: isVip });
   addLog({ name:g.name, ticket:`${g.ticketName} (${g.checkedInTickets.length} of ${g.qty})`, status:'ok', note:'Manual' });
   stats.admitted++; stats.total++;
-  document.getElementById('hdr-count').textContent = stats.admitted;
+  
   updateStats(); updateGLStats(); renderGuestList();
 
   // Update drawer
@@ -2784,7 +2784,7 @@ async function lookupTicket(code) {
     saveDoorCounts(counts);
     stats.admitted++;
     stats.total++;
-    document.getElementById('hdr-count').textContent = stats.admitted;
+    
     updateStats();
     vibrate([80]);
     setResult('ok', '🚪', dt.label, `Scan ${counts[code]} of ${dt.limit}`, false);
@@ -2829,7 +2829,7 @@ async function lookupTicket(code) {
       if (window.fbWriteRFCheckin) window.fbWriteRFCheckin(rfId, rfBooking.name, rfBooking.eventTitle);
       addLog({ name: rfBooking.name, ticket: `${rfBooking.eventTitle} (RF)`, status:'ok', code });
       stats.admitted++; stats.total++;
-      document.getElementById('hdr-count').textContent = stats.admitted;
+      
       updateStats(); renderGuestList(); updateGLStats();
       vibrate([80]);
       const now = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -2983,7 +2983,7 @@ async function lookupTicket(code) {
             await mecWriteCheckin(code, mecGuest);
             addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} (${code})`, status:'ok', code });
             stats.admitted++; stats.total++;
-            document.getElementById('hdr-count').textContent = stats.admitted;
+            
             // Enrich mecGuest with bookingMap ticket data for correct VIP/entitlement display
             const invId   = mecGuest._invoiceID || mecGuest.orderNumber;
             const placeNo = mecGuest._place;
@@ -3358,7 +3358,7 @@ function admitTM() {
   vibrate([80]);
   addLog({ name:'TM Guest', ticket:'Ticketmaster', status:'ok', note:'Manual verify' });
   stats.admitted++; stats.total++;
-  document.getElementById('hdr-count').textContent = stats.admitted;
+  
   document.getElementById('tm-actions').classList.add('hidden');
   setResult('ok','✓','Ticketmaster — Admitted','', true);
   showEnt({ isVip:false, isTM:true, table:null });
@@ -3434,7 +3434,7 @@ function handleGuest(g, code) {
 
   addLog({ name:g.name, ticket:admitDetail, status:'ok', code });
   stats.admitted++; stats.total++;
-  document.getElementById('hdr-count').textContent = stats.admitted;
+  
   setResult('ok','✓', g.name, admitDetail, true);
   showEnt(g);
   updateStats(); updateGLStats(); renderGuestList();
@@ -3869,7 +3869,7 @@ function clearLocalCheckins() {
   stats.admitted = 0; stats.total = 0; stats.dupe = 0; stats.invalid = 0;
   scanLog = [];
   renderGuestList(); updateGLStats(); updateStats(); renderLogs();
-  document.getElementById('hdr-count').textContent = 0;
+  
   alert('Local check-in data cleared.');
 }
 
