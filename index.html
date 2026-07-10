@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.2';
+const APP_VERSION = '2.4.3';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3062,6 +3062,27 @@ async function lookupTicket(code) {
             stats.invalid++; stats.total++;
             updateStats();
           } else {
+            // Check late restriction (e.g. "ARRIVE BEFORE 3PM" tickets scanned after cutoff)
+            const lateBlock = checkLateRestriction(mecGuest.ticketName, mecGuest._eventId);
+            if (lateBlock) {
+              // Warn but still admit — door staff decides whether to collect upgrade
+              const upgradeMsg = lateBlock.upgradePrice
+                ? `${lateBlock.upgradePrice} upgrade required`
+                : 'upgrade required';
+              vibrate([200, 80, 200]);
+              setResult('warn','⚠️', mecGuest.name,
+                `Early entry ticket — valid before ${lateBlock.validBefore}. ${upgradeMsg} for late entry.`);
+              showChips([
+                { label: mecGuest.ticketName, cls:'' },
+                { label: `Valid before ${lateBlock.validBefore}`, cls:'hi' },
+                { label: lateBlock.upgradePrice ? `Upgrade: ${lateBlock.upgradePrice}` : 'Upgrade required', cls:'hi' }
+              ]);
+              // Still write check-in — door staff makes the call
+              await mecWriteCheckin(code, mecGuest);
+              addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} — LATE (past ${lateBlock.validBefore})`, status:'warn', code });
+              stats.admitted++; stats.total++;
+              updateStats();
+            } else {
             // Valid MEC ticket — write check-in and get ticket info back
             await mecWriteCheckin(code, mecGuest);
             addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} (${code})`, status:'ok', code });
@@ -3137,7 +3158,8 @@ async function lookupTicket(code) {
     console.log('SCAN RESULT: name=', mecGuest.name, 'checkinName=', checkinName);
             showEnt(mecGuest);
             updateStats();
-          }
+          } // end lateBlock else
+          } // end timeBlock else
         }
         isScanning = false;
         return;
@@ -3246,8 +3268,49 @@ function checkTimeRestriction(ticketName, mecStartTime, eventId) {
   return null;
 }
 
-// ═══════════════════════════════════════════
-//  MEC UTILITY API
+// Check if a ticket has a "valid before X" restriction and we're past it
+// Returns { validBefore, currentTime, upgradePrice } if past cutoff, null if ok
+function checkLateRestriction(ticketName, eventId) {
+  // Check cfg.entry_labels first (white-label config)
+  if (cfg.entry_labels && Array.isArray(cfg.entry_labels)) {
+    const tn = (ticketName || '').toUpperCase();
+    const rule = cfg.entry_labels.find(r => r.valid_before && tn.includes((r.match || '').toUpperCase()));
+    if (rule) {
+      const parts = rule.valid_before.split(':');
+      const cutoffMins = parseInt(parts[0]) * 60 + parseInt(parts[1] || 0);
+      const now = new Date();
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      if (nowMins >= cutoffMins) {
+        return {
+          validBefore: rule.valid_before,
+          currentTime: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+          upgradePrice: rule.upgrade_price || null
+        };
+      }
+      return null;
+    }
+  }
+  // Fallback: keyword detection for "ARRIVE BEFORE Xpm/Xam" or "BEFORE 3PM" etc
+  const tn = (ticketName || '').toUpperCase();
+  const match = tn.match(/BEFORE\s+(\d+)(?::(\d+))?\s*(AM|PM)?/);
+  if (match) {
+    let h = parseInt(match[1]);
+    const m = parseInt(match[2] || 0);
+    if (match[3] === 'PM' && h !== 12) h += 12;
+    if (match[3] === 'AM' && h === 12) h = 0;
+    const cutoffMins = h * 60 + m;
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    if (nowMins >= cutoffMins) {
+      return {
+        validBefore: `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`,
+        currentTime: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+        upgradePrice: '£10'
+      };
+    }
+  }
+  return null;
+}
 //  QR URL format:
 //  https://site.com/?invoiceID=30554&checkIn=email@x.com&place=12&Hash=abc123
 // ═══════════════════════════════════════════
@@ -3603,7 +3666,12 @@ function showEnt(g) {
     iconEl.innerHTML = '👷';
     el.querySelector('.eb-title').textContent = 'Staff — Admit:';
     items.innerHTML = '';
-  } else if (isSeated) {
+  } else if (/before\s+\d/i.test(ticketStr)) {
+    el.className = 'ent-banner std';
+    el.style.borderColor = 'var(--border)';
+    iconEl.innerHTML = '🌅';
+    el.querySelector('.eb-title').textContent = 'Early Entry — Admit:';
+    items.innerHTML = '';
     el.className = 'ent-banner std';
     el.style.borderColor = 'var(--border)';
     iconEl.innerHTML = '🪑';
