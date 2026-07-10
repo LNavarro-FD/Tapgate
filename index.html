@@ -1255,6 +1255,7 @@ async function fetchMecAttendees(events) {
               eventDay:        detectDay(ev.title || ''),
               orderDate:       ev.mec_data ? ev.mec_data.start_date : null,
               _mecTicket:      true,
+              _mecTicketId:    ticketId,
               _bookingId:      String(a.booking_id),
               _attendeeKey:    String(a.attendee_key),
               _invoiceID:      String(a.invoice_id || a.booking_id),
@@ -1312,6 +1313,7 @@ async function fetchMecAttendees(events) {
               eventDay:        detectDay(ev.title || ''),
               orderDate:       ev.mec_data ? ev.mec_data.start_date : null,
               _mecTicket:      true,
+              _mecTicketId:    ticketId,
               _bookingId:      String(a.booking_id),
               _attendeeKey:    String(a.attendee_key),
               _invoiceID:      String(a.invoice_id || a.booking_id),
@@ -1356,10 +1358,11 @@ async function fetchMecAttendees(events) {
     bookingMap[bid].tickets.push({
       key:          `${bid}-${g._attendeeKey}`,
       attendeeKey:  g._attendeeKey,
-      name:         g.name !== bookingMap[bid].name ? g.name : g.name, // keep individual name
+      name:         g.name !== bookingMap[bid].name ? g.name : g.name,
       ticketName:   g.ticketName,
       isVip:        g.isVip,
-      checkedIn:    g.checkedIn
+      checkedIn:    g.checkedIn,
+      _mecTicketId: g._mecTicketId || null
     });
   });
 
@@ -1391,7 +1394,20 @@ async function loadGuestList() {
       renderGuestList(); updateGLStats(); updateStats();
       console.log('Restored from sessionStorage — age:', Math.round(age/1000) + 's, bookings:', Object.keys(bookingMap).length);
       // Still run sheet loading + ticket map in background
-      fetchUpcomingEvents().then(() => Promise.all([loadSheetData(), fetchMecTicketMap()])).catch(() => {});
+      fetchUpcomingEvents().then(() => Promise.all([loadSheetData(), fetchMecTicketMap().then(() => {
+        // Backfill ticket names in restored bookingMap using _mecTicketId
+        let changed = false;
+        Object.values(bookingMap).forEach(b => {
+          (b.tickets || []).forEach(t => {
+            if ((!t.ticketName || t.ticketName === 'MEC Ticket') && t._mecTicketId) {
+              const resolved = window.mecTicketMap[String(t._mecTicketId)];
+              if (resolved) { t.ticketName = resolved; t.isVip = /vip/i.test(resolved); changed = true; }
+            }
+          });
+        });
+        if (changed) { console.log('mecTicketMap backfill applied'); renderGuestList(); }
+        else { console.log('mecTicketMap loaded (no backfill needed or _mecTicketId not yet in cache — clear session to update'); }
+      })])).catch(() => {});
       return;
     }
   } catch(e) { console.warn('sessionStorage restore failed:', e.message); }
