@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.0';
+const APP_VERSION = '2.4.1';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1292,18 +1292,13 @@ window.mecAttendeeTicketMap = {}; // "booking_id:attendee_key" → ticket_id
 async function fetchMecTicketMap() {
   if (!window.activeEvent || !window.activeEvent.mec_id) return;
   try {
-    const r = await fetch(`${cfg.u}/wp-json/mec-utility/v1/events/${window.activeEvent.mec_id}`, { cache: 'no-store' });
+    // Only fetch ticket type names — NOT attendees (that's bulk2's job)
+    const r = await fetch(`${cfg.u}/wp-json/mec-utility/v1/events/${window.activeEvent.mec_id}`);
     if (!r.ok) { console.warn('mecTicketMap fetch failed:', r.status); return; }
     const data = await r.json();
-    // Build ticket_id → name map
     const tickets = data.tickets || [];
     tickets.forEach(t => { window.mecTicketMap[String(t.id)] = t.name; });
-    // Build booking+attendee → ticket_id map from attendee list
-    const attendees = (data.occurrences || []).flatMap(o => (o.attendees?.attendees || []));
-    attendees.forEach(a => {
-      if (a.ticket_id) window.mecAttendeeTicketMap[`${a.booking_id}:${a.attendee_key}`] = String(a.ticket_id);
-    });
-    console.log('mecTicketMap loaded:', Object.keys(window.mecTicketMap).length, 'tickets,', Object.keys(window.mecAttendeeTicketMap).length, 'attendee mappings');
+    console.log('mecTicketMap loaded:', Object.keys(window.mecTicketMap).length, 'ticket types');
   } catch(e) { console.warn('mecTicketMap fetch error:', e.message); }
 }
 
