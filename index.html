@@ -572,6 +572,92 @@ input::placeholder { color: #999; }
     } catch(e) { console.warn('Firebase sheet write failed:', e.message); }
   };
 
+  // Write MEC attendee checkin to Firebase (for cross-device sync)
+  window.fbWriteMECCheckin = async function(bookingId, attendeeKey, checkedIn) {
+    try {
+      const key = String(bookingId) + '_' + String(attendeeKey);
+      await fbSet('mecCheckins/' + key, {
+        bookingId: String(bookingId),
+        attendeeKey: String(attendeeKey),
+        checkedIn: !!checkedIn,
+        ts: Date.now()
+      });
+    } catch(e) { console.warn('Firebase MEC checkin write failed:', e.message); }
+  };
+
+  // Load mecCheckins on start and apply to bookingMap
+  window._mecCheckins = {};
+  window._mecCheckinsLastPoll = 0;
+
+  window.fbLoadMECCheckins = async function() {
+    try {
+      const data = await fbGet('mecCheckins');
+      window._mecCheckins = data || {};
+      console.log('MEC Firebase checkins loaded:', Object.keys(window._mecCheckins).length);
+      fbApplyMECCheckins();
+    } catch(e) { window._mecCheckins = {}; }
+  };
+
+  // Apply Firebase MEC checkins to bookingMap
+  window.fbApplyMECCheckins = function() {
+    if (!window.bookingMap || !window._mecCheckins) return;
+    let changed = false;
+    Object.values(window._mecCheckins).forEach(function(c) {
+      const bid = String(c.bookingId);
+      const b = window.bookingMap[bid];
+      if (!b) return;
+      const t = b.tickets.find(function(t) { return String(t.attendeeKey) === String(c.attendeeKey); });
+      if (!t) return;
+      if (!!t.checkedIn !== !!c.checkedIn) {
+        t.checkedIn = !!c.checkedIn;
+        changed = true;
+      }
+    });
+    if (changed) {
+      if (typeof renderGuestList === 'function') renderGuestList();
+      if (typeof updateGLStats === 'function') updateGLStats();
+      if (typeof updateStats === 'function') updateStats();
+    }
+  };
+
+  // Poll Firebase every 10 seconds for new MEC checkins
+  window._fbPollInterval = null;
+  window.fbStartMECPoll = function() {
+    if (window._fbPollInterval) return; // already polling
+    window._fbPollInterval = setInterval(async function() {
+      try {
+        const data = await fbGet('mecCheckins');
+        if (!data) return;
+        let changed = false;
+        Object.entries(data).forEach(function(entry) {
+          const key = entry[0]; const c = entry[1];
+          const existing = window._mecCheckins[key];
+          if (!existing || existing.ts !== c.ts) {
+            window._mecCheckins[key] = c;
+            // Apply this specific change
+            if (window.bookingMap) {
+              const b = window.bookingMap[String(c.bookingId)];
+              if (b) {
+                const t = b.tickets.find(function(t) { return String(t.attendeeKey) === String(c.attendeeKey); });
+                if (t && !!t.checkedIn !== !!c.checkedIn) {
+                  t.checkedIn = !!c.checkedIn;
+                  changed = true;
+                }
+              }
+            }
+          }
+        });
+        if (changed) {
+          if (typeof renderGuestList === 'function') renderGuestList();
+          if (typeof updateGLStats === 'function') updateGLStats();
+          if (typeof updateStats === 'function') updateStats();
+          console.log('Firebase MEC sync: applied updates');
+        }
+      } catch(e) { console.warn('Firebase MEC poll failed:', e.message); }
+    }, 10000);
+    console.log('Firebase MEC poll started (10s interval)');
+  };
+
   // Load sheet checkins on start
   document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -984,6 +1070,8 @@ const APP_VERSION = '2.3.9';
 let cfg      = { siteUrl:'', wcKey:'', wcSecret:'', mecKey:'', demo:false };
 let guestMap   = {};  // orderNumber/mec-key → guest (individual)
 let bookingMap = {};  // bookingId → { name, email, tickets:[], source }
+// Expose on window for Firebase cross-device sync
+Object.defineProperty(window, 'bookingMap', { get: function() { return bookingMap; }, set: function(v) { bookingMap = v; } });
 let invoiceMap = {};  // invoiceId → booking (for QR lookup)
 let emailMap   = {};  // email lower → guest
 let idMap      = {};  // wc order id → guest
@@ -1402,6 +1490,8 @@ async function loadGuestList() {
         if (changed) { console.log('mecTicketMap backfill applied'); renderGuestList(); }
         else { console.log('mecTicketMap loaded (no backfill needed or _mecTicketId not yet in cache — clear session to update'); }
       })])).catch(() => {});
+      // Load Firebase MEC checkins and start poll for cross-device sync
+      if (window.fbLoadMECCheckins) window.fbLoadMECCheckins().then(function() { if (window.fbStartMECPoll) window.fbStartMECPoll(); });
       return;
     }
   } catch(e) { console.warn('sessionStorage restore failed:', e.message); }
@@ -1664,6 +1754,8 @@ async function loadGuestList() {
       try { try { localStorage.setItem('tg_bookingmap', JSON.stringify(bookingMap)); localStorage.setItem('tg_bookingmap_ts', String(Date.now())); } catch(e) { console.warn('bookingMap too large for localStorage:', e.message); } } catch(e) {}
       // Save active event for stats page
       if (window.activeEvent) try { localStorage.setItem('tg_event', JSON.stringify(window.activeEvent)); } catch(e) {}
+      // Load Firebase MEC checkins and start cross-device sync poll
+      if (window.fbLoadMECCheckins) window.fbLoadMECCheckins().then(function() { if (window.fbStartMECPoll) window.fbStartMECPoll(); });
     }
 
     // Load real check-in state from our database proxy
@@ -2067,6 +2159,8 @@ function admitSpecific(bookingId, attendeeKey) {
     fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
       method: 'POST'
     }).catch(e => console.warn('MEC checkin failed:', e));
+    // Write to Firebase for cross-device sync
+    if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(b.bookingId, attendeeKey, true);
   } else {
     const wcGuest = guestMap[`wc-${b.invoiceID}`];
     if (wcGuest) { wcGuest.checkedInTickets.push(ticket.key); writeCheckIn(wcGuest.id, ticket.key, wcGuest.checkedInTickets); }
@@ -2100,20 +2194,12 @@ function undoSpecific(bookingId, attendeeKey) {
   // Write back to source
   if (b.source === 'mec') {
     const invoiceId = b.mecInvoiceID || b.invoiceID;
-    // Try DELETE on the checkin proxy to un-check in MEC
+    // DELETE on the checkin proxy to un-check in MEC
     fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
       method: 'DELETE'
-    }).then(r => {
-      if (!r.ok) console.warn('MEC undo via DELETE failed:', r.status, '— trying uncheckin endpoint');
-      // Also try /uncheckin endpoint as fallback
-      return fetch(`${cfg.u}/wp-json/fd2/v1/uncheckin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
-        method: 'POST'
-      });
     }).catch(e => console.warn('MEC undo failed:', e.message));
-    // Write undo to Firebase so all devices sync
-    if (window.fbSet) {
-      window.fbSet(`undos/${invoiceId}_${attendeeKey}`, { undone: true, ts: Date.now() });
-    }
+    // Write undo to Firebase for cross-device sync
+    if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(b.bookingId, attendeeKey, false);
   } else {
     const wcGuest = guestMap[`wc-${b.invoiceID}`];
     if (wcGuest) {
@@ -2145,9 +2231,7 @@ function undoAllBooking(bookingId) {
       fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(t.attendeeKey)}`, {
         method: 'DELETE'
       }).catch(e => console.warn('MEC undo failed:', e.message));
-      if (window.fbSet) {
-        window.fbSet(`undos/${invoiceId}_${t.attendeeKey}`, { undone: true, ts: Date.now() });
-      }
+      if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(b.bookingId, t.attendeeKey, false);
     });
   } else {
     const wcGuest = guestMap[`wc-${b.invoiceID}`];
@@ -2176,6 +2260,7 @@ function admitAllBooking(bookingId) {
     if (b.source === 'mec') {
       fetch(`${cfg.u}/wp-json/mec-utility/v1/attendees/${b.bookingId}/${t.attendeeKey}/checkin`,
         { method:'POST', headers:{'X-MEC-KEY':cfg.m} }).catch(e => console.warn('MEC checkin:',e));
+      if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(b.bookingId, t.attendeeKey, true);
     } else {
       const wcGuest = guestMap[`wc-${b.invoiceID}`];
       if (wcGuest) { wcGuest.checkedInTickets.push(t.key); wcGuest.checkedIn = wcGuest.checkedInTickets.length >= wcGuest.qty; writeCheckIn(wcGuest.id, t.key, wcGuest.checkedInTickets); }
