@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.9';
+const APP_VERSION = '2.4.9-diag';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3103,7 +3103,8 @@ async function lookupTicket(code) {
             const detail = [
               mecGuest.isVip ? '⭐ VIP' : null,
               mecGuest.ticketName && mecGuest.ticketName !== 'MEC Ticket' ? mecGuest.ticketName : null,
-              now
+              now,
+              window._lastScanDebug || null
             ].filter(Boolean).join('  ·  ');
             setResult('ok','✓', mecGuest.name, detail, true);
             showEnt(mecGuest);
@@ -3376,6 +3377,8 @@ async function mecLookupAndCheckin(code) {
   const checkedIn = !!(bookingMapTicket?.checkedIn);
 
   console.log(`mecLookupAndCheckin (bulk2 mode): invoice=${invoiceID} place=${place} name=${name}`);
+  // DEBUG — show invoice/place in scan detail so visible on phone (remove after diagnosis)
+  window._lastScanDebug = `inv:${invoiceID} pl:${place} bm:${bookingMapEntry?'✓':'✗'}`;
 
   return {
     id: invoiceID,
