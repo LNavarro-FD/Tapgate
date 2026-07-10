@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.8';
+const APP_VERSION = '2.4.9';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3067,8 +3067,7 @@ async function lookupTicket(code) {
               isScanning = false;
             } else {
             // Valid MEC ticket — update UI immediately, write to server in background
-            const invId   = mecGuest._invoiceID || mecGuest.orderNumber;
-            const placeNo = mecGuest._place;
+            // invId and placeNo already declared in enrichment block above
 
             // 1. Update local state instantly — reuse booking from enrichment block above
             // booking is already resolved above; re-lookup only if needed
