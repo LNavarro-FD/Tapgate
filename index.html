@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.4';
+const APP_VERSION = '2.4.5';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3061,6 +3061,7 @@ async function lookupTicket(code) {
             addLog({ name:mecGuest.name, ticket:`Too early — valid from ${timeBlock.validFrom}`, status:'err', code });
             stats.invalid++; stats.total++;
             updateStats();
+            isScanning = false;
           } else {
             // Check late restriction (e.g. "ARRIVE BEFORE 3PM" tickets scanned after cutoff)
             const lateBlock = checkLateRestriction(mecGuest.ticketName, mecGuest._eventId);
@@ -3082,6 +3083,10 @@ async function lookupTicket(code) {
               addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} — LATE (past ${lateBlock.validBefore})`, status:'warn', code });
               stats.admitted++; stats.total++;
               updateStats();
+              // Write to Firebase for cross-device sync
+              if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(mecGuest._bookingId || mecGuest.orderNumber, mecGuest._place || mecGuest._attendeeKey, true);
+              showEnt(mecGuest);
+              isScanning = false;
             } else {
             // Valid MEC ticket — write check-in and get ticket info back
             await mecWriteCheckin(code, mecGuest);
