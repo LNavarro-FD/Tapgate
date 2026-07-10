@@ -1208,7 +1208,8 @@ async function fetchUpcomingEvents() {
 }
 
 // Ticket ID → ticket name lookup, built from MEC Utility event endpoint
-window.mecTicketMap = {};
+window.mecTicketMap = {};       // ticket_id → ticket_name
+window.mecAttendeeTicketMap = {}; // "booking_id:attendee_key" → ticket_id
 
 async function fetchMecTicketMap() {
   if (!window.activeEvent || !window.activeEvent.mec_id) return;
@@ -1216,9 +1217,15 @@ async function fetchMecTicketMap() {
     const r = await fetch(`${cfg.u}/wp-json/mec-utility/v1/events/${window.activeEvent.mec_id}`, { cache: 'no-store' });
     if (!r.ok) { console.warn('mecTicketMap fetch failed:', r.status); return; }
     const data = await r.json();
+    // Build ticket_id → name map
     const tickets = data.tickets || [];
     tickets.forEach(t => { window.mecTicketMap[String(t.id)] = t.name; });
-    console.log('mecTicketMap loaded:', Object.keys(window.mecTicketMap).length, 'tickets');
+    // Build booking+attendee → ticket_id map from attendee list
+    const attendees = (data.occurrences || []).flatMap(o => (o.attendees?.attendees || []));
+    attendees.forEach(a => {
+      if (a.ticket_id) window.mecAttendeeTicketMap[`${a.booking_id}:${a.attendee_key}`] = String(a.ticket_id);
+    });
+    console.log('mecTicketMap loaded:', Object.keys(window.mecTicketMap).length, 'tickets,', Object.keys(window.mecAttendeeTicketMap).length, 'attendee mappings');
   } catch(e) { console.warn('mecTicketMap fetch error:', e.message); }
 }
 
@@ -1584,7 +1591,8 @@ async function loadGuestList() {
         }
         const leadName = data.attendees[0]?.name || '';
         const eventDay = detectDay('', data.eventId);
-        const firstTicketId = String(data.attendees[0]?.ticket_id || '');
+        const firstAttendeeKey = data.attendees[0]?.attendee_key || '1';
+        const firstTicketId = window.mecAttendeeTicketMap[`${bid}:${firstAttendeeKey}`] || String(data.attendees[0]?.ticket_id || '');
         const firstTicketName = window.mecTicketMap[firstTicketId] || data.attendees[0]?.ticket_name || 'MEC Ticket';
         const isVipBooking = /vip/i.test(firstTicketName);
         bookingMap[bid] = {
@@ -1598,7 +1606,7 @@ async function loadGuestList() {
         invoiceMap[data.inv] = bookingMap[bid];
         if (data.mecInv && data.mecInv !== data.inv) invoiceMap[data.mecInv] = bookingMap[bid];
         data.attendees.forEach((a, idx) => {
-          const aTicketId = String(a.ticket_id || '');
+          const aTicketId = window.mecAttendeeTicketMap[`${bid}:${a.attendee_key || idx+1}`] || String(a.ticket_id || '');
           const ticketName = window.mecTicketMap[aTicketId] || a.ticket_name || firstTicketName;
           const isVip = /vip/i.test(ticketName);
           bookingMap[bid].tickets.push({
