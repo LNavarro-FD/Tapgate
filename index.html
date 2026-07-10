@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.1';
+const APP_VERSION = '2.5.2';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3305,14 +3305,17 @@ function parseMecQrUrl(code) {
 }
 
 async function resolveShortUrl(shortUrl) {
-  // Check cache first — resolved URLs don't change
-  if (!window._shortUrlCache) window._shortUrlCache = {};
+  // Load cache from localStorage on first use — persists across sessions
+  if (!window._shortUrlCache) {
+    try { window._shortUrlCache = JSON.parse(localStorage.getItem('tg_short_url_cache') || '{}'); }
+    catch(e) { window._shortUrlCache = {}; }
+  }
   if (window._shortUrlCache[shortUrl]) {
     console.log('Short URL resolved from cache:', window._shortUrlCache[shortUrl].invoiceID);
     return window._shortUrlCache[shortUrl];
   }
   try {
-    // Fast resolver endpoint only — HEAD redirect removed (too slow, unreliable)
+    // Fast resolver endpoint — server follows redirect internally (~0.5s)
     const slug = shortUrl.split('/invoice/')[1];
     if (slug && cfg.u) {
       const res = await fetch(`${cfg.u}/wp-json/fd2/v1/resolve?slug=${encodeURIComponent(slug)}`);
@@ -3322,6 +3325,8 @@ async function resolveShortUrl(shortUrl) {
           console.log('Short URL resolved:', data.mec_invoice_id, 'place:', data.place || '1');
           const result = { invoiceID: data.mec_invoice_id, place: data.place || '1', hash: null, email: null, shortUrl: null };
           window._shortUrlCache[shortUrl] = result;
+          // Persist to localStorage — next session instant for same ticket
+          try { localStorage.setItem('tg_short_url_cache', JSON.stringify(window._shortUrlCache)); } catch(e) {}
           return result;
         }
       }
