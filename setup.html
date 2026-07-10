@@ -5,411 +5,563 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tapgate Setup Wizard</title>
 <style>
-  :root {
-    --navy: #22224C;
-    --pink: #FF4B7B;
-    --ok: #00A85A;
-    --warn: #E07800;
-    --err: #CC2200;
-    --border: #E0E0E0;
-    --muted: #888;
-    --bg: #F5F5F8;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--navy); min-height: 100vh; }
+:root {
+  --navy:#22224C; --pink:#FF4B7B; --ok:#00A85A; --warn:#E07800;
+  --err:#CC2200; --border:#E0E0E0; --muted:#888; --bg:#F5F5F8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--navy);min-height:100vh;}
 
-  header {
-    background: var(--navy); color: #fff; padding: 16px 20px;
-    border-bottom: 3px solid var(--pink);
-    display: flex; align-items: center; gap: 12px;
-  }
-  header h1 { font-size: 18px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-  header span { font-size: 11px; opacity: .5; }
+header{background:var(--navy);color:#fff;padding:14px 20px;border-bottom:3px solid var(--pink);}
+header h1{font-size:17px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--pink);}
+header p{font-size:11px;opacity:.5;margin-top:3px;}
 
-  .wizard { max-width: 620px; margin: 0 auto; padding: 24px 16px 80px; }
+.wizard{max-width:640px;margin:0 auto;padding:20px 16px 100px;}
 
-  .step {
-    background: #fff; border-radius: 14px; margin-bottom: 16px;
-    border: 1px solid var(--border); overflow: hidden;
-  }
-  .step-head {
-    padding: 14px 18px; display: flex; align-items: center; gap: 12px;
-    cursor: pointer; user-select: none;
-  }
-  .step-num {
-    width: 28px; height: 28px; border-radius: 50%;
-    background: var(--navy); color: #fff;
-    font-size: 12px; font-weight: 900; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .step-num.done { background: var(--ok); }
-  .step-title { font-size: 14px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; flex: 1; }
-  .step-chevron { font-size: 12px; color: var(--muted); transition: transform .2s; }
-  .step-chevron.open { transform: rotate(180deg); }
-  .step-body { padding: 0 18px 18px; display: none; }
-  .step-body.open { display: block; }
+/* Steps */
+.step{background:#fff;border-radius:14px;margin-bottom:14px;border:1px solid var(--border);overflow:hidden;}
+.step-head{padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.step-num.done{background:var(--ok);}
+.step-title{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;flex:1;}
+.step-chev{font-size:11px;color:var(--muted);transition:transform .2s;}
+.step-chev.open{transform:rotate(180deg);}
+.step-body{padding:0 18px 20px;display:none;}
+.step-body.open{display:block;}
 
-  label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; margin-top: 14px; }
-  input[type=text], input[type=url], input[type=number], input[type=time], select {
-    width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
-    border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--navy);
-    background: #fff; outline: none;
-  }
-  input:focus, select:focus { border-color: var(--pink); }
-  .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+/* Form */
+label{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 5px;}
+input[type=text],input[type=url],input[type=time],select,textarea{
+  width:100%;padding:10px 12px;border:1.5px solid var(--border);
+  border-radius:8px;font-size:13px;font-family:inherit;color:var(--navy);
+  background:#fff;outline:none;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--pink);}
+.hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* Tab cards */
+.tab-card{border:1.5px solid var(--border);border-radius:10px;margin-top:10px;overflow:hidden;}
+.tab-card-head{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F8F8FB;cursor:pointer;}
+.tab-card-head input[type=checkbox]{width:16px;height:16px;cursor:pointer;flex-shrink:0;}
+.tab-card-title{font-size:13px;font-weight:700;flex:1;}
+.tab-card-key{font-size:10px;color:var(--muted);font-family:monospace;}
+.tab-card-body{padding:12px 14px;border-top:1px solid var(--border);display:none;}
+.tab-card-body.open{display:block;}
+.col-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+.col-row{display:flex;align-items:center;gap:8px;}
+.col-row input{flex:1;}
+.col-key{font-size:10px;color:var(--muted);font-family:monospace;min-width:120px;}
 
-  .event-card {
-    border: 1.5px solid var(--border); border-radius: 10px;
-    padding: 12px; margin-top: 10px; position: relative;
-  }
-  .event-card .remove-btn {
-    position: absolute; top: 10px; right: 10px;
-    background: none; border: none; color: var(--err); font-size: 16px; cursor: pointer;
-  }
+/* Event / ticket cards */
+.item-card{border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:10px;position:relative;}
+.item-card .rm{position:absolute;top:10px;right:10px;background:none;border:none;color:var(--err);font-size:15px;cursor:pointer;}
 
-  .ticket-card {
-    border: 1.5px solid var(--border); border-radius: 10px;
-    padding: 12px; margin-top: 10px; position: relative; background: #FAFAFA;
-  }
-  .ticket-card .remove-btn {
-    position: absolute; top: 10px; right: 10px;
-    background: none; border: none; color: var(--err); font-size: 16px; cursor: pointer;
-  }
-  .ticket-time-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+/* Buttons */
+.add-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:none;border:1.5px dashed var(--border);border-radius:8px;padding:10px;font-size:13px;font-weight:700;color:var(--pink);cursor:pointer;margin-top:10px;width:100%;font-family:inherit;}
+.add-btn:hover{border-color:var(--pink);background:#FFF0F4;}
+.btn{background:var(--pink);color:#fff;border:none;border-radius:10px;padding:13px 20px;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:.05em;text-transform:uppercase;width:100%;margin-top:8px;}
+.btn:hover{opacity:.9;}
+.btn.sec{background:#fff;color:var(--navy);border:2px solid var(--navy);}
+.btn.ok{background:var(--ok);}
+.btn.sm{padding:8px 14px;font-size:12px;border-radius:8px;width:auto;}
 
-  .add-btn {
-    display: flex; align-items: center; gap: 6px;
-    background: none; border: 1.5px dashed var(--border);
-    border-radius: 8px; padding: 10px 14px; font-size: 13px;
-    font-weight: 700; color: var(--pink); cursor: pointer; margin-top: 10px;
-    width: 100%; justify-content: center; font-family: inherit;
-  }
-  .add-btn:hover { border-color: var(--pink); background: #FFF0F4; }
+/* Icon picker */
+.icon-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.ic{width:34px;height:34px;border:2px solid var(--border);border-radius:7px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#fff;}
+.ic.on{border-color:var(--pink);background:#FFF0F4;}
 
-  .btn {
-    background: var(--pink); color: #fff; border: none;
-    border-radius: 10px; padding: 14px 24px; font-size: 15px;
-    font-weight: 900; cursor: pointer; font-family: inherit;
-    letter-spacing: .05em; text-transform: uppercase; width: 100%; margin-top: 6px;
-  }
-  .btn:hover { opacity: .9; }
-  .btn.secondary { background: #fff; color: var(--navy); border: 2px solid var(--navy); }
+/* Colour swatches */
+.sw-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.sw{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;}
+.sw.on{border-color:var(--navy);}
 
-  /* Output section */
-  #output-section { display: none; }
-  #output-section.show { display: block; }
-
-  .output-card {
-    background: #fff; border-radius: 14px; border: 1px solid var(--border);
-    padding: 20px; margin-bottom: 16px;
-  }
-  .output-card h3 { font-size: 13px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; color: var(--navy); }
-
-  #qr-canvas { display: block; margin: 0 auto; border-radius: 8px; }
-
-  .login-url {
-    background: #F5F5F8; border-radius: 8px; padding: 10px 12px;
-    font-size: 11px; font-family: monospace; word-break: break-all;
-    color: var(--navy); margin-top: 8px; cursor: pointer;
-  }
-  .login-url:hover { background: #EEE; }
-
-  .json-preview {
-    background: #1a1a2e; color: #A8FF78; border-radius: 8px;
-    padding: 12px; font-size: 11px; font-family: monospace;
-    overflow-x: auto; white-space: pre; margin-top: 8px;
-  }
-
-  .copy-btn {
-    background: var(--navy); color: #fff; border: none;
-    border-radius: 8px; padding: 8px 16px; font-size: 12px;
-    font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 8px;
-  }
-
-  .icon-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-  .icon-opt {
-    width: 36px; height: 36px; border: 2px solid var(--border);
-    border-radius: 8px; font-size: 18px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    background: #fff;
-  }
-  .icon-opt.selected { border-color: var(--pink); background: #FFF0F4; }
-
-  .color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-  .color-swatch {
-    width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
-    border: 2px solid transparent;
-  }
-  .color-swatch.selected { border-color: var(--navy); }
+/* Output */
+#out{display:none;}
+#out.show{display:block;}
+.out-card{background:#fff;border-radius:14px;border:1px solid var(--border);padding:20px;margin-bottom:14px;}
+.out-card h3{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;}
+#qr-canvas{display:block;margin:0 auto;border-radius:8px;}
+.url-box{background:#F5F5F8;border-radius:8px;padding:10px 12px;font-size:11px;font-family:monospace;word-break:break-all;color:var(--navy);margin-top:8px;cursor:pointer;}
+.json-box{background:#1a1a2e;color:#A8FF78;border-radius:8px;padding:12px;font-size:10px;font-family:monospace;overflow-x:auto;white-space:pre;margin-top:8px;max-height:200px;overflow-y:auto;}
 </style>
 </head>
 <body>
 
 <header>
-  <div>
-    <h1>Tapgate Setup Wizard</h1>
-    <span>v1.0.0 — generates QR config for scanner</span>
-  </div>
+  <h1>Tapgate Setup Wizard</h1>
+  <p>v1.1.0 — generates QR config + Google Sheet template</p>
 </header>
 
 <div class="wizard">
 
-  <!-- STEP 1: Client -->
-  <div class="step" id="step-1">
-    <div class="step-head" onclick="toggleStep(1)">
-      <div class="step-num" id="num-1">1</div>
-      <div class="step-title">Client & Credentials</div>
-      <div class="step-chevron open" id="chev-1">▼</div>
-    </div>
-    <div class="step-body open" id="body-1">
-      <label>Client / Company Name</label>
-      <input type="text" id="client-name" placeholder="e.g. Funky Dory Love Ltd">
-
-      <label>WordPress Site URL</label>
-      <input type="url" id="site-url" placeholder="https://yoursite.co.uk">
-      <div class="hint">No trailing slash</div>
-
-      <label>WooCommerce Consumer Key</label>
-      <input type="text" id="wc-key" placeholder="ck_...">
-
-      <label>WooCommerce Consumer Secret</label>
-      <input type="text" id="wc-secret" placeholder="cs_...">
-
-      <label>MEC API Key (optional)</label>
-      <input type="text" id="mec-key" placeholder="Leave blank if not using MEC Utility">
-
-      <label>Google Sheet ID (optional)</label>
-      <input type="text" id="sheet-id" placeholder="Sheet ID from URL — for guest list">
-    </div>
+<!-- ── STEP 1: Credentials ── -->
+<div class="step" id="s1">
+  <div class="step-head" onclick="tog(1)">
+    <div class="step-num" id="n1">1</div>
+    <div class="step-title">Client & Credentials</div>
+    <div class="step-chev open" id="c1">▼</div>
   </div>
+  <div class="step-body open" id="b1">
+    <label>Client / Company Name</label>
+    <input type="text" id="client-name" placeholder="e.g. Funky Dory Love Ltd">
 
-  <!-- STEP 2: Events -->
-  <div class="step" id="step-2">
-    <div class="step-head" onclick="toggleStep(2)">
-      <div class="step-num" id="num-2">2</div>
-      <div class="step-title">Events</div>
-      <div class="step-chevron" id="chev-2">▼</div>
-    </div>
-    <div class="step-body" id="body-2">
-      <div id="events-list"></div>
-      <button class="add-btn" onclick="addEvent()">+ Add Event</button>
-    </div>
-  </div>
+    <label>WordPress Site URL</label>
+    <input type="url" id="site-url" placeholder="https://yoursite.co.uk">
+    <div class="hint">No trailing slash</div>
 
-  <!-- STEP 3: Ticket Rules -->
-  <div class="step" id="step-3">
-    <div class="step-head" onclick="toggleStep(3)">
-      <div class="step-num" id="num-3">3</div>
-      <div class="step-title">Ticket Types & Rules</div>
-      <div class="step-chevron" id="chev-3">▼</div>
-    </div>
-    <div class="step-body" id="body-3">
-      <div class="hint" style="margin-top:0;margin-bottom:10px;">
-        Define how ticket names appear on the scanner and any time restrictions.
-        The scanner matches ticket names that <strong>contain</strong> your keyword (case-insensitive).
+    <div class="row2">
+      <div>
+        <label>WooCommerce Key</label>
+        <input type="text" id="wc-key" placeholder="ck_...">
       </div>
-      <div id="tickets-list"></div>
-      <button class="add-btn" onclick="addTicketRule()">+ Add Ticket Rule</button>
-    </div>
-  </div>
-
-  <!-- STEP 4: Generate -->
-  <div class="step" id="step-4">
-    <div class="step-head" onclick="toggleStep(4)">
-      <div class="step-num" id="num-4">4</div>
-      <div class="step-title">Generate</div>
-      <div class="step-chevron" id="chev-4">▼</div>
-    </div>
-    <div class="step-body" id="body-4">
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
-        Review your config, then generate the QR code to give to door staff.
-      </p>
-      <button class="btn" onclick="generate()">Generate QR Code</button>
-    </div>
-  </div>
-
-  <!-- OUTPUT -->
-  <div id="output-section">
-    <div class="output-card">
-      <h3>QR Code — scan to log in</h3>
-      <canvas id="qr-canvas" width="240" height="240"></canvas>
-      <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">
-        Screenshot or print this. Scan with Tapgate scanner to configure.
-      </p>
-    </div>
-
-    <div class="output-card">
-      <h3>Login URL</h3>
-      <div class="login-url" id="login-url" onclick="copyUrl()">
-        Tap to copy
+      <div>
+        <label>WooCommerce Secret</label>
+        <input type="text" id="wc-secret" placeholder="cs_...">
       </div>
-      <button class="copy-btn" onclick="copyUrl()">Copy URL</button>
     </div>
 
-    <div class="output-card">
-      <h3>Config JSON (reference)</h3>
-      <div class="json-preview" id="json-preview"></div>
-    </div>
-
-    <button class="btn secondary" onclick="document.getElementById('output-section').classList.remove('show')">← Edit Config</button>
+    <label>MEC API Key <span style="font-weight:400;text-transform:none">(optional)</span></label>
+    <input type="text" id="mec-key" placeholder="Leave blank if not using MEC Utility">
   </div>
-
 </div>
 
-<!-- QR library — zxing not needed, use qrcodejs via CDN -->
+<!-- ── STEP 2: Guest Sheet ── -->
+<div class="step" id="s2">
+  <div class="step-head" onclick="tog(2)">
+    <div class="step-num" id="n2">2</div>
+    <div class="step-title">Guest Sheet</div>
+    <div class="step-chev" id="c2">▼</div>
+  </div>
+  <div class="step-body" id="b2">
+    <p class="hint" style="margin-top:0;">Toggle which tabs you need, rename them and their columns to match your workflow. Then download the template, upload to Google Drive, and paste the Sheet ID back here.</p>
+
+    <div id="tabs-list"></div>
+
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn ok sm" onclick="downloadTemplate()">⬇ Download Sheet Template</button>
+    </div>
+    <div class="hint" style="margin-top:6px;">Upload the downloaded file to Google Drive — it will convert to a Sheet automatically.</div>
+
+    <label>Google Sheet ID</label>
+    <input type="text" id="sheet-id" placeholder="Paste Sheet ID from the Google Drive URL">
+    <div class="hint">Found in the URL: docs.google.com/spreadsheets/d/<strong>[this part]</strong>/edit</div>
+  </div>
+</div>
+
+<!-- ── STEP 3: Events ── -->
+<div class="step" id="s3">
+  <div class="step-head" onclick="tog(3)">
+    <div class="step-num" id="n3">3</div>
+    <div class="step-title">Events</div>
+    <div class="step-chev" id="c3">▼</div>
+  </div>
+  <div class="step-body" id="b3">
+    <div id="events-list"></div>
+    <button class="add-btn" onclick="addEvent()">+ Add Event</button>
+  </div>
+</div>
+
+<!-- ── STEP 4: Ticket Rules ── -->
+<div class="step" id="s4">
+  <div class="step-head" onclick="tog(4)">
+    <div class="step-num" id="n4">4</div>
+    <div class="step-title">Ticket Types & Rules</div>
+    <div class="step-chev" id="c4">▼</div>
+  </div>
+  <div class="step-body" id="b4">
+    <p class="hint" style="margin-top:0;">Define how ticket names appear on the scanner and any time restrictions. The scanner matches any ticket name <em>containing</em> your keyword.</p>
+    <div id="tickets-list"></div>
+    <button class="add-btn" onclick="addTicket()">+ Add Ticket Rule</button>
+  </div>
+</div>
+
+<!-- ── STEP 5: Generate ── -->
+<div class="step" id="s5">
+  <div class="step-head" onclick="tog(5)">
+    <div class="step-num" id="n5">5</div>
+    <div class="step-title">Generate QR</div>
+    <div class="step-chev" id="c5">▼</div>
+  </div>
+  <div class="step-body" id="b5">
+    <p class="hint" style="margin-top:0;margin-bottom:16px;">Review and generate the QR code for door staff to scan.</p>
+    <button class="btn" onclick="generate()">Generate QR Code →</button>
+  </div>
+</div>
+
+<!-- ── OUTPUT ── -->
+<div id="out">
+  <div class="out-card">
+    <h3>QR Code — scan to configure scanner</h3>
+    <canvas id="qr-canvas" width="260" height="260"></canvas>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Screenshot or print. Scan with Tapgate to configure.</p>
+  </div>
+  <div class="out-card">
+    <h3>Login URL</h3>
+    <div class="url-box" id="url-box" onclick="copyUrl()">—</div>
+    <button class="btn sm sec" style="margin-top:8px;" onclick="copyUrl()">Copy URL</button>
+  </div>
+  <div class="out-card">
+    <h3>Config JSON</h3>
+    <div class="json-box" id="json-box"></div>
+  </div>
+  <button class="btn sec" onclick="document.getElementById('out').classList.remove('show')">← Edit Config</button>
+</div>
+
+</div><!-- /wizard -->
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 
-// ── State ──────────────────────────────────
-let eventCount = 0;
-let ticketCount = 0;
+// ── Constants ──────────────────────────────────────────────────
+const ICONS = ['🎽','🪑','⭐','🎫','👷','🌅','🌙','🎟️','🎉','🔑','🍹','🎵'];
+const COLORS = ['#FF4B7B','#22224C','#00A85A','#E07800','#7B2FBE','#0070F3','#FF6036','#C89500'];
 
-const ICONS = ['🎽','🪑','⭐','🎫','👷','🌅','🌙','🎟️','🎉','🔑'];
-const COLORS = ['#FF4B7B','#22224C','#00A85A','#E07800','#7B2FBE','#0070F3','#FF6036','#FFEC00'];
+// ── Default tab definitions ────────────────────────────────────
+const DEFAULT_TABS = [
+  {
+    key: 'EVENTS', label: 'Events', enabled: true,
+    desc: 'List of events — used to populate the event selector',
+    columns: [
+      { key: 'event_id',  label: 'Event ID' },
+      { key: 'name',      label: 'Name' },
+      { key: 'date',      label: 'Date' },
+      { key: 'venue',     label: 'Venue' },
+      { key: 'mec_id',   label: 'MEC ID' },
+      { key: 'active',   label: 'Active' },
+      { key: 'color',    label: 'Colour' },
+    ],
+    example: ['FD-FD7-2026','FD Festival 7','Sat 15 Aug 2026','Ashfields Carriage & Polo Club','25732','Yes','#FF4B7B']
+  },
+  {
+    key: 'EVENT_CONFIG', label: 'Event Config', enabled: true,
+    desc: 'Ticket type rules per event (entry labels, time restrictions)',
+    columns: [
+      { key: 'event_id',      label: 'Event ID' },
+      { key: 'match',         label: 'Ticket Keyword' },
+      { key: 'label',         label: 'Scanner Label' },
+      { key: 'icon',          label: 'Icon' },
+      { key: 'valid_before',  label: 'Valid Before' },
+      { key: 'valid_from',    label: 'Valid From' },
+      { key: 'upgrade_price', label: 'Upgrade Price' },
+      { key: 'action',        label: 'Action' },
+    ],
+    example: ['FD-FD7-2026','SEATED','Seated','🪑','','','','']
+  },
+  {
+    key: 'GUESTS', label: 'Guests', enabled: true,
+    desc: 'Comp guests, plus ones, invites',
+    columns: [
+      { key: 'name',       label: 'Name' },
+      { key: 'email',      label: 'Email' },
+      { key: 'event_id',   label: 'Event ID' },
+      { key: 'entry_type', label: 'Entry Type' },
+      { key: 'qty',        label: 'Qty' },
+      { key: 'table',      label: 'Table' },
+      { key: 'guest_of',   label: 'Guest Of' },
+      { key: 'notes',      label: 'Notes' },
+    ],
+    example: ['Jane Smith','jane@example.com','FD-FD7-2026','GE','2','','Promoter','Plus one']
+  },
+  {
+    key: 'DJs', label: 'DJs', enabled: true,
+    desc: 'Artists, DJs, performers',
+    columns: [
+      { key: 'name',       label: 'Name' },
+      { key: 'email',      label: 'Email' },
+      { key: 'event_id',   label: 'Event ID' },
+      { key: 'entry_type', label: 'Entry Type' },
+      { key: 'guests',     label: 'Guest Tickets' },
+      { key: 'set_time',   label: 'Set Time' },
+      { key: 'notes',      label: 'Notes' },
+    ],
+    example: ['DJ Example','dj@example.com','FD-FD7-2026','AAA','2','22:00','Headliner']
+  },
+  {
+    key: '3RD_PARTY', label: '3rd Party', enabled: true,
+    desc: 'External ticket holders (e.g. Remenham Farm passes)',
+    columns: [
+      { key: 'name',        label: 'Name' },
+      { key: 'email',       label: 'Email' },
+      { key: 'event_id',    label: 'Event ID' },
+      { key: 'entry_type',  label: 'Entry Type' },
+      { key: 'qty',         label: 'Qty' },
+      { key: 'ticket_ref',  label: 'Ticket Ref' },
+      { key: 'notes',       label: 'Notes' },
+    ],
+    example: ['John Doe','john@example.com','FD-FD7-2026','GE','1','RF-001','']
+  },
+  {
+    key: 'DOOR_TICKETS', label: 'Door Tickets', enabled: false,
+    desc: 'On-the-door ticket types and prices',
+    columns: [
+      { key: 'ticket_type',   label: 'Ticket Type' },
+      { key: 'price',         label: 'Price' },
+      { key: 'entry_type',    label: 'Entry Type' },
+      { key: 'valid_from',    label: 'Valid From' },
+      { key: 'valid_before',  label: 'Valid Before' },
+      { key: 'active',        label: 'Active' },
+    ],
+    example: ['General Entry','£50','GE','','','Yes']
+  },
+  {
+    key: 'LoV', label: 'List of Values', enabled: false,
+    desc: 'Reference data (entry types, categories etc)',
+    columns: [
+      { key: 'type',  label: 'Type' },
+      { key: 'value', label: 'Value' },
+      { key: 'label', label: 'Label' },
+      { key: 'notes', label: 'Notes' },
+    ],
+    example: ['entry_type','GE','General Entry','']
+  },
+];
 
-// ── Step toggle ────────────────────────────
-function toggleStep(n) {
-  const body = document.getElementById('body-' + n);
-  const chev = document.getElementById('chev-' + n);
-  const isOpen = body.classList.contains('open');
-  body.classList.toggle('open', !isOpen);
-  chev.classList.toggle('open', !isOpen);
+// Deep clone so we can mutate
+let tabs = JSON.parse(JSON.stringify(DEFAULT_TABS));
+let evCount = 0;
+let tkCount = 0;
+
+// ── Step toggle ────────────────────────────────────────────────
+function tog(n) {
+  const b = document.getElementById('b'+n);
+  const c = document.getElementById('c'+n);
+  const open = b.classList.contains('open');
+  b.classList.toggle('open', !open);
+  c.classList.toggle('open', !open);
 }
 
-// ── Events ─────────────────────────────────
-function addEvent(data) {
-  const i = ++eventCount;
-  const d = data || {};
+// ── Render tabs ────────────────────────────────────────────────
+function renderTabs() {
+  const el = document.getElementById('tabs-list');
+  el.innerHTML = '';
+  tabs.forEach((tab, ti) => {
+    const card = document.createElement('div');
+    card.className = 'tab-card';
+    card.id = 'tab-card-' + ti;
+
+    card.innerHTML = `
+      <div class="tab-card-head" onclick="toggleTab(${ti})">
+        <input type="checkbox" ${tab.enabled?'checked':''} onclick="event.stopPropagation();setTabEnabled(${ti},this.checked)">
+        <div class="tab-card-title" id="tab-title-${ti}">${tab.label}</div>
+        <div class="tab-card-key">${tab.key}</div>
+        <span style="font-size:11px;color:var(--muted);">▼</span>
+      </div>
+      <div class="tab-card-body ${tab.enabled?'open':''}" id="tab-body-${ti}">
+        <div class="hint" style="margin:0 0 8px;">${tab.desc}</div>
+        <label>Tab Name</label>
+        <input type="text" value="${tab.label}" oninput="tabs[${ti}].label=this.value;document.getElementById('tab-title-${ti}').textContent=this.value">
+        <label>Columns <span style="font-weight:400;text-transform:none">(rename to match your sheet)</span></label>
+        <div class="col-list" id="cols-${ti}">
+          ${tab.columns.map((col, ci) => `
+            <div class="col-row">
+              <span class="col-key">${col.key}</span>
+              <input type="text" value="${col.label}" oninput="tabs[${ti}].columns[${ci}].label=this.value" placeholder="${col.key}">
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function toggleTab(ti) {
+  const body = document.getElementById('tab-body-' + ti);
+  body.classList.toggle('open');
+}
+
+function setTabEnabled(ti, val) {
+  tabs[ti].enabled = val;
+  const body = document.getElementById('tab-body-' + ti);
+  if (val) body.classList.add('open');
+}
+
+// ── Download template ──────────────────────────────────────────
+async function downloadTemplate() {
+  const btn = event.target;
+  btn.textContent = 'Building…';
+  btn.disabled = true;
+
+  try {
+    // Build sheet map from current tab state
+    const sheetMap = {};
+    tabs.forEach(tab => {
+      sheetMap[tab.key] = {
+        tab_name: tab.label,
+        enabled: tab.enabled,
+        columns: tab.columns.reduce((o, c) => { o[c.key] = c.label; return o; }, {})
+      };
+    });
+
+    // Use Anthropic API to generate the XLSX via claude-in-artifacts approach
+    // Actually — generate client-side as CSV zip, or call backend
+    // Since we're in GitHub Pages (static), generate CSV per tab and zip
+    generateAndDownloadXLSX(sheetMap);
+
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.textContent = '⬇ Download Sheet Template';
+    btn.disabled = false;
+  }
+}
+
+function generateAndDownloadXLSX(sheetMap) {
+  // Generate as TSV files packaged into a simple multi-sheet HTML table
+  // that Google Sheets can import, or generate CSV per tab
+  // Since we can't run Python here, generate a CSV for each enabled tab
+  // and download as a zip using JSZip from CDN
+
+  // Build workbook data
+  const workbook = {};
+  tabs.forEach(tab => {
+    if (!tab.enabled) return;
+    const headers = tab.columns.map(c => c.label);
+    const example = DEFAULT_TABS.find(d => d.key === tab.key)?.example || [];
+    workbook[tab.label] = { headers, example };
+  });
+
+  // Use SheetJS (xlsx) from CDN to generate real xlsx
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  script.onload = () => {
+    const wb = XLSX.utils.book_new();
+    Object.entries(workbook).forEach(([sheetName, data]) => {
+      const rows = [data.headers];
+      if (data.example.length) rows.push(data.example);
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      // Style header row (basic)
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const addr = XLSX.utils.encode_cell({ r: 0, c });
+        if (!ws[addr]) continue;
+        ws[addr].s = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '22224C' } } };
+      }
+      ws['!cols'] = data.headers.map(h => ({ wch: Math.max(h.length + 4, 16) }));
+      ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+
+    // Add a README tab
+    const readme = XLSX.utils.aoa_to_sheet([
+      ['Tapgate Sheet Template'],
+      [''],
+      ['Instructions:'],
+      ['1. Delete the example rows (row 2) from each tab before use'],
+      ['2. Column names in row 1 must not be changed — they are mapped by the scanner'],
+      ['3. Upload this file to Google Drive — it will convert to a Google Sheet automatically'],
+      ['4. Copy the Sheet ID from the URL and paste into the Tapgate Setup Wizard'],
+      [''],
+      ['Generated by Tapgate Setup Wizard — ' + new Date().toLocaleDateString('en-GB')],
+    ]);
+    XLSX.utils.book_append_sheet(wb, readme, 'README');
+
+    XLSX.writeFile(wb, 'Tapgate_Sheet_Template.xlsx');
+  };
+  document.head.appendChild(script);
+}
+
+// ── Events ─────────────────────────────────────────────────────
+function addEvent(d) {
+  const i = ++evCount;
+  d = d || {};
   const div = document.createElement('div');
-  div.className = 'event-card';
-  div.id = 'event-' + i;
+  div.className = 'item-card';
+  div.id = 'ev-' + i;
   div.innerHTML = `
-    <button class="remove-btn" onclick="removeEvent(${i})">✕</button>
-    <label>Event ID (internal)</label>
-    <input type="text" id="ev-id-${i}" placeholder="e.g. FD-FD7-2026" value="${d.id||''}">
-    <label>MEC Event ID</label>
-    <input type="text" id="ev-mec-${i}" placeholder="e.g. 25732" value="${d.mec_id||''}">
-    <div class="row">
-      <div>
-        <label>Display Name</label>
-        <input type="text" id="ev-name-${i}" placeholder="FD Festival 7" value="${d.name||''}">
-      </div>
-      <div>
-        <label>Short Name</label>
-        <input type="text" id="ev-short-${i}" placeholder="Festival 7" value="${d.short||''}">
-      </div>
+    <button class="rm" onclick="document.getElementById('ev-${i}').remove()">✕</button>
+    <div class="row2">
+      <div><label>Event ID</label><input type="text" id="ev-id-${i}" value="${d.id||''}" placeholder="FD-FD7-2026"></div>
+      <div><label>MEC Event ID</label><input type="text" id="ev-mec-${i}" value="${d.mec_id||''}" placeholder="25732"></div>
     </div>
-    <div class="row">
-      <div>
-        <label>Date</label>
-        <input type="text" id="ev-date-${i}" placeholder="Sat 15 Aug 2026" value="${d.date||''}">
-      </div>
-      <div>
-        <label>Venue</label>
-        <input type="text" id="ev-venue-${i}" placeholder="Venue name" value="${d.venue||''}">
-      </div>
+    <div class="row2">
+      <div><label>Display Name</label><input type="text" id="ev-name-${i}" value="${d.name||''}" placeholder="FD Festival 7"></div>
+      <div><label>Short Name</label><input type="text" id="ev-short-${i}" value="${d.short||''}" placeholder="Festival 7"></div>
+    </div>
+    <div class="row2">
+      <div><label>Date</label><input type="text" id="ev-date-${i}" value="${d.date||''}" placeholder="Sat 15 Aug 2026"></div>
+      <div><label>Venue</label><input type="text" id="ev-venue-${i}" value="${d.venue||''}" placeholder="Venue name"></div>
     </div>
     <label>Colour</label>
-    <div class="color-row" id="ev-colors-${i}"></div>
-    <input type="text" id="ev-color-${i}" placeholder="#FF4B7B" value="${d.color||'#FF4B7B'}" style="margin-top:6px;">
+    <div class="sw-row" id="ev-sw-${i}"></div>
+    <input type="text" id="ev-col-${i}" value="${d.color||'#FF4B7B'}" placeholder="#FF4B7B" style="margin-top:6px;">
     <label>Active</label>
-    <select id="ev-active-${i}">
+    <select id="ev-act-${i}">
       <option value="Yes" ${(d.active||'Yes')==='Yes'?'selected':''}>Yes — scan this event</option>
       <option value="No" ${d.active==='No'?'selected':''}>No — inactive</option>
     </select>
   `;
   document.getElementById('events-list').appendChild(div);
-
-  // Render colour swatches
-  const cr = document.getElementById('ev-colors-' + i);
+  const sr = document.getElementById('ev-sw-'+i);
   COLORS.forEach(c => {
     const sw = document.createElement('div');
-    sw.className = 'color-swatch' + (c === (d.color||'#FF4B7B') ? ' selected' : '');
+    sw.className = 'sw' + (c===(d.color||'#FF4B7B')?' on':'');
     sw.style.background = c;
     sw.onclick = () => {
-      cr.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-      sw.classList.add('selected');
-      document.getElementById('ev-color-' + i).value = c;
+      sr.querySelectorAll('.sw').forEach(s => s.classList.remove('on'));
+      sw.classList.add('on');
+      document.getElementById('ev-col-'+i).value = c;
     };
-    cr.appendChild(sw);
+    sr.appendChild(sw);
   });
-}
-
-function removeEvent(i) {
-  const el = document.getElementById('event-' + i);
-  if (el) el.remove();
 }
 
 function getEvents() {
-  const events = [];
-  document.querySelectorAll('.event-card').forEach(card => {
-    const i = card.id.replace('event-','');
-    const id = document.getElementById('ev-id-'+i).value.trim();
-    if (!id) return;
-    events.push({
-      id,
-      mec_id: document.getElementById('ev-mec-'+i).value.trim(),
-      name:   document.getElementById('ev-name-'+i).value.trim(),
-      short:  document.getElementById('ev-short-'+i).value.trim(),
-      date:   document.getElementById('ev-date-'+i).value.trim(),
-      venue:  document.getElementById('ev-venue-'+i).value.trim(),
-      color:  document.getElementById('ev-color-'+i).value.trim() || '#FF4B7B',
-      active: document.getElementById('ev-active-'+i).value
-    });
-  });
-  return events;
+  return Array.from(document.querySelectorAll('.item-card[id^="ev-"]')).map(card => {
+    const i = card.id.replace('ev-','');
+    return {
+      id:     document.getElementById('ev-id-'+i)?.value.trim(),
+      mec_id: document.getElementById('ev-mec-'+i)?.value.trim(),
+      name:   document.getElementById('ev-name-'+i)?.value.trim(),
+      short:  document.getElementById('ev-short-'+i)?.value.trim(),
+      date:   document.getElementById('ev-date-'+i)?.value.trim(),
+      venue:  document.getElementById('ev-venue-'+i)?.value.trim(),
+      color:  document.getElementById('ev-col-'+i)?.value.trim() || '#FF4B7B',
+      active: document.getElementById('ev-act-'+i)?.value,
+    };
+  }).filter(e => e.id);
 }
 
-// ── Ticket Rules ───────────────────────────
-function addTicketRule(data) {
-  const i = ++ticketCount;
-  const d = data || {};
+// ── Ticket rules ───────────────────────────────────────────────
+function addTicket(d) {
+  const i = ++tkCount;
+  d = d || {};
   const div = document.createElement('div');
-  div.className = 'ticket-card';
-  div.id = 'ticket-' + i;
-
-  const icons = ICONS.map((ic, idx) =>
-    `<div class="icon-opt${ic===(d.icon||'🎽')?' selected':''}" onclick="selectIcon(${i},'${ic}',this)">${ic}</div>`
+  div.className = 'item-card';
+  div.id = 'tk-' + i;
+  const icons = ICONS.map(ic =>
+    `<div class="ic${ic===(d.icon||'🎽')?' on':''}" onclick="selIcon(${i},'${ic}',this)">${ic}</div>`
   ).join('');
-
   div.innerHTML = `
-    <button class="remove-btn" onclick="removeTicket(${i})">✕</button>
-
-    <label>Ticket Name Contains (keyword to match)</label>
-    <input type="text" id="tk-match-${i}" placeholder="e.g. SEATED or BEFORE 3PM" value="${d.match||''}">
-    <div class="hint">Case-insensitive. Matches any ticket name containing this text.</div>
-
-    <label>Label shown on scanner</label>
-    <input type="text" id="tk-label-${i}" placeholder="e.g. Seated" value="${d.label||''}">
-
-    <label>Icon</label>
-    <div class="icon-picker" id="tk-icons-${i}">${icons}</div>
-    <input type="hidden" id="tk-icon-${i}" value="${d.icon||'🎽'}">
-
-    <label>Time Restriction Type</label>
-    <select id="tk-type-${i}" onchange="updateTicketType(${i})">
-      <option value="none" ${!d.valid_before&&!d.valid_from?'selected':''}>No restriction</option>
-      <option value="before" ${d.valid_before?'selected':''}>Valid BEFORE a time (early entry ticket)</option>
-      <option value="from"   ${d.valid_from?'selected':''}>Valid FROM a time (evening / late entry)</option>
+    <button class="rm" onclick="document.getElementById('tk-${i}').remove()">✕</button>
+    <label>Ticket Name Contains</label>
+    <input type="text" id="tk-m-${i}" value="${d.match||''}" placeholder="e.g. SEATED or BEFORE 3PM">
+    <div class="hint">Case-insensitive match against full ticket name</div>
+    <div class="row2" style="margin-top:0;">
+      <div><label>Scanner Label</label><input type="text" id="tk-l-${i}" value="${d.label||''}" placeholder="e.g. Seated"></div>
+      <div>
+        <label>Icon</label>
+        <div class="icon-row" id="tk-ic-${i}">${icons}</div>
+        <input type="hidden" id="tk-icv-${i}" value="${d.icon||'🎽'}">
+      </div>
+    </div>
+    <label>Time Restriction</label>
+    <select id="tk-t-${i}" onchange="updTkType(${i})">
+      <option value="none" ${!d.valid_before&&!d.valid_from?'selected':''}>None</option>
+      <option value="before" ${d.valid_before?'selected':''}>Valid BEFORE a time (early entry)</option>
+      <option value="from"   ${d.valid_from?'selected':''}>Valid FROM a time (evening / late)</option>
     </select>
-
-    <div id="tk-time-wrap-${i}" style="display:${(d.valid_before||d.valid_from)?'block':'none'}">
-      <div class="ticket-time-row" style="margin-top:10px;">
+    <div id="tk-tw-${i}" style="display:${d.valid_before||d.valid_from?'block':'none'}">
+      <div class="row3" style="margin-top:10px;">
+        <div><label>Cut-off Time</label><input type="time" id="tk-time-${i}" value="${d.valid_before||d.valid_from||''}"></div>
+        <div><label>Upgrade Price</label><input type="text" id="tk-up-${i}" value="${d.upgrade_price||''}" placeholder="e.g. £10"></div>
         <div>
-          <label>Cut-off time</label>
-          <input type="time" id="tk-time-${i}" value="${d.valid_before||d.valid_from||''}">
-        </div>
-        <div>
-          <label>Upgrade price</label>
-          <input type="text" id="tk-upgrade-${i}" placeholder="e.g. £10" value="${d.upgrade_price||''}">
-        </div>
-        <div>
-          <label>Action</label>
-          <select id="tk-action-${i}">
-            <option value="warn" ${(d.action||'warn')==='warn'?'selected':''}>Warn — admit + flag</option>
-            <option value="block" ${d.action==='block'?'selected':''}>Block — reject entry</option>
+          <label>If Outside Window</label>
+          <select id="tk-ac-${i}">
+            <option value="warn"  ${(d.action||'warn')==='warn'?'selected':''}>Warn + admit</option>
+            <option value="block" ${d.action==='block'?'selected':''}>Block entry</option>
           </select>
         </div>
       </div>
@@ -418,146 +570,125 @@ function addTicketRule(data) {
   document.getElementById('tickets-list').appendChild(div);
 }
 
-function selectIcon(i, icon, el) {
-  document.querySelectorAll('#tk-icons-'+i+' .icon-opt').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  document.getElementById('tk-icon-'+i).value = icon;
+function selIcon(i, ic, el) {
+  document.querySelectorAll('#tk-ic-'+i+' .ic').forEach(o => o.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('tk-icv-'+i).value = ic;
 }
 
-function removeTicket(i) {
-  const el = document.getElementById('ticket-'+i);
-  if (el) el.remove();
+function updTkType(i) {
+  const v = document.getElementById('tk-t-'+i).value;
+  document.getElementById('tk-tw-'+i).style.display = v==='none'?'none':'block';
 }
 
-function updateTicketType(i) {
-  const val = document.getElementById('tk-type-'+i).value;
-  document.getElementById('tk-time-wrap-'+i).style.display = val === 'none' ? 'none' : 'block';
-}
-
-function getTicketRules() {
-  const rules = [];
-  document.querySelectorAll('.ticket-card').forEach(card => {
-    const i = card.id.replace('ticket-','');
-    const match = document.getElementById('tk-match-'+i).value.trim();
-    if (!match) return;
-    const type = document.getElementById('tk-type-'+i).value;
+function getTickets() {
+  return Array.from(document.querySelectorAll('.item-card[id^="tk-"]')).map(card => {
+    const i = card.id.replace('tk-','');
+    const match = document.getElementById('tk-m-'+i)?.value.trim();
+    if (!match) return null;
+    const type = document.getElementById('tk-t-'+i)?.value;
     const rule = {
       match: match,
-      label: document.getElementById('tk-label-'+i).value.trim() || match,
-      icon:  document.getElementById('tk-icon-'+i).value || '🎽'
+      label: document.getElementById('tk-l-'+i)?.value.trim() || match,
+      icon:  document.getElementById('tk-icv-'+i)?.value || '🎽',
     };
     if (type === 'before') {
-      rule.valid_before   = document.getElementById('tk-time-'+i).value;
-      rule.upgrade_price  = document.getElementById('tk-upgrade-'+i).value.trim();
-      rule.action         = document.getElementById('tk-action-'+i).value;
+      rule.valid_before  = document.getElementById('tk-time-'+i)?.value;
+      rule.upgrade_price = document.getElementById('tk-up-'+i)?.value.trim();
+      rule.action        = document.getElementById('tk-ac-'+i)?.value;
     } else if (type === 'from') {
-      rule.valid_from     = document.getElementById('tk-time-'+i).value;
-      rule.upgrade_price  = document.getElementById('tk-upgrade-'+i).value.trim();
-      rule.action         = document.getElementById('tk-action-'+i).value;
+      rule.valid_from    = document.getElementById('tk-time-'+i)?.value;
+      rule.upgrade_price = document.getElementById('tk-up-'+i)?.value.trim();
+      rule.action        = document.getElementById('tk-ac-'+i)?.value;
     }
-    rules.push(rule);
+    return rule;
+  }).filter(Boolean);
+}
+
+// ── Sheet map from tabs state ──────────────────────────────────
+function getSheetMap() {
+  const map = {};
+  tabs.forEach(tab => {
+    if (!tab.enabled) return;
+    map[tab.key] = {
+      tab_name: tab.label,
+      columns: tab.columns.reduce((o, c) => { o[c.key] = c.label; return o; }, {})
+    };
   });
-  return rules;
+  return map;
 }
 
-// ── Generate ────────────────────────────────
-function buildConfig() {
-  const cfg = {
-    u:      document.getElementById('site-url').value.trim().replace(/\/$/,''),
-    k:      document.getElementById('wc-key').value.trim(),
-    s:      document.getElementById('wc-secret').value.trim(),
-    m:      document.getElementById('mec-key').value.trim(),
-    sheet:  document.getElementById('sheet-id').value.trim(),
-    events: getEvents(),
-    entry_labels: getTicketRules()
-  };
-  // Remove empty optional fields
-  if (!cfg.m)     delete cfg.m;
-  if (!cfg.sheet) delete cfg.sheet;
-  if (!cfg.entry_labels.length) delete cfg.entry_labels;
-  return cfg;
-}
-
+// ── Generate ───────────────────────────────────────────────────
 function generate() {
-  const cfg = buildConfig();
+  const u = document.getElementById('site-url').value.trim().replace(/\/$/,'');
+  const k = document.getElementById('wc-key').value.trim();
+  const s = document.getElementById('wc-secret').value.trim();
+  if (!u || !k || !s) { alert('Site URL, WC Key and Secret are required.'); return; }
 
-  // Validate
-  if (!cfg.u || !cfg.k || !cfg.s) {
-    alert('Site URL, WooCommerce Key and Secret are required.');
-    return;
-  }
+  const cfg = { u, k, s };
+  const m = document.getElementById('mec-key').value.trim();
+  const sheet = document.getElementById('sheet-id').value.trim();
+  if (m)     cfg.m = m;
+  if (sheet) cfg.sheet = sheet;
+
+  const events = getEvents();
+  if (events.length) cfg.events = events;
+
+  const tickets = getTickets();
+  if (tickets.length) cfg.entry_labels = tickets;
+
+  const sheetMap = getSheetMap();
+  if (Object.keys(sheetMap).length) cfg.sheet_map = sheetMap;
 
   const json    = JSON.stringify(cfg);
   const encoded = btoa(json).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-  const loginUrl = `https://lnavarro-fd.github.io/Tapgate/?tg=${encoded}`;
+  const url     = `https://lnavarro-fd.github.io/Tapgate/?tg=${encoded}`;
 
-  // Show output
-  document.getElementById('output-section').classList.add('show');
-  document.getElementById('login-url').textContent = loginUrl;
-  document.getElementById('json-preview').textContent = JSON.stringify(cfg, null, 2);
+  document.getElementById('out').classList.add('show');
+  document.getElementById('url-box').textContent = url;
+  document.getElementById('json-box').textContent = JSON.stringify(cfg, null, 2);
 
-  // Generate QR
+  // QR
   const canvas = document.getElementById('qr-canvas');
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, 240, 240);
-
-  // Use QRCode library
+  ctx.clearRect(0,0,260,260);
   const tmp = document.createElement('div');
-  new QRCode(tmp, {
-    text: loginUrl,
-    width: 240,
-    height: 240,
-    colorDark: '#22224C',
-    colorLight: '#FFFFFF',
-    correctLevel: QRCode.CorrectLevel.M
-  });
+  new QRCode(tmp, { text: url, width:260, height:260, colorDark:'#22224C', colorLight:'#FFFFFF', correctLevel: QRCode.CorrectLevel.M });
   setTimeout(() => {
-    const img = tmp.querySelector('img') || tmp.querySelector('canvas');
-    if (img) {
-      if (img.tagName === 'IMG') {
-        const i = new Image();
-        i.onload = () => ctx.drawImage(i, 0, 0, 240, 240);
-        i.src = img.src;
-      } else {
-        ctx.drawImage(img, 0, 0, 240, 240);
-      }
-    }
-  }, 100);
+    const el = tmp.querySelector('canvas') || tmp.querySelector('img');
+    if (el && el.tagName === 'CANVAS') ctx.drawImage(el,0,0,260,260);
+    else if (el) { const img = new Image(); img.onload = () => ctx.drawImage(img,0,0,260,260); img.src = el.src; }
+  }, 150);
 
-  // Scroll to output
-  document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('out').scrollIntoView({ behavior:'smooth' });
 }
 
 function copyUrl() {
-  const url = document.getElementById('login-url').textContent;
+  const url = document.getElementById('url-box').textContent;
   navigator.clipboard.writeText(url).then(() => {
-    document.getElementById('login-url').textContent = '✓ Copied!';
-    setTimeout(() => document.getElementById('login-url').textContent = url, 2000);
+    const box = document.getElementById('url-box');
+    const prev = box.textContent;
+    box.textContent = '✓ Copied!';
+    setTimeout(() => box.textContent = prev, 2000);
   });
 }
 
-// ── Pre-load FD Festival 7 for testing ─────
-function loadFDFestival7() {
+// ── Pre-load FD Festival 7 ─────────────────────────────────────
+function preload() {
   document.getElementById('client-name').value = 'Funky Dory Love Ltd';
-  document.getElementById('site-url').value = 'https://funkydorylove.co.uk';
-  document.getElementById('wc-key').value = 'ck_c756b5d00fc48439906867812d7f1e0212c849a8';
-  document.getElementById('wc-secret').value = 'cs_7c2ec9d628b4503d19c1639c1779c97e2b82dfdd';
-  document.getElementById('sheet-id').value = '1Sx1KxRcRu8uhzbLD5cmA75ugxrYLlOi6kG5hrRt7SRM';
+  document.getElementById('site-url').value    = 'https://funkydorylove.co.uk';
+  document.getElementById('wc-key').value      = 'ck_c756b5d00fc48439906867812d7f1e0212c849a8';
+  document.getElementById('wc-secret').value   = 'cs_7c2ec9d628b4503d19c1639c1779c97e2b82dfdd';
+  document.getElementById('sheet-id').value    = '1Sx1KxRcRu8uhzbLD5cmA75ugxrYLlOi6kG5hrRt7SRM';
 
-  addEvent({
-    id: 'FD-FD7-2026', mec_id: '25732',
-    name: 'FD Festival 7', short: 'Festival 7',
-    date: 'Sat 15 Aug 2026', venue: 'Ashfields Carriage & Polo Club',
-    color: '#FF4B7B', active: 'Yes'
-  });
+  addEvent({ id:'FD-FD7-2026', mec_id:'25732', name:'FD Festival 7', short:'Festival 7', date:'Sat 15 Aug 2026', venue:'Ashfields Carriage & Polo Club', color:'#FF4B7B', active:'Yes' });
+  addTicket({ match:'SEATED',      label:'Seated',      icon:'🪑' });
+  addTicket({ match:'BEFORE 3PM',  label:'Early Entry', icon:'🌅', valid_before:'15:00', upgrade_price:'', action:'warn' });
 
-  addTicketRule({ match: 'SEATED', label: 'Seated', icon: '🪑' });
-  addTicketRule({ match: 'BEFORE 3PM', label: 'Early Entry', icon: '🌅', valid_before: '15:00', upgrade_price: '£10', action: 'warn' });
+  renderTabs();
 }
 
-// Auto-load test data
-loadFDFestival7();
-
+preload();
 </script>
 </body>
 </html>
