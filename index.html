@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.4.9-diag';
+const APP_VERSION = '2.5.0';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3072,9 +3072,13 @@ async function lookupTicket(code) {
             // 1. Update local state instantly — reuse booking from enrichment block above
             // booking is already resolved above; re-lookup only if needed
             if (!booking) booking = invoiceMap[invId] || bookingMap[invId];
+            if (!booking) booking = bookingMap[mecGuest._bookingId];
             if (!booking) booking = Object.values(bookingMap).find(b => String(b.invoiceID) === String(invId) || String(b.mecInvoiceID) === String(invId));
             if (booking) {
-              const ticket = booking.tickets.find(t => String(t.attendeeKey) === String(placeNo))
+              // Use real attendeeKey from bulk2, not raw place from QR
+              const realAttendeeKey = mecGuest._attendeeKey || placeNo;
+              const ticket = booking.tickets.find(t => String(t.attendeeKey) === String(realAttendeeKey))
+                          || booking.tickets.find(t => String(t.attendeeKey) === String(placeNo))
                           || booking.tickets[parseInt(placeNo) - 1];
               if (ticket) {
                 ticket.checkedIn = true;
@@ -3117,7 +3121,7 @@ async function lookupTicket(code) {
 
             // 3. Write to WordPress and Firebase in background
             mecWriteCheckin(code, mecGuest).catch(e => console.warn('MEC checkin write failed:', e));
-            if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(invId, placeNo, true);
+            if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(mecGuest._bookingId || invId, mecGuest._attendeeKey || placeNo, true);
           } // end lateBlock else
           } // end timeBlock else
         }
@@ -3358,11 +3362,12 @@ async function mecLookupAndCheckin(code) {
   if (!invoiceID) return null;
 
   const bookingMapEntry = invoiceMap[String(invoiceID)] || bookingMap[String(invoiceID)];
+  const realBookingId = bookingMapEntry?.bookingId || String(invoiceID);
   
-  // Get per-attendee name from bulk2 cache or bookingMap
-  const cachedName = mecAttendeeCache[`${invoiceID}:${place}`];
+  // Find ticket by attendeeKey (MEC attendee_key = place from QR)
   const bookingMapTicket = bookingMapEntry?.tickets?.find(t => String(t.attendeeKey) === String(place))
     || bookingMapEntry?.tickets?.[parseInt(place) - 1];
+  const cachedName = mecAttendeeCache[`${invoiceID}:${place}`];
   const bookingMapName = bookingMapTicket?.name || bookingMapEntry?.name || '';
   const name = cachedName || bookingMapName || 'Guest';
 
@@ -3398,6 +3403,8 @@ async function mecLookupAndCheckin(code) {
     _mecTicket: true,
     _mecCode: code,
     _invoiceID: invoiceID,
+    _bookingId: realBookingId,
+    _attendeeKey: bookingMapTicket?.attendeeKey || place,
     _place: place,
     _hash: parsed.hash,
     _ticketKey: ticketKey,
