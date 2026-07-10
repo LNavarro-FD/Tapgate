@@ -988,7 +988,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.3.7';
+const APP_VERSION = '2.3.8';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1207,6 +1207,21 @@ async function fetchUpcomingEvents() {
   }
 }
 
+// Ticket ID → ticket name lookup, built from MEC Utility event endpoint
+window.mecTicketMap = {};
+
+async function fetchMecTicketMap() {
+  if (!window.activeEvent || !window.activeEvent.mec_id) return;
+  try {
+    const r = await fetch(`${cfg.u}/wp-json/mec-utility/v1/events/${window.activeEvent.mec_id}`, { cache: 'no-store' });
+    if (!r.ok) { console.warn('mecTicketMap fetch failed:', r.status); return; }
+    const data = await r.json();
+    const tickets = data.tickets || [];
+    tickets.forEach(t => { window.mecTicketMap[String(t.id)] = t.name; });
+    console.log('mecTicketMap loaded:', Object.keys(window.mecTicketMap).length, 'tickets');
+  } catch(e) { console.warn('mecTicketMap fetch error:', e.message); }
+}
+
 async function fetchMecAttendees(events) {
   // For each upcoming event, fetch attendees from each occurrence
   const mecGuests = {};
@@ -1220,7 +1235,7 @@ async function fetchMecAttendees(events) {
             const key = `mec-${a.booking_id}-${a.attendee_key}`;
             const ticketId = String(a.ticket_id || '1');
             const ticket   = ev.tickets ? ev.tickets.find(t => String(t.id) === ticketId) : null;
-            const ticketName = ticket ? ticket.name : (a.ticket_name || ev.title || 'MEC Ticket');
+            const ticketName = ticket ? ticket.name : (window.mecTicketMap[ticketId] || a.ticket_name || ev.title || 'MEC Ticket');
             mecGuests[key] = {
               id:              `${a.booking_id}-${a.attendee_key}`,
               orderNumber:     String(a.invoice_id || a.booking_id),
@@ -1277,7 +1292,7 @@ async function fetchMecAttendees(events) {
             const key = `mec-${a.booking_id}-${a.attendee_key}`;
             const ticketId   = String(a.ticket_id || '1');
             const ticket     = ev.tickets ? ev.tickets.find(t => String(t.id) === ticketId) : null;
-            const ticketName = ticket ? ticket.name : (a.ticket_name || ev.title || 'MEC Ticket');
+            const ticketName = ticket ? ticket.name : (window.mecTicketMap[ticketId] || a.ticket_name || ev.title || 'MEC Ticket');
             mecGuests[key] = {
               id:              `${a.booking_id}-${a.attendee_key}`,
               orderNumber:     String(a.invoice_id || a.booking_id),
@@ -1383,8 +1398,9 @@ async function loadGuestList() {
 
   guestMap = {}; bookingMap = {}; invoiceMap = {}; emailMap = {}; idMap = {};
   try {
-    // 1. Fetch upcoming MEC events
+    // 1. Fetch upcoming MEC events + ticket map
     await fetchUpcomingEvents();
+    await fetchMecTicketMap();
 
     // 2. Fetch MEC attendees, WC orders, and bulk checkins in parallel
     // bulk2 is large and slow — fetch independently and re-render when it arrives
