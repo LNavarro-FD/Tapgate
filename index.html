@@ -537,6 +537,7 @@ input::placeholder { color: #999; }
       return r.ok;
     } catch(e) { console.warn('FB SET failed:', e.message); return false; }
   }
+  window.fbSet = fbSet;
 
   // Load RF checkins on start
   document.addEventListener('DOMContentLoaded', async () => {
@@ -2098,7 +2099,21 @@ function undoSpecific(bookingId, attendeeKey) {
 
   // Write back to source
   if (b.source === 'mec') {
-    console.warn('MEC undo: local only — MEC API does not support undo');
+    const invoiceId = b.mecInvoiceID || b.invoiceID;
+    // Try DELETE on the checkin proxy to un-check in MEC
+    fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
+      method: 'DELETE'
+    }).then(r => {
+      if (!r.ok) console.warn('MEC undo via DELETE failed:', r.status, '— trying uncheckin endpoint');
+      // Also try /uncheckin endpoint as fallback
+      return fetch(`${cfg.u}/wp-json/fd2/v1/uncheckin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
+        method: 'POST'
+      });
+    }).catch(e => console.warn('MEC undo failed:', e.message));
+    // Write undo to Firebase so all devices sync
+    if (window.fbSet) {
+      window.fbSet(`undos/${invoiceId}_${attendeeKey}`, { undone: true, ts: Date.now() });
+    }
   } else {
     const wcGuest = guestMap[`wc-${b.invoiceID}`];
     if (wcGuest) {
@@ -2124,7 +2139,17 @@ function undoAllBooking(bookingId) {
 
   b.tickets.forEach(t => { t.checkedIn = false; });
 
-  if (b.source !== 'mec') {
+  if (b.source === 'mec') {
+    const invoiceId = b.mecInvoiceID || b.invoiceID;
+    b.tickets.forEach(t => {
+      fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(t.attendeeKey)}`, {
+        method: 'DELETE'
+      }).catch(e => console.warn('MEC undo failed:', e.message));
+      if (window.fbSet) {
+        window.fbSet(`undos/${invoiceId}_${t.attendeeKey}`, { undone: true, ts: Date.now() });
+      }
+    });
+  } else {
     const wcGuest = guestMap[`wc-${b.invoiceID}`];
     if (wcGuest) {
       wcGuest.checkedInTickets = [];
