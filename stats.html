@@ -309,12 +309,14 @@ async function loadStats(ev) {
     await mecUtilityPromise;
 
     const checkinsList = bd.checkins || [];
+    let ticketResolved = 0, ticketMissed = 0;
 
     checkinsList.forEach(c => {
       const bid = String(c.invoice_id || c.booking_id || '');
       if (!bid || String(c.event_id) !== String(ev.mec_id)) return;
       const ticketId = mecAttendeeTicketMap[`${c.booking_id}:${c.attendee_key}`] || '';
       const ticketName = mecTicketMap[ticketId] || c.ticket_name || 'MEC Ticket';
+      if (ticketId) ticketResolved++; else ticketMissed++;
       if (!bookingMap[bid]) {
         bookingMap[bid] = { key: bid, name: c.name || 'Unknown', tickets: [], source: 'mec', entryType: c.entry_type || 'GE' };
       }
@@ -325,6 +327,15 @@ async function loadStats(ev) {
         entryType: c.entry_type || 'GE'
       });
     });
+
+    console.log(`Ticket resolution: ${ticketResolved} resolved, ${ticketMissed} missed`);
+    if (ticketMissed > 0) {
+      const sample = bd.checkins.find(c => String(c.event_id) === String(ev.mec_id));
+      console.log('Sample bulk2 record:', JSON.stringify(sample));
+      const sampleKey = `${sample?.booking_id}:${sample?.attendee_key}`;
+      console.log('Lookup key tried:', sampleKey, '→', mecAttendeeTicketMap[sampleKey] || 'NOT FOUND');
+      console.log('Sample mecAttendeeTicketMap keys:', Object.keys(mecAttendeeTicketMap).slice(0,3));
+    }
 
     // 2. Load event config in background — don't block render
     loadEventConfig(ev).catch(e => console.warn('Event config failed:', e.message));
