@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.0';
+const APP_VERSION = '2.5.1';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1681,24 +1681,25 @@ async function loadGuestList() {
         invoiceMap[data.inv] = bookingMap[bid];
         if (data.mecInv && data.mecInv !== data.inv) invoiceMap[data.mecInv] = bookingMap[bid];
         data.attendees.forEach((a, idx) => {
-          const aTicketId = window.mecAttendeeTicketMap[`${bid}:${a.attendee_key || idx+1}`] || String(a.ticket_id || '');
+          const aKey = String(a.attendee_key || idx+1);
+          const aTicketId = window.mecAttendeeTicketMap[`${bid}:${aKey}`] || String(a.ticket_id || '');
           const ticketName = window.mecTicketMap[aTicketId] || a.ticket_name || firstTicketName;
           const isVip = /vip/i.test(ticketName);
           bookingMap[bid].tickets.push({
-            key: `${bid}-${idx+1}`, attendeeKey: String(idx+1),
+            key: `${bid}-${aKey}`, attendeeKey: aKey,
             name: a.name || '', ticketName: ticketName,
             isVip: isVip, checkedIn: !!a.checked_in,
             _mecTicketId: aTicketId || null
           });
-          // Cache name by mec_invoice_id + place for fast scan lookup
-          if (data.mecInv && a.name) mecAttendeeCache[`${data.mecInv}:${idx+1}`] = a.name;
+          // Cache name by mec_invoice_id + attendee_key for fast scan lookup
+          if (data.mecInv && a.name) mecAttendeeCache[`${data.mecInv}:${aKey}`] = a.name;
         });
         // Set booking-level VIP if any ticket is VIP
         if (bookingMap[bid].tickets.some(t => t.isVip)) bookingMap[bid].isVip = true;
         // Add to guestMap so guest list renders this booking
         const qty = data.attendees.length || 1;
         const checkedInTickets = data.attendees
-          .map((a, idx) => a.checked_in ? `${bid}-${idx+1}` : null)
+          .map((a) => a.checked_in ? `${bid}-${String(a.attendee_key || '1')}` : null)
           .filter(Boolean);
         guestMap[bid] = {
           id: bid, name: leadName, email: data.attendees[0]?.email || '',
@@ -3107,8 +3108,7 @@ async function lookupTicket(code) {
             const detail = [
               mecGuest.isVip ? '⭐ VIP' : null,
               mecGuest.ticketName && mecGuest.ticketName !== 'MEC Ticket' ? mecGuest.ticketName : null,
-              now,
-              window._lastScanDebug || null
+              now
             ].filter(Boolean).join('  ·  ');
             setResult('ok','✓', mecGuest.name, detail, true);
             showEnt(mecGuest);
@@ -3305,29 +3305,29 @@ function parseMecQrUrl(code) {
 }
 
 async function resolveShortUrl(shortUrl) {
+  // Check cache first — resolved URLs don't change
+  if (!window._shortUrlCache) window._shortUrlCache = {};
+  if (window._shortUrlCache[shortUrl]) {
+    console.log('Short URL resolved from cache:', window._shortUrlCache[shortUrl].invoiceID);
+    return window._shortUrlCache[shortUrl];
+  }
   try {
-    // Try fast resolver endpoint first
+    // Fast resolver endpoint only — HEAD redirect removed (too slow, unreliable)
     const slug = shortUrl.split('/invoice/')[1];
     if (slug && cfg.u) {
       const res = await fetch(`${cfg.u}/wp-json/fd2/v1/resolve?slug=${encodeURIComponent(slug)}`);
       if (res.ok) {
         const data = await res.json();
         if (data.found && data.mec_invoice_id) {
-          console.log('Short URL resolved via fast endpoint:', data.mec_invoice_id);
-          return { invoiceID: data.mec_invoice_id, place: '1', hash: null, email: null, shortUrl: null };
+          console.log('Short URL resolved:', data.mec_invoice_id, 'place:', data.place || '1');
+          const result = { invoiceID: data.mec_invoice_id, place: data.place || '1', hash: null, email: null, shortUrl: null };
+          window._shortUrlCache[shortUrl] = result;
+          return result;
         }
       }
     }
-    // Fallback: follow redirect
-    const r = await fetch(shortUrl, { method: 'HEAD', redirect: 'follow' });
-    if (r.ok || r.redirected) {
-      const finalUrl = r.url;
-      console.log('Short URL resolved to:', finalUrl);
-      const p = parseMecQrUrl(finalUrl);
-      if (p && p.invoiceID) return p;
-    }
   } catch(e) {
-    console.warn('Short URL direct resolve failed:', e.message);
+    console.warn('Short URL resolve failed:', e.message);
   }
   return null;
 }
@@ -3383,8 +3383,7 @@ async function mecLookupAndCheckin(code) {
 
   console.log(`mecLookupAndCheckin (bulk2 mode): invoice=${invoiceID} place=${place} name=${name}`);
   // DEBUG — show invoice/place in scan detail so visible on phone (remove after diagnosis)
-  const _dbgTicketKeys = bookingMapEntry?.tickets?.map(t => t.attendeeKey).join(',') || 'none';
-  window._lastScanDebug = `inv:${invoiceID} pl:${place} bm:${bookingMapEntry?'✓':'✗'} tks:[${_dbgTicketKeys}]`;
+  // (debug removed)
 
   return {
     id: invoiceID,
