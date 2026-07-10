@@ -15,16 +15,19 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh}
 
-.topbar{background:var(--navy);padding:calc(var(--safe-t)+10px) 16px 10px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;border-bottom:2px solid var(--pink);}
-.topbar-inner{width:100%;max-width:600px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
-.brand-name{font-size:15px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);line-height:1;}
-.brand-sub{font-size:10px;color:#fff;opacity:.6;margin-top:3px;}
-.topbar-back{color:var(--pink);font-size:15px;font-weight:700;text-decoration:none;padding:4px 0;display:inline-block;}
-.hdr-right{text-align:right;color:#fff;}
-.hdr-event{font-size:11px;opacity:.6;margin-bottom:3px;}
-.hdr-counts{display:flex;gap:12px;align-items:baseline;justify-content:flex-end;}
-.hdr-counts span{font-size:11px;opacity:.7;}
-.hdr-counts strong{font-size:18px;font-weight:900;opacity:1;margin-left:3px;}
+.topbar{background:var(--navy);padding:calc(var(--safe-t)+10px) 16px 12px;position:sticky;top:0;z-index:50;border-bottom:2px solid var(--pink);}
+.topbar-inner{width:100%;max-width:600px;margin:0 auto;}
+.topbar-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.topbar-row2{display:flex;align-items:center;justify-content:space-between;}
+.brand-name{font-size:16px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--pink);line-height:1;}
+.brand-sub{font-size:10px;color:#fff;opacity:.4;margin-left:8px;}
+.topbar-back{color:#fff;font-size:13px;font-weight:700;text-decoration:none;opacity:.7;padding:4px 0;display:inline-block;letter-spacing:.03em;}
+.topbar-back:hover{opacity:1;}
+.hdr-event{font-size:12px;color:#fff;opacity:.6;font-weight:600;}
+.hdr-counts{display:flex;gap:16px;align-items:center;}
+.hdr-count-item{display:flex;flex-direction:column;align-items:flex-end;}
+.hdr-count-num{font-size:20px;font-weight:900;color:#fff;line-height:1;}
+.hdr-count-lbl{font-size:9px;color:#fff;opacity:.5;text-transform:uppercase;letter-spacing:.08em;margin-top:1px;}
 
 .wrap{padding:14px 14px calc(var(--safe-b)+80px);max-width:600px;margin:0 auto;}
 
@@ -127,16 +130,24 @@ async function fbSet(path, data) {
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div style="display:flex;flex-direction:column;gap:4px;">
-      <a class="topbar-back" href="index.html">← Scanner</a>
-      <div class="brand-name">Tapgate Stats</div>
-      <div class="brand-sub">v1.3.5</div>
+    <div class="topbar-row1">
+      <div style="display:flex;align-items:baseline;gap:6px;">
+        <div class="brand-name">Tapgate Stats</div>
+        <div class="brand-sub">v1.3.6</div>
+      </div>
+      <a class="topbar-back" href="index.html">← Back to Scanner</a>
     </div>
-    <div class="hdr-right">
-      <div class="hdr-event" id="tb-sub"></div>
+    <div class="topbar-row2">
+      <div class="hdr-event" id="tb-sub">Loading…</div>
       <div class="hdr-counts">
-        <span>🎟<strong id="hdr-total">—</strong></span>
-        <span>✅<strong id="hdr-checkin">—</strong></span>
+        <div class="hdr-count-item">
+          <div class="hdr-count-num" id="hdr-checkin">—</div>
+          <div class="hdr-count-lbl">Checked In</div>
+        </div>
+        <div class="hdr-count-item">
+          <div class="hdr-count-num" id="hdr-total">—</div>
+          <div class="hdr-count-lbl">Total</div>
+        </div>
       </div>
     </div>
   </div>
