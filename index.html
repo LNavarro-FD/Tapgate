@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.3';
+const APP_VERSION = '2.5.4';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1462,7 +1462,15 @@ async function loadGuestList() {
     const cachedAt  = parseInt(localStorage.getItem('tg_bookingmap_ts') || '0');
     const age       = Date.now() - cachedAt;
     if (cached && age < 10 * 60 * 1000) {
-      bookingMap = JSON.parse(cached);
+      const restored = JSON.parse(cached);
+      const activeId = String(window.activeEvent ? window.activeEvent.mec_id : '');
+      // Filter to active event only — prevents stale data from other events showing
+      bookingMap = {};
+      Object.entries(restored).forEach(([k, b]) => {
+        if (!activeId || !b._eventId || String(b._eventId) === activeId || b.source === 'sheet') {
+          bookingMap[k] = b;
+        }
+      });
       // Rebuild index maps
       Object.values(bookingMap).forEach(b => {
         if (b._mecInvoice) invoiceMap[b._mecInvoice] = b;
@@ -2334,8 +2342,15 @@ function renderFilterPills() {
     const spacer = bar.querySelector('div[style*="flex:1"]');
     spacer ? bar.insertBefore(pill, spacer) : bar.appendChild(pill);
 
-    // Auto-select first event pill
-    if (!bar.querySelector('.filter-pill.active')) {
+    // Auto-select active event pill
+    if (ev.active === 'Yes' || (!bar.querySelector('.filter-pill.active'))) {
+      // Deselect any previously active pill first
+      bar.querySelectorAll('.filter-pill').forEach(p => {
+        p.classList.remove('active');
+        p.style.background = '';
+        p.style.color = '';
+        p.style.borderColor = '';
+      });
       pill.classList.add('active');
       pill.style.background = col.bg;
       pill.style.color = '#fff';
