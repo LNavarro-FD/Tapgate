@@ -3,29 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tapgate — FD Festival 7 Login</title>
+<title>Tapgate — FD Festival 7</title>
 <style>
-body{font-family:system-ui;background:#22224C;color:#fff;text-align:center;padding:40px 20px;}
+body{font-family:system-ui;background:#22224C;color:#fff;text-align:center;padding:40px 20px;min-height:100vh;}
 h1{color:#FF4B7B;font-size:20px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
 p{font-size:13px;opacity:.6;margin-bottom:24px;}
-#qr{background:#fff;padding:16px;border-radius:12px;display:inline-block;margin-bottom:24px;}
-a{color:#FF4B7B;font-size:13px;}
+#qr-img{background:#fff;padding:16px;border-radius:12px;display:inline-block;margin-bottom:24px;}
+#qr-img img{display:block;}
+.btn{display:inline-block;background:#FF4B7B;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;margin-top:16px;}
 </style>
 </head>
 <body>
 <h1>Tapgate</h1>
-<p>FD Festival 7 — Scan to open scanner</p>
-<div id="qr"></div>
+<p>FD Festival 7 — Scan QR or tap button</p>
+<div id="qr-img">
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=https://lnavarro-fd.github.io/Tapgate/?tg=eyJ1IjoiaHR0cHM6Ly9mdW5reWRvcnlsb3ZlLmNvLnVrIiwiayI6ImNrX2M3NTZiNWQwMGZjNDg0Mzk5MDY4Njc4MTJkN2YxZTAyMTJjODQ5YTgiLCJzIjoiY3NfN2MyZWM5ZDYyOGI0NTAzZDE5YzE2MzljMTc3OWM5N2UyYjgyZGZkZCIsInNoZWV0IjoiMVN4MUt4UmNSdTh1aHpiTEQ1Y21BNzV1Z3hyWUxsT2k2a0c1aHJSdDdTUk0iLCJldmVudHMiOlt7ImlkIjoiRkQtRkQ3LTIwMjYiLCJtZWNfaWQiOiIyNTczMiIsIm5hbWUiOiJGRCBGZXN0aXZhbCA3Iiwic2hvcnQiOiJGZXN0aXZhbCA3IiwiZGF0ZSI6IlNhdCAxNSBBdWcgMjAyNiIsInZlbnVlIjoiQXNoZmllbGRzIENhcnJpYWdlICYgUG9sbyBDbHViIiwiY29sb3IiOiIjRkY0QjdCIiwiYWN0aXZlIjoiWWVzIn1dLCJlbnRyeV9sYWJlbHMiOlt7Im1hdGNoIjoiU0VBVEVEIiwibGFiZWwiOiJTZWF0ZWQiLCJpY29uIjoiXHVkODNlXHVkZTkxIn0seyJtYXRjaCI6IkJFRk9SRSAzUE0iLCJsYWJlbCI6IkVhcmx5IEVudHJ5IiwiaWNvbiI6Ilx1ZDgzY1x1ZGYwNSIsInZhbGlkX2JlZm9yZSI6IjE1OjAwIiwiYWN0aW9uIjoid2FybiJ9XX0=&color=22224C&bgcolor=FFFFFF" width="256" height="256" alt="QR Code">
+</div>
 <br>
-<a href="https://lnavarro-fd.github.io/Tapgate/?tg=eyJ1IjoiaHR0cHM6Ly9mdW5reWRvcnlsb3ZlLmNvLnVrIiwiayI6ImNrX2M3NTZiNWQwMGZjNDg0Mzk5MDY4Njc4MTJkN2YxZTAyMTJjODQ5YTgiLCJzIjoiY3NfN2MyZWM5ZDYyOGI0NTAzZDE5YzE2MzljMTc3OWM5N2UyYjgyZGZkZCIsInNoZWV0IjoiMVN4MUt4UmNSdTh1aHpiTEQ1Y21BNzV1Z3hyWUxsT2k2a0c1aHJSdDdTUk0iLCJldmVudHMiOlt7ImlkIjoiRkQtRkQ3LTIwMjYiLCJtZWNfaWQiOiIyNTczMiIsIm5hbWUiOiJGRCBGZXN0aXZhbCA3Iiwic2hvcnQiOiJGZXN0aXZhbCA3IiwiZGF0ZSI6IlNhdCAxNSBBdWcgMjAyNiIsInZlbnVlIjoiQXNoZmllbGRzIENhcnJpYWdlICYgUG9sbyBDbHViIiwiY29sb3IiOiIjRkY0QjdCIiwiYWN0aXZlIjoiWWVzIn1dLCJlbnRyeV9sYWJlbHMiOlt7Im1hdGNoIjoiU0VBVEVEIiwibGFiZWwiOiJTZWF0ZWQiLCJpY29uIjoiXHVkODNlXHVkZTkxIn0seyJtYXRjaCI6IkJFRk9SRSAzUE0iLCJsYWJlbCI6IkVhcmx5IEVudHJ5IiwiaWNvbiI6Ilx1ZDgzY1x1ZGYwNSIsInZhbGlkX2JlZm9yZSI6IjE1OjAwIiwiYWN0aW9uIjoid2FybiJ9XX0=">Or tap here to open directly</a>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>
-new QRCode(document.getElementById('qr'), {
-  text: "https://lnavarro-fd.github.io/Tapgate/?tg=eyJ1IjoiaHR0cHM6Ly9mdW5reWRvcnlsb3ZlLmNvLnVrIiwiayI6ImNrX2M3NTZiNWQwMGZjNDg0Mzk5MDY4Njc4MTJkN2YxZTAyMTJjODQ5YTgiLCJzIjoiY3NfN2MyZWM5ZDYyOGI0NTAzZDE5YzE2MzljMTc3OWM5N2UyYjgyZGZkZCIsInNoZWV0IjoiMVN4MUt4UmNSdTh1aHpiTEQ1Y21BNzV1Z3hyWUxsT2k2a0c1aHJSdDdTUk0iLCJldmVudHMiOlt7ImlkIjoiRkQtRkQ3LTIwMjYiLCJtZWNfaWQiOiIyNTczMiIsIm5hbWUiOiJGRCBGZXN0aXZhbCA3Iiwic2hvcnQiOiJGZXN0aXZhbCA3IiwiZGF0ZSI6IlNhdCAxNSBBdWcgMjAyNiIsInZlbnVlIjoiQXNoZmllbGRzIENhcnJpYWdlICYgUG9sbyBDbHViIiwiY29sb3IiOiIjRkY0QjdCIiwiYWN0aXZlIjoiWWVzIn1dLCJlbnRyeV9sYWJlbHMiOlt7Im1hdGNoIjoiU0VBVEVEIiwibGFiZWwiOiJTZWF0ZWQiLCJpY29uIjoiXHVkODNlXHVkZTkxIn0seyJtYXRjaCI6IkJFRk9SRSAzUE0iLCJsYWJlbCI6IkVhcmx5IEVudHJ5IiwiaWNvbiI6Ilx1ZDgzY1x1ZGYwNSIsInZhbGlkX2JlZm9yZSI6IjE1OjAwIiwiYWN0aW9uIjoid2FybiJ9XX0=",
-  width: 256, height: 256,
-  colorDark: '#22224C', colorLight: '#FFFFFF',
-  correctLevel: QRCode.CorrectLevel.M
-});
-</script>
+<a class="btn" href="https://lnavarro-fd.github.io/Tapgate/?tg=eyJ1IjoiaHR0cHM6Ly9mdW5reWRvcnlsb3ZlLmNvLnVrIiwiayI6ImNrX2M3NTZiNWQwMGZjNDg0Mzk5MDY4Njc4MTJkN2YxZTAyMTJjODQ5YTgiLCJzIjoiY3NfN2MyZWM5ZDYyOGI0NTAzZDE5YzE2MzljMTc3OWM5N2UyYjgyZGZkZCIsInNoZWV0IjoiMVN4MUt4UmNSdTh1aHpiTEQ1Y21BNzV1Z3hyWUxsT2k2a0c1aHJSdDdTUk0iLCJldmVudHMiOlt7ImlkIjoiRkQtRkQ3LTIwMjYiLCJtZWNfaWQiOiIyNTczMiIsIm5hbWUiOiJGRCBGZXN0aXZhbCA3Iiwic2hvcnQiOiJGZXN0aXZhbCA3IiwiZGF0ZSI6IlNhdCAxNSBBdWcgMjAyNiIsInZlbnVlIjoiQXNoZmllbGRzIENhcnJpYWdlICYgUG9sbyBDbHViIiwiY29sb3IiOiIjRkY0QjdCIiwiYWN0aXZlIjoiWWVzIn1dLCJlbnRyeV9sYWJlbHMiOlt7Im1hdGNoIjoiU0VBVEVEIiwibGFiZWwiOiJTZWF0ZWQiLCJpY29uIjoiXHVkODNlXHVkZTkxIn0seyJtYXRjaCI6IkJFRk9SRSAzUE0iLCJsYWJlbCI6IkVhcmx5IEVudHJ5IiwiaWNvbiI6Ilx1ZDgzY1x1ZGYwNSIsInZhbGlkX2JlZm9yZSI6IjE1OjAwIiwiYWN0aW9uIjoid2FybiJ9XX0=">Open Scanner →</a>
 </body>
 </html>
