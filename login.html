@@ -1,38 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FD Scanner — Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tapgate — FD Festival 7 Login</title>
 <style>
-body { margin:0; background:#22224C; display:flex; align-items:center; justify-content:center; min-height:100vh; font-family:-apple-system,sans-serif; }
-.msg { color:white; text-align:center; font-size:16px; opacity:0.7; }
+body{font-family:system-ui;background:#22224C;color:#fff;text-align:center;padding:40px 20px;}
+h1{color:#FF4B7B;font-size:20px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
+p{font-size:13px;opacity:.6;margin-bottom:24px;}
+#qr{background:#fff;padding:16px;border-radius:12px;display:inline-block;margin-bottom:24px;}
+a{color:#FF4B7B;font-size:13px;}
 </style>
 </head>
 <body>
-<div class="msg" id="msg">Logging in...</div>
+<h1>Tapgate</h1>
+<p>FD Festival 7 — Scan to open scanner</p>
+<div id="qr"></div>
+<br>
+<a href="https://lnavarro-fd.github.io/Tapgate/?tg=eyJ1IjoiaHR0cHM6Ly9mdW5reWRvcnlsb3ZlLmNvLnVrIiwiayI6ImNrX2M3NTZiNWQwMGZjNDg0Mzk5MDY4Njc4MTJkN2YxZTAyMTJjODQ5YTgiLCJzIjoiY3NfN2MyZWM5ZDYyOGI0NTAzZDE5YzE2MzljMTc3OWM5N2UyYjgyZGZkZCIsInNoZWV0IjoiMVN4MUt4UmNSdTh1aHpiTEQ1Y21BNzV1Z3hyWUxsT2k2a0c1aHJSdDdTUk0iLCJldmVudHMiOlt7ImlkIjoiRkQtRkQ3LTIwMjYiLCJtZWNfaWQiOiIyNTczMiIsIm5hbWUiOiJGRCBGZXN0aXZhbCA3Iiwic2hvcnQiOiJGZXN0aXZhbCA3IiwiZGF0ZSI6IlNhdCAxNSBBdWcgMjAyNiIsInZlbnVlIjoiQXNoZmllbGRzIENhcnJpYWdlICYgUG9sbyBDbHViIiwiY29sb3IiOiIjRkY0QjdCIiwiYWN0aXZlIjoiWWVzIn1dLCJlbnRyeV9sYWJlbHMiOlt7Im1hdGNoIjoiU0VBVEVEIiwibGFiZWwiOiJTZWF0ZWQiLCJpY29uIjoiXHVkODNlXHVkZTkxIn0seyJtYXRjaCI6IkJFRk9SRSAzUE0iLCJsYWJlbCI6IkVhcmx5IEVudHJ5IiwiaWNvbiI6Ilx1ZDgzY1x1ZGYwNSIsInZhbGlkX2JlZm9yZSI6IjE1OjAwIiwiYWN0aW9uIjoid2FybiJ9XX0=">Or tap here to open directly</a>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-(function() {
-  var params = new URLSearchParams(window.location.search);
-  var tg = params.get('tg') || params.get('fd');
-  if (tg) {
-    try {
-      var b64    = decodeURIComponent(tg).replace(/-/g,'+').replace(/_/g,'/');
-      var padded = b64 + '=='.slice(0,(4-b64.length%4)%4);
-      var parsed = JSON.parse(atob(padded));
-      if (parsed.u && parsed.k && parsed.s) {
-        localStorage.setItem('fd_cfg', JSON.stringify(parsed));
-        document.getElementById('msg').textContent = 'Logged in — opening scanner...';
-        setTimeout(function() { window.location.href = 'index.html'; }, 500);
-        return;
-      }
-    } catch(e) {
-      document.getElementById('msg').textContent = 'Login failed — please try again';
-    }
-  }
-  document.getElementById('msg').textContent = 'No credentials found — redirecting...';
-  setTimeout(function() { window.location.href = 'index.html'; }, 1000);
-})();
+new QRCode(document.getElementById('qr'), {
+  text: "https://lnavarro-fd.github.io/Tapgate/?tg=eyJ1IjoiaHR0cHM6Ly9mdW5reWRvcnlsb3ZlLmNvLnVrIiwiayI6ImNrX2M3NTZiNWQwMGZjNDg0Mzk5MDY4Njc4MTJkN2YxZTAyMTJjODQ5YTgiLCJzIjoiY3NfN2MyZWM5ZDYyOGI0NTAzZDE5YzE2MzljMTc3OWM5N2UyYjgyZGZkZCIsInNoZWV0IjoiMVN4MUt4UmNSdTh1aHpiTEQ1Y21BNzV1Z3hyWUxsT2k2a0c1aHJSdDdTUk0iLCJldmVudHMiOlt7ImlkIjoiRkQtRkQ3LTIwMjYiLCJtZWNfaWQiOiIyNTczMiIsIm5hbWUiOiJGRCBGZXN0aXZhbCA3Iiwic2hvcnQiOiJGZXN0aXZhbCA3IiwiZGF0ZSI6IlNhdCAxNSBBdWcgMjAyNiIsInZlbnVlIjoiQXNoZmllbGRzIENhcnJpYWdlICYgUG9sbyBDbHViIiwiY29sb3IiOiIjRkY0QjdCIiwiYWN0aXZlIjoiWWVzIn1dLCJlbnRyeV9sYWJlbHMiOlt7Im1hdGNoIjoiU0VBVEVEIiwibGFiZWwiOiJTZWF0ZWQiLCJpY29uIjoiXHVkODNlXHVkZTkxIn0seyJtYXRjaCI6IkJFRk9SRSAzUE0iLCJsYWJlbCI6IkVhcmx5IEVudHJ5IiwiaWNvbiI6Ilx1ZDgzY1x1ZGYwNSIsInZhbGlkX2JlZm9yZSI6IjE1OjAwIiwiYWN0aW9uIjoid2FybiJ9XX0=",
+  width: 256, height: 256,
+  colorDark: '#22224C', colorLight: '#FFFFFF',
+  correctLevel: QRCode.CorrectLevel.M
+});
 </script>
 </body>
 </html>
