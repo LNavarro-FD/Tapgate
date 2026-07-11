@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.2';
+const APP_VERSION = '2.5.3';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -4366,21 +4366,19 @@ document.addEventListener('visibilitychange', () => {
 //  QR CODE FOR SETTINGS
 // ═══════════════════════════════════════════
 function renderSettingsQR() {
-  const url = window.location.href.split('?')[0];
-  document.getElementById('settings-url').textContent = url;
+  const baseUrl = window.location.href.split('?')[0];
+  const encoded = btoa(JSON.stringify(cfg)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  const loginUrl = baseUrl + '?tg=' + encoded;
+  document.getElementById('settings-url').textContent = loginUrl;
   const qrDiv = document.getElementById('settings-qr');
   if (!qrDiv || qrDiv.dataset.rendered) return;
-  const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-  script.onload = () => {
-    new QRCode(qrDiv, { text: url, width: 180, height: 180, colorDark: '#22224C', colorLight: '#ffffff' });
-    qrDiv.dataset.rendered = '1';
-  };
-  if (!document.querySelector('script[src*="qrcode"]')) document.head.appendChild(script);
-  else if (window.QRCode) {
-    new QRCode(qrDiv, { text: url, width: 180, height: 180, colorDark: '#22224C', colorLight: '#ffffff' });
-    qrDiv.dataset.rendered = '1';
-  }
+  // Use QR server API — works in Safari without JS library issues
+  const img = document.createElement('img');
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(loginUrl) + '&color=22224C&bgcolor=FFFFFF';
+  img.width = 180; img.height = 180;
+  img.style.borderRadius = '8px';
+  qrDiv.appendChild(img);
+  qrDiv.dataset.rendered = '1';
 }
 
 function copyAppUrl() {
