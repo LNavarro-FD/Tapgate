@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.4';
+const APP_VERSION = '2.5.5';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -4382,8 +4382,8 @@ document.addEventListener('visibilitychange', () => {
 // ═══════════════════════════════════════════
 function renderSettingsQR() {
   const baseUrl = window.location.href.split('?')[0];
-  const encoded = btoa(JSON.stringify(cfg)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-  const loginUrl = baseUrl + '?tg=' + encoded;
+  const encoded = btoa(JSON.stringify(cfg));
+  const loginUrl = baseUrl + '?fd=' + encoded;
   document.getElementById('settings-url').textContent = loginUrl;
   const qrDiv = document.getElementById('settings-qr');
   if (!qrDiv || qrDiv.dataset.rendered) return;
