@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.6';
+const APP_VERSION = '2.5.7';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1421,8 +1421,7 @@ async function fetchMecAttendees(events) {
           ? g._eventTitle
             .replace(/copy of /i, '')
             .replace(/funky dory\s*/i, '')
-            .replace(/during henley\s*(royal\s*)?regatta\s*/i, '')
-            .replace(/\(SCAN TEST[^)]*\)/i, '')
+              .replace(/\(SCAN TEST[^)]*\)/i, '')
             .replace(/\s{2,}/g, ' ').trim()
           : '',
         eventDay:    g.eventDay,
@@ -1607,15 +1606,11 @@ async function loadGuestList() {
       if (ticket && g.name) ticket.name = g.name;
     });
 
-    // 4. Add WC guests — only those NOT already covered by MEC (comps, TM)
+    // 4. Add WC guests — only those NOT already covered by MEC
     const mecInvoiceIds = new Set(Object.values(bookingMap).map(b => String(b.invoiceID)));
     wcGuests.forEach(g => {
+      // Skip if already in MEC bookingMap
       if (mecInvoiceIds.has(String(g.orderNumber))) return;
-      if (upcomingEvents.length > 0) {
-        const ticketLower = (g.ticketName || '').replace(/&#8211;|&ndash;/g, '–').toLowerCase();
-        const KEYWORDS = ['ladies day', 'ibiza', 'white party', 'studio 54', 'brunch on the banks', 'henley royal regatta'];
-        if (!KEYWORDS.some(kw => ticketLower.includes(kw))) return;
-      }
       g._source = 'wc';
       guestMap[`wc-${g.orderNumber}`] = g;
       if (g.email && !emailMap[g.email]) emailMap[g.email] = g;
@@ -1727,7 +1722,16 @@ async function loadGuestList() {
           const t = bookingMap[bid].tickets[idx];
           if (t && a.checked_in) t.checkedIn = true;
           if (t && a.name && !t.name) t.name = a.name;
+          // Update ticket name if it was previously MEC Ticket and we now have a real name
+          if (t && a.ticket_name && (!t.ticketName || t.ticketName === 'MEC Ticket')) {
+            t.ticketName = a.ticket_name;
+          }
         });
+        // Also update guestMap ticket name
+        if (guestMap[bid] && (!guestMap[bid].ticketName || guestMap[bid].ticketName === 'MEC Ticket')) {
+          const firstTicketName = data.attendees[0]?.ticket_name || '';
+          if (firstTicketName) guestMap[bid].ticketName = firstTicketName;
+        }
       }
     });
     console.log('bulk2Changed:', bulk2Changed, 'bookingMap size:', Object.keys(bookingMap).length);
@@ -2295,15 +2299,12 @@ function renderFilterPills() {
     ? 365 * 24 * 60 * 60 * 1000
     : 24 * 60 * 60 * 1000;
 
-  // Define preferred pill order
-  const ORDER = ['ladies', 'ibiza', 'studio', 'brunch'];
+  // Sort events by order in cfg.events, then alphabetically
+  const cfgEventIds = (cfg.events || []).map(e => String(e.id));
   const rank = t => {
-    const tl = t.toLowerCase();
-    if (/ladies/.test(tl))  return 0;
-    if (/ibiza/.test(tl))   return 1;
-    if (/studio/.test(tl))  return 2;
-    if (/brunch/.test(tl))  return 3;
-    return 4;
+    // Find cfg event that matches this title
+    const idx = cfgEventIds.findIndex(id => (t || '').toLowerCase().includes(id.toLowerCase()));
+    return idx >= 0 ? idx : 99;
   };
 
   const filtered = upcomingEvents
@@ -3632,8 +3633,6 @@ function showEnt(g) {
 
   const entryType = (g.entryType || (g.isVip ? 'VIP' : 'GE')).toUpperCase();
   const ticketStr = (g.ticketName || g.eventTitle || '');
-  const isSeated  = /seated/i.test(ticketStr);
-  const isEvening = /evening/i.test(ticketStr) || /access only/i.test(ticketStr);
   const iconEl = el.querySelector('.eb-icon');
 
   if (entryType === 'VIP') {
@@ -3655,29 +3654,23 @@ function showEnt(g) {
     iconEl.innerHTML = '👷';
     el.querySelector('.eb-title').textContent = 'Staff — Admit:';
     items.innerHTML = '';
-  } else if (/before\s+\d/i.test(ticketStr)) {
-    el.className = 'ent-banner std';
-    el.style.borderColor = 'var(--border)';
-    iconEl.innerHTML = '🌅';
-    el.querySelector('.eb-title').textContent = 'Early Entry — Admit:';
-    items.innerHTML = '';
-    el.className = 'ent-banner std';
-    el.style.borderColor = 'var(--border)';
-    iconEl.innerHTML = '🪑';
-    el.querySelector('.eb-title').textContent = 'Seated — Admit:';
-    items.innerHTML = '';
-  } else if (isEvening) {
-    el.className = 'ent-banner std';
-    el.style.borderColor = 'var(--border)';
-    iconEl.innerHTML = '🌙';
-    el.querySelector('.eb-title').textContent = 'Evening Entry — Admit:';
-    items.innerHTML = '';
   } else {
-    el.className = 'ent-banner std';
-    el.style.borderColor = 'var(--border)';
-    iconEl.innerHTML = '🎽';
-    el.querySelector('.eb-title').textContent = 'General Entry — Admit:';
-    items.innerHTML = '';
+    // Use cfg.entry_labels for dynamic ticket type matching — white-label safe
+    const labels = (cfg.entry_labels || []);
+    const matched = labels.find(lbl => ticketStr.toUpperCase().includes((lbl.match || '').toUpperCase()));
+    if (matched) {
+      el.className = 'ent-banner std';
+      el.style.borderColor = 'var(--border)';
+      iconEl.innerHTML = matched.icon || '🎽';
+      el.querySelector('.eb-title').textContent = (matched.label || matched.match) + ' — Admit:';
+      items.innerHTML = '';
+    } else {
+      el.className = 'ent-banner std';
+      el.style.borderColor = 'var(--border)';
+      iconEl.innerHTML = '🎽';
+      el.querySelector('.eb-title').textContent = 'General Entry — Admit:';
+      items.innerHTML = '';
+    }
   }
   el.classList.remove('hidden');
 }
@@ -3707,6 +3700,16 @@ function renderLogs() {
   document.getElementById('full-log').innerHTML = scanLog.map(row).join('');
 }
 function exportCSV() {
+  // Admin check — only allowed emails can download
+  const admins = cfg.admins || [];
+  if (admins.length > 0) {
+    const email = prompt('Enter your email address to download:');
+    if (!email || !admins.map(e => e.toLowerCase()).includes(email.toLowerCase().trim())) {
+      alert('Sorry, you are not authorised to download this data.');
+      return;
+    }
+  }
+
   if (!scanLog.length && !Object.keys(bookingMap).length) {
     alert('No check-in data to export yet.');
     return;
@@ -3860,7 +3863,6 @@ function renderEventCards() {
   function getTimeOfDay(ticketName) {
     const t = (ticketName || '').toLowerCase();
     if (t.includes('evening') || t.includes('access only') || t.includes('eve')) return 'Evening';
-    if (t.includes('brunch')) return 'Day';
     if (t.includes('day') || t.includes('full day') || t.includes('vip')) return 'Day';
     return null; // unknown — don't split
   }
@@ -3939,7 +3941,6 @@ function renderEventCards() {
     const pct             = totalTickets > 0 ? Math.round(admittedTickets / totalTickets * 100) : 0;
     const shortTitle = ev.title
       .replace(/copy of /i,'').replace(/funky dory\s*/i,'')
-      .replace(/during henley\s*(royal\s*)?regatta\s*/i,'')
       .replace(/meets\s*/i,'\u00d7 ').replace(/\s*[-\u2013]\s*\d{2}[./]\d{2}([./]\d{2,4})?/g,'')
       .replace(/\(SCAN TEST[^)]*\)/i,'').replace(/\s{2,}/g,' ').trim();
     return `<div class="ev-card">
@@ -4042,13 +4043,15 @@ function undoLastCheckin() {
   alert(`Check-in undone for ${g.name}.`);
 }
 
-// ── Event colour map ──
+// ── Event colour map — uses cfg.events color, falls back to navy ──
 function getEventColour(title) {
-  const t = (title || '').toLowerCase();
-  if (/ladies.?day/i.test(t))         return { bg: '#29ABE2', text: '#fff', light: '#E8F6FD' };
-  if (/ibiza|white.?party/i.test(t))  return { bg: '#F05A28', text: '#fff', light: '#FEF0EB' };
-  if (/brunch/i.test(t))              return { bg: '#1a2744', text: '#fff', light: '#EEF1F8' };
-  if (/studio.?54/i.test(t))          return { bg: '#E91E8C', text: '#fff', light: '#FDE8F4' };
+  // Match against cfg.events by name
+  const match = (cfg.events || []).find(e =>
+    (title || '').toLowerCase().includes((e.name || e.short || '').toLowerCase())
+  );
+  if (match && match.color) {
+    return { bg: match.color, text: '#fff', light: match.color + '22' };
+  }
   return { bg: '#1a2744', text: '#fff', light: '#EEF1F8' }; // default navy
 }
 
