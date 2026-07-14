@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.8';
+const APP_VERSION = '2.5.9';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1894,10 +1894,12 @@ async function loadCompGuests() {
     try {
       const rows = await fetchSheetTab(SHEET_TABS.guests);
       if (rows.length < 2) throw new Error('No guest data');
-      const headers = rows[0].map(h => (h||'').toLowerCase().trim());
+      const guestHeaderIdx = rows.findIndex(r => r.some(c => (c||'').toLowerCase().includes('first name') || (c||'').toLowerCase().includes('email')));
+      const headerRow = guestHeaderIdx >= 0 ? guestHeaderIdx : 0;
+      const headers = rows[headerRow].map(h => (h||'').toLowerCase().trim());
       const col = name => headers.indexOf(name.toLowerCase());
       let n = 0;
-      rows.slice(1).forEach((r, i) => {
+      rows.slice(headerRow + 1).forEach((r, i) => {
         const eventId   = (r[col('event id')]   || r[col('event')] || '').trim();
         const firstName = (r[col('first name')]  || '').trim();
         const lastName  = (r[col('last name')]   || '').trim();
@@ -1933,9 +1935,11 @@ async function loadCompGuests() {
       let n = 0;
       // Build a map of performer name → bookingMap key for guest linking
       window._djMap = {};
-      const djHeaders = djRows[0].map(h => (h||'').toLowerCase().trim());
+      const djHeaderIdx = djRows.findIndex(r => r.some(c => (c||'').toLowerCase().includes('performer')));
+      if (djHeaderIdx < 0) { console.warn('DJ sheet: header row not found'); return; }
+      const djHeaders = djRows[djHeaderIdx].map(h => (h||'').toLowerCase().trim());
       const djCol = name => djHeaders.indexOf(name.toLowerCase());
-      djRows.slice(1).forEach((r, i) => {
+      djRows.slice(djHeaderIdx + 1).forEach((r, i) => {
         const eventId       = (r[djCol('event id')]        || r[0] || '').trim();
         const performerName = (r[djCol('performer name')]  || r[1] || '').trim();
         const type          = (r[djCol('type')]            || r[2] || '').trim();
@@ -2549,8 +2553,16 @@ function renderGuestList() {
     return;
   }
 
-  const totalTickets = filtered.reduce((sum, b) => sum + b.tickets.length, 0);
-  const countHTML = `<div class="gl-count">${filtered.length} booking${filtered.length!==1?'s':''} · ${totalTickets} ticket${totalTickets!==1?'s':''}</div>`;
+  const totalTickets = filtered.reduce((sum, b) => b.source === 'sheet' ? sum : sum + b.tickets.length, 0);
+  const totalDJs     = filtered.filter(b => b.source === 'sheet' && (b.eventTitle||'').toLowerCase() === 'dj').length;
+  const totalGuests  = filtered.filter(b => b.source === 'sheet' && (b.eventTitle||'').toLowerCase() !== 'dj').length;
+  const countParts   = [
+    `${filtered.filter(b => b.source !== 'sheet').length} booking${filtered.filter(b=>b.source!=='sheet').length!==1?'s':''}`,
+    `${totalTickets} ticket${totalTickets!==1?'s':''}`,
+    totalDJs    ? `${totalDJs} DJ${totalDJs!==1?'s':''}`       : null,
+    totalGuests ? `${totalGuests} guest${totalGuests!==1?'s':''}` : null,
+  ].filter(Boolean);
+  const countHTML = `<div class="gl-count">${countParts.join(' · ')}</div>`;
 
   const rows = filtered.map(b => {
     const admitted = getBookingAdmittedCount(b);
