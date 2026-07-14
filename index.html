@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.14';
+const APP_VERSION = '2.5.15';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1818,11 +1818,13 @@ function sectionToEntry(section) {
   }
 }
 
-async function fetchSheetTab(gid) {
+async function fetchSheetTab(gid, startRow) {
+  // startRow: 1-based row number to start from (1 = first row, 3 = skip 2 title rows)
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(`Sheet fetch failed gid=${gid}: ${r.status}`);
-  return parseCSV(await r.text());
+  const rows = parseCSV(await r.text());
+  return startRow && startRow > 1 ? rows.slice(startRow - 1) : rows;
 }
 
 function parseCSV(text) {
@@ -1896,14 +1898,12 @@ async function loadCompGuests() {
     // Tab: GUESTS — header-based column mapping (white-label safe)
     // Headers: Event ID | First Name | Last Name | Email | Entry Code | Category | Guest Of | Notes
     try {
-      const rows = await fetchSheetTab(SHEET_TABS.guests);
+      const rows = await fetchSheetTab(SHEET_TABS.guests, 3);
       if (rows.length < 2) throw new Error('No guest data');
-      const guestHeaderIdx = rows.findIndex(r => r.some(c => (c||'').trim().toLowerCase() === 'first name'));
-      const headerRow = guestHeaderIdx >= 0 ? guestHeaderIdx : 0;
-      const headers = rows[headerRow].map(h => (h||'').toLowerCase().trim());
+      const headers = rows[0].map(h => (h||'').toLowerCase().trim());
       const col = name => headers.indexOf(name.toLowerCase());
       let n = 0;
-      rows.slice(headerRow + 1).forEach((r, i) => {
+      rows.slice(1).forEach((r, i) => {
         const eventId   = (r[col('event id')]   || r[col('event')] || 'active').trim();
         const firstName = (r[col('first name')]  || '').trim();
         const lastName  = (r[col('last name')]   || '').trim();
@@ -1935,19 +1935,15 @@ async function loadCompGuests() {
     // Tab: DJ's — Event ID(0)|Performer Name(1)|Type(2)|Email(3)|Entry Code(4)|Set Time(5)|Stage(6)|Lanyard(7)|Notes(8)
     // DJ guests come from GUESTS tab with Category=DJ Guest and Guest Of=Performer Name
     try {
-      const djRows = await fetchSheetTab(SHEET_TABS.djs);
+      const djRows = await fetchSheetTab(SHEET_TABS.djs, 3);
       let n = 0;
       // Build a map of performer name → bookingMap key for guest linking
       window._djMap = {};
-      // DJ sheet has 2 title rows + 1 header row before data starts
-      const djHeaderIdx = (() => {
-        const exactIdx = djRows.findIndex((r, idx) => idx > 0 && r.some(c => (c||'').trim().toLowerCase() === 'performer name'));
-        return exactIdx >= 0 ? exactIdx : 2; // fallback: assume row 3 (index 2) is header
-      })();
-      if (djHeaderIdx >= djRows.length) { console.warn('DJ sheet: header row not found'); return; }
-      const djHeaders = djRows[djHeaderIdx].map(h => (h||'').toLowerCase().trim());
+      if (djRows.length < 2) { console.log('✓ Sheet DJs: 0'); return; }
+      // Row 0 is header (row 3 of sheet), data starts from row 1
+      const djHeaders = djRows[0].map(h => (h||'').toLowerCase().trim());
       const djCol = name => djHeaders.indexOf(name.toLowerCase());
-      djRows.slice(djHeaderIdx + 1).forEach((r, i) => {
+      djRows.slice(1).forEach((r, i) => {
         const eventId       = (r[djCol('event id')]        || r[0] || '').trim();
         const performerName = (r[djCol('performer name')]  || r[1] || '').trim();
         const type          = (r[djCol('type')]            || r[2] || '').trim();
