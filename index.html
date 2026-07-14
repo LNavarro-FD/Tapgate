@@ -422,7 +422,7 @@ input::placeholder { color: #999; }
 .gl-avatar.tm      { background: #D6E8FF; color: #0050B3; }
 .gl-info  { flex: 1; min-width: 0; overflow: hidden; max-width: calc(100% - 130px); }
 .gl-name  { font-size: 17px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gl-ticket { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gl-ticket { font-size: 12px; color: var(--muted); margin-top: 2px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .gl-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
 .badge {
   font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
@@ -444,7 +444,7 @@ input::placeholder { color: #999; }
 .gl-att-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
 .gl-att-dot.ok { background: var(--ok); }
 .gl-att-name { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gl-att-ticket { font-size: 12px; color: var(--muted); flex-shrink: 0; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gl-att-ticket { font-size: 12px; color: var(--muted); flex-shrink: 0; max-width: 120px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .gl-att-in   { font-size: 11px; font-weight: 800; color: var(--ok); letter-spacing: .05em; flex-shrink: 0; }
 
 /* ── Guest drawer ── */
@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.9';
+const APP_VERSION = '2.5.10';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -2636,7 +2636,7 @@ function renderGuestList() {
             <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.name}</span>
             <span style="color:var(--muted);font-size:22px;line-height:1;flex-shrink:0;" id="chevron-${b.bookingId}">›</span>
           </div>
-          <div class="gl-ticket" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.eventDay&&b.eventDay!=='All'?'<span style="font-weight:800;color:var(--navy);margin-right:4px;">'+b.eventDay+'</span>':''}${b.guestOf?'<span style="color:var(--muted);">Guest of '+b.guestOf+' · </span>':''}${b.eventTitle||''}</div>
+          <div class="gl-ticket">${b.eventDay&&b.eventDay!=='All'?'<span style="font-weight:800;color:var(--navy);margin-right:4px;">'+b.eventDay+'</span>':''}${b.guestOf?'<span style="color:var(--muted);">Guest of '+b.guestOf+' · </span>':''}${b.eventTitle||''}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;max-width:70px;margin-left:6px;overflow:hidden;">
           ${badges}
