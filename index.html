@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.16';
+const APP_VERSION = '2.5.17';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1935,12 +1935,15 @@ async function loadCompGuests() {
     // Tab: DJ's — Event ID(0)|Performer Name(1)|Type(2)|Email(3)|Entry Code(4)|Set Time(5)|Stage(6)|Lanyard(7)|Notes(8)
     // DJ guests come from GUESTS tab with Category=DJ Guest and Guest Of=Performer Name
     try {
-      const djRows = await fetchSheetTab(SHEET_TABS.djs, 3);
+      const djRowsAll = await fetchSheetTab(SHEET_TABS.djs);
       let n = 0;
       // Build a map of performer name → bookingMap key for guest linking
       window._djMap = {};
-      if (djRows.length < 2) { console.log('✓ Sheet DJs: 0'); return; }
-      // Row 0 is header (row 3 of sheet), data starts from row 1
+      if (djRowsAll.length < 2) { console.log('✓ Sheet DJs: 0'); return; }
+      // Find header row by looking for a cell that is exactly 'performer name'
+      const djHeaderIdx = djRowsAll.findIndex(r => r.map(c => (c||'').trim().toLowerCase()).includes('performer name'));
+      if (djHeaderIdx < 0) { console.warn('DJ sheet: no header row found'); return; }
+      const djRows = djRowsAll.slice(djHeaderIdx);
       const djHeaders = djRows[0].map(h => (h||'').toLowerCase().trim());
       const djCol = name => djHeaders.indexOf(name.toLowerCase());
       djRows.slice(1).forEach((r, i) => {
