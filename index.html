@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.15';
+const APP_VERSION = '2.5.16';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -3720,21 +3720,32 @@ function exportCSV() {
     return;
   }
 
-  const rows = [['Time', 'Name', 'Event', 'Ticket Type', 'VIP', 'Comp', 'Status', 'Method', 'Notes']];
+  const rows = [['Time', 'Name', 'Event', 'Ticket Type', 'Early Entry', 'VIP', 'Comp', 'Status', 'Method', 'Notes']];
+  const earlyEntryRows = []; // track which row indices need highlighting (1-based, 0=header)
+
+  // Check if a ticket is an early entry type
+  const isEarlyEntry = (ticketName) => {
+    const t = (ticketName || '').toUpperCase();
+    if (t.includes('BEFORE') && t.includes('PM')) return true;
+    const labels = cfg.entry_labels || [];
+    return labels.some(l => l.valid_before && t.includes((l.match||'').toUpperCase()));
+  };
 
   // Export from scanLog (session scans)
   if (scanLog.length) {
     scanLog.forEach(e => {
-      // Try to enrich from bookingMap
       const booking = Object.values(bookingMap).find(b => b.name === e.name);
       const isVip   = booking ? booking.tickets.some(t => t.isVip) : false;
       const isComp  = booking ? (booking.isComp || false) : false;
       const event   = booking ? (booking.eventTitle || '') : '';
+      const early   = isEarlyEntry(e.ticket);
+      if (early) earlyEntryRows.push(rows.length);
       rows.push([
         e.time || '',
         e.name || '',
         event,
         e.ticket || '',
+        early ? 'YES' : '',
         isVip  ? 'Yes' : 'No',
         isComp ? 'Yes' : 'No',
         e.status === 'ok' ? 'Admitted' : e.status === 'warn' ? 'Duplicate' : 'Rejected',
@@ -3747,11 +3758,14 @@ function exportCSV() {
     Object.values(bookingMap).forEach(b => {
       b.tickets.forEach((t, i) => {
         if (!t.checkedIn) return;
+        const early = isEarlyEntry(t.ticketName);
+        if (early) earlyEntryRows.push(rows.length);
         rows.push([
           '',
           t.name || b.name,
           b.eventTitle || '',
           t.ticketName || '',
+          early ? 'YES' : '',
           t.isVip ? 'Yes' : 'No',
           b.isComp ? 'Yes' : 'No',
           'Admitted',
@@ -3762,15 +3776,36 @@ function exportCSV() {
     });
   }
 
-  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
   const date = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
-  a.href     = url;
-  a.download = `TG-checkins-${date}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+
+  function doExport(XLSX) {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:8},{wch:25},{wch:20},{wch:40},{wch:12},{wch:6},{wch:6},{wch:10},{wch:10},{wch:20}];
+    earlyEntryRows.forEach(function(rowIdx) {
+      for (var c = 0; c < rows[rowIdx].length; c++) {
+        var addr = XLSX.utils.encode_cell({r: rowIdx, c: c});
+        if (!ws[addr]) ws[addr] = { v: '', t: 's' };
+        ws[addr].s = { fill: { fgColor: { rgb: 'FFF3CD' } }, font: { bold: true } };
+      }
+    });
+    for (var c = 0; c < rows[0].length; c++) {
+      var addr = XLSX.utils.encode_cell({r: 0, c: c});
+      if (!ws[addr]) ws[addr] = { v: '', t: 's' };
+      ws[addr].s = { fill: { fgColor: { rgb: '22224C' } }, font: { bold: true, color: { rgb: 'FFFFFF' } } };
+    }
+    XLSX.utils.book_append_sheet(wb, ws, 'Check-ins');
+    XLSX.writeFile(wb, 'TG-checkins-' + date + '.xlsx');
+  }
+
+  if (window.XLSX) {
+    doExport(window.XLSX);
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = function() { doExport(window.XLSX); };
+    document.head.appendChild(s);
+  }
 }
 
 // ═══════════════════════════════════════════
