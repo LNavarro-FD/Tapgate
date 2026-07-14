@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.17';
+const APP_VERSION = '2.5.18';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1898,24 +1898,22 @@ async function loadCompGuests() {
     // Tab: GUESTS — header-based column mapping (white-label safe)
     // Headers: Event ID | First Name | Last Name | Email | Entry Code | Category | Guest Of | Notes
     try {
-      const rows = await fetchSheetTab(SHEET_TABS.guests, 3);
-      if (rows.length < 2) throw new Error('No guest data');
-      const headers = rows[0].map(h => (h||'').toLowerCase().trim());
-      const col = name => headers.indexOf(name.toLowerCase());
+      const guestRowsAll = await fetchSheetTab(SHEET_TABS.guests);
+      if (guestRowsAll.length < 2) throw new Error('No guest data');
       let n = 0;
-      rows.slice(1).forEach((r, i) => {
-        const eventId   = (r[col('event id')]   || r[col('event')] || 'active').trim();
-        const firstName = (r[col('first name')]  || '').trim();
-        const lastName  = (r[col('last name')]   || '').trim();
-        const email     = (r[col('email')]        || '').toLowerCase().trim();
-        const entryCode = (r[col('entry code')]  || '').trim();
-        const category  = (r[col('category')]    || 'Comp Guest').trim();
-        const guestOf   = (r[col('guest of')]    || '').trim();
-        const notes     = (r[col('notes')]       || '').trim();
+      guestRowsAll.forEach((r, i) => {
+        const firstName = (r[1] || '').trim();
+        const lastName  = (r[2] || '').trim();
+        const email     = (r[3] || '').toLowerCase().trim();
+        const entryCode = (r[4] || '').trim();
+        const category  = (r[5] || 'Comp Guest').trim();
+        const guestOf   = (r[6] || '').trim();
+        const notes     = (r[7] || '').trim();
         const name = [firstName, lastName].filter(Boolean).join(' ');
         if (!firstName && !lastName) return;
-        const eventIds = sheetEventToId(eventId);
-        if (!eventIds.length) return;
+        // Skip header/title rows
+        if (firstName.toLowerCase() === 'first name' || firstName.toLowerCase() === 'first_name') return;
+        const eventIds = sheetEventToId('');
         const isDJGuest = category.toLowerCase().includes('dj');
         addSheetBooking({
           key: `gs-${i}`, name, email,
@@ -1941,25 +1939,22 @@ async function loadCompGuests() {
       window._djMap = {};
       if (djRowsAll.length < 2) { console.log('✓ Sheet DJs: 0'); return; }
       // Find header row by looking for a cell that is exactly 'performer name'
-      const djHeaderIdx = djRowsAll.findIndex(r => r.map(c => (c||'').trim().toLowerCase()).includes('performer name'));
-      if (djHeaderIdx < 0) { console.warn('DJ sheet: no header row found'); return; }
-      const djRows = djRowsAll.slice(djHeaderIdx);
-      const djHeaders = djRows[0].map(h => (h||'').toLowerCase().trim());
-      const djCol = name => djHeaders.indexOf(name.toLowerCase());
-      djRows.slice(1).forEach((r, i) => {
-        const eventId       = (r[djCol('event id')]        || r[0] || '').trim();
-        const performerName = (r[djCol('performer name')]  || r[1] || '').trim();
-        const type          = (r[djCol('type')]            || r[2] || '').trim();
-        const email         = (r[djCol('email')]           || r[3] || '').trim();
-        const entryCode     = (r[djCol('entry code')]      || r[4] || '').trim();
-        const setTime       = (r[djCol('set time')]        || r[5] || '').trim();
-        const stage         = (r[djCol('stage')]           || r[6] || '').trim();
-        const lanyard       = (r[djCol('lanyard')]         || r[7] || '').trim();
-        const notes         = (r[djCol('notes')]           || r[8] || '').trim();
-        const name = (performerName||'').trim();
+      // Skip all non-data rows — only process rows where column B has a name
+      // and column A looks like an event ID (not a header or title row)
+      djRowsAll.forEach((r, i) => {
+        const performerName = (r[1] || '').trim();
+        const type          = (r[2] || '').trim();
+        const email         = (r[3] || '').trim();
+        const entryCode     = (r[4] || '').trim();
+        const setTime       = (r[5] || '').trim();
+        const stage         = (r[6] || '').trim();
+        const lanyard       = (r[7] || '').trim();
+        const notes         = (r[8] || '').trim();
+        const name = performerName;
         if (!name) return;
-        const eventIds = sheetEventToId(eventId);
-        if (!eventIds.length) return;
+        // Skip header/title rows
+        if (name.toLowerCase() === 'performer name' || name.toLowerCase() === 'performer_name') return;
+        const eventIds = sheetEventToId('');
         const hasLanyard = (lanyard||'').toLowerCase() === 'yes';
         const tickets = [{
           key: `dj-${i}-0`, attendeeKey: '1',
