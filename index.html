@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.12';
+const APP_VERSION = '2.5.13';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1935,10 +1935,12 @@ async function loadCompGuests() {
       let n = 0;
       // Build a map of performer name → bookingMap key for guest linking
       window._djMap = {};
-      const djHeaderIdx = djRows.findIndex(r => 
-        r.some(c => (c||'').trim().toLowerCase() === 'performer name')
-      );
-      if (djHeaderIdx < 0) { console.warn('DJ sheet: header row not found'); return; }
+      // DJ sheet has 2 title rows + 1 header row before data starts
+      const djHeaderIdx = (() => {
+        const exactIdx = djRows.findIndex((r, idx) => idx > 0 && r.some(c => (c||'').trim().toLowerCase() === 'performer name'));
+        return exactIdx >= 0 ? exactIdx : 2; // fallback: assume row 3 (index 2) is header
+      })();
+      if (djHeaderIdx >= djRows.length) { console.warn('DJ sheet: header row not found'); return; }
       const djHeaders = djRows[djHeaderIdx].map(h => (h||'').toLowerCase().trim());
       const djCol = name => djHeaders.indexOf(name.toLowerCase());
       djRows.slice(djHeaderIdx + 1).forEach((r, i) => {
