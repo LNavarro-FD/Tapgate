@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.18';
+const APP_VERSION = '2.5.19';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -2561,7 +2561,6 @@ function renderGuestList() {
   const countParts   = [
     `${filtered.filter(b => b.source !== 'sheet').length} booking${filtered.filter(b=>b.source!=='sheet').length!==1?'s':''}`,
     `${totalTickets} ticket${totalTickets!==1?'s':''}`,
-    totalDJs    ? `${totalDJs} DJ${totalDJs!==1?'s':''}`       : null,
     totalGuests ? `${totalGuests} guest${totalGuests!==1?'s':''}` : null,
   ].filter(Boolean);
   const countHTML = `<div class="gl-count">${countParts.join(' · ')}</div>`;
