@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.13';
+const APP_VERSION = '2.5.14';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1782,7 +1782,11 @@ const SHEET_TABS = {
 };
 
 function sheetEventToId(eventStr) {
-  if (!eventStr) return [];
+  if (!eventStr || eventStr === 'active') {
+    // No event ID — default to active event
+    if (window.activeEvent) return [String(window.activeEvent.mec_id)];
+    return upcomingEvents.map(e => String(e.id));
+  }
   const s = eventStr.trim().toLowerCase();
   if (s === 'all') return upcomingEvents.map(e => String(e.id));
   if (window.activeEvent) return [String(window.activeEvent.mec_id)];
@@ -1900,7 +1904,7 @@ async function loadCompGuests() {
       const col = name => headers.indexOf(name.toLowerCase());
       let n = 0;
       rows.slice(headerRow + 1).forEach((r, i) => {
-        const eventId   = (r[col('event id')]   || r[col('event')] || '').trim();
+        const eventId   = (r[col('event id')]   || r[col('event')] || 'active').trim();
         const firstName = (r[col('first name')]  || '').trim();
         const lastName  = (r[col('last name')]   || '').trim();
         const email     = (r[col('email')]        || '').toLowerCase().trim();
