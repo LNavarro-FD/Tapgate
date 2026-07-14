@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.7';
+const APP_VERSION = '2.5.8';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1455,12 +1455,14 @@ async function loadGuestList() {
   document.getElementById('gl-list').innerHTML = '<div class="gl-loading"><span class="spin"></span>&nbsp; Loading…</div>';
   if (cfg.demo) { loadDemoGuests(); renderGuestList(); updateGLStats(); return; }
 
-  // Restore from sessionStorage if returning from stats (data < 10 mins old)
+  // Restore from localStorage if returning from stats (data < 10 mins old)
+  const CACHE_VERSION = '2'; // bump when bulk2 schema changes
   try {
     const cached    = localStorage.getItem('tg_bookingmap');
     const cachedAt  = parseInt(localStorage.getItem('tg_bookingmap_ts') || '0');
+    const cachedVer = localStorage.getItem('tg_bookingmap_ver') || '1';
     const age       = Date.now() - cachedAt;
-    if (cached && age < 10 * 60 * 1000) {
+    if (cached && age < 10 * 60 * 1000 && cachedVer === CACHE_VERSION) {
       const restored = JSON.parse(cached);
       const activeId = String(window.activeEvent ? window.activeEvent.mec_id : '');
       // Filter to active event only — prevents stale data from other events showing
@@ -1481,20 +1483,7 @@ async function loadGuestList() {
       renderGuestList(); updateGLStats(); updateStats();
       console.log('Restored from sessionStorage — age:', Math.round(age/1000) + 's, bookings:', Object.keys(bookingMap).length);
       // Still run sheet loading + ticket map in background
-      fetchUpcomingEvents().then(() => Promise.all([loadSheetData(), fetchMecTicketMap().then(() => {
-        // Backfill ticket names in restored bookingMap using _mecTicketId
-        let changed = false;
-        Object.values(bookingMap).forEach(b => {
-          (b.tickets || []).forEach(t => {
-            if ((!t.ticketName || t.ticketName === 'MEC Ticket') && t._mecTicketId) {
-              const resolved = window.mecTicketMap[String(t._mecTicketId)];
-              if (resolved) { t.ticketName = resolved; t.isVip = /vip/i.test(resolved); changed = true; }
-            }
-          });
-        });
-        if (changed) { console.log('mecTicketMap backfill applied'); renderGuestList(); }
-        else { console.log('mecTicketMap loaded (no backfill needed or _mecTicketId not yet in cache — clear session to update'); }
-      })])).catch(() => {});
+      fetchUpcomingEvents().then(() => Promise.all([loadSheetData(), fetchMecTicketMap()])).catch(() => {})
       // Load Firebase MEC checkins and start poll for cross-device sync
       if (window.fbLoadMECCheckins) window.fbLoadMECCheckins().then(function() { if (window.fbStartMECPoll) window.fbStartMECPoll(); });
       return;
@@ -1762,7 +1751,7 @@ async function loadGuestList() {
       showWarning('✅ ' + totalTickets + ' attendees loaded', 'green', null);
       setTimeout(clearWarning, 4000);
       // Save bookingMap to sessionStorage for stats page
-      try { try { localStorage.setItem('tg_bookingmap', JSON.stringify(bookingMap)); localStorage.setItem('tg_bookingmap_ts', String(Date.now())); } catch(e) { console.warn('bookingMap too large for localStorage:', e.message); } } catch(e) {}
+      try { try { localStorage.setItem('tg_bookingmap', JSON.stringify(bookingMap)); localStorage.setItem('tg_bookingmap_ts', String(Date.now())); localStorage.setItem('tg_bookingmap_ver', CACHE_VERSION); } catch(e) { console.warn('bookingMap too large for localStorage:', e.message); } } catch(e) {}
       // Save active event for stats page
       if (window.activeEvent) try { localStorage.setItem('tg_event', JSON.stringify(window.activeEvent)); } catch(e) {}
       // Load Firebase MEC checkins and start cross-device sync poll
@@ -4373,6 +4362,7 @@ document.addEventListener('visibilitychange', () => {
       try {
         localStorage.setItem('tg_bookingmap', JSON.stringify(bookingMap));
         localStorage.setItem('tg_bookingmap_ts', String(Date.now()));
+        localStorage.setItem('tg_bookingmap_ver', CACHE_VERSION);
       } catch(e) { console.warn('bookingMap save on hide failed:', e.message); }
     }
     // Pause camera to save battery
