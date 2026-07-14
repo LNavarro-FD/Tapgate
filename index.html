@@ -1064,7 +1064,8 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.21';
+const APP_VERSION = '2.5.22';
+const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -2568,7 +2569,6 @@ function renderGuestList() {
   const countParts   = [
     `${filtered.filter(b => b.source !== 'sheet').length} booking${filtered.filter(b=>b.source!=='sheet').length!==1?'s':''}`,
     `${totalTickets} ticket${totalTickets!==1?'s':''}`,
-    totalGuests ? `${totalGuests} guest${totalGuests!==1?'s':''}` : null,
   ].filter(Boolean);
   const countHTML = `<div class="gl-count">${countParts.join(' · ')}</div>`;
 
