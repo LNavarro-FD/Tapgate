@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.10';
+const APP_VERSION = '2.5.11';
 // auto-update removed;
 
 // ═══════════════════════════════════════════
@@ -1935,7 +1935,10 @@ async function loadCompGuests() {
       let n = 0;
       // Build a map of performer name → bookingMap key for guest linking
       window._djMap = {};
-      const djHeaderIdx = djRows.findIndex(r => r.some(c => (c||'').toLowerCase().includes('performer')));
+      const djHeaderIdx = djRows.findIndex(r => 
+        r.some(c => (c||'').toLowerCase().includes('performer')) &&
+        r.some(c => (c||'').toLowerCase().includes('event'))
+      );
       if (djHeaderIdx < 0) { console.warn('DJ sheet: header row not found'); return; }
       const djHeaders = djRows[djHeaderIdx].map(h => (h||'').toLowerCase().trim());
       const djCol = name => djHeaders.indexOf(name.toLowerCase());
