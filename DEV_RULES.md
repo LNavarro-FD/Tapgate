@@ -104,10 +104,10 @@ Dev (local /home/claude/) → Syntax check → GitHub main → GitHub Pages (liv
 
 | File | Version | Last updated |
 |------|---------|-------------|
-| index.html | v2.4.4 | 2026-07-10 |
-| stats.html | v1.3.7 | 2026-07-10 |
+| index.html | v2.5.14 | 2026-07-14 |
+| stats.html | v1.3.9 | 2026-07-14 |
 | FD Checkin Proxy | v2.8 | 2026-07-10 |
-| setup.html | v1.1.0 | 2026-07-10 |
+| setup.html | v1.1.0 | 2026-07-14 |
 | FD Checkin Proxy | v2.8 | 2026-07-10 |
 | FD bulk2 | v4.x | — |
 
