@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.22';
+const APP_VERSION = '2.5.23';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -3748,7 +3748,7 @@ function exportCSV() {
         e.time || '',
         e.name || '',
         event,
-        e.ticket || '',
+        early ? '⚠️ ' + (e.ticket || '') : (e.ticket || ''),
         early ? 'YES' : '',
         isVip  ? 'Yes' : 'No',
         isComp ? 'Yes' : 'No',
@@ -3760,6 +3760,23 @@ function exportCSV() {
   } else {
     // Fall back to bookingMap checked-in state if no scan log
     Object.values(bookingMap).forEach(b => {
+      if (b.source === 'sheet') {
+        // Always include sheet guests regardless of check-in status
+        const checkedIn = b.tickets && b.tickets.some(t => t.checkedIn);
+        rows.push([
+          '',
+          b.name,
+          b.guestType || 'Comp Guest',
+          b.ticketName || b.guestType || '',
+          '',
+          'No',
+          'Yes',
+          checkedIn ? 'Admitted' : 'Not yet',
+          b.guestOf ? 'Guest of ' + b.guestOf : '',
+          b.notes || ''
+        ]);
+        return;
+      }
       b.tickets.forEach((t, i) => {
         if (!t.checkedIn) return;
         const early = isEarlyEntry(t.ticketName);
@@ -3768,7 +3785,7 @@ function exportCSV() {
           '',
           t.name || b.name,
           b.eventTitle || '',
-          t.ticketName || '',
+          early ? '⚠️ ' + (t.ticketName || '') : (t.ticketName || ''),
           early ? 'YES' : '',
           t.isVip ? 'Yes' : 'No',
           b.isComp ? 'Yes' : 'No',
