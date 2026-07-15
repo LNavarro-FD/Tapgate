@@ -132,7 +132,7 @@ async function fbSet(path, data) {
     <div class="topbar-line1">
       <div style="display:flex;align-items:baseline;gap:6px;">
         <div class="brand-name">Tapgate Stats</div>
-        <div class="brand-sub">v1.3.13</div>
+        <div class="brand-sub">v1.3.14</div>
       </div>
       <a class="topbar-back" href="#" onclick="event.preventDefault();history.back();">← Scanner</a>
     </div>
@@ -186,6 +186,12 @@ async function fbSet(path, data) {
       <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
         <span id="prog-in">0 in</span><span id="prog-pct">0%</span><span id="prog-rem">0 remaining</span>
       </div>
+    </div>
+
+    <!-- Today's Sales -->
+    <div class="stat-card" id="card-today-sales">
+      <div class="stat-card-title">Today's Sales <span id="today-sales-date" style="font-weight:400;opacity:.6;"></span></div>
+      <div id="today-sales-rows"><div class="empty">Loading...</div></div>
     </div>
 
     <!-- By entry type -->
@@ -412,7 +418,10 @@ async function loadStats(ev) {
     // 2. Load event config in background — don't block render
     loadEventConfig(ev).catch(e => console.warn('Event config failed:', e.message));
 
-    // 3. Render immediately with what we have
+    // 3. Fetch today's sales
+    fetchTodaySales(ev);
+
+    // 4. Render immediately with what we have
     renderStats();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('stats-content').style.display = 'block';
@@ -457,6 +466,46 @@ async function loadEventConfig(ev) {
 }
 
 // ── RENDER STATS ──
+async function fetchTodaySales(ev) {
+  const el = document.getElementById('today-sales-rows');
+  const dateEl = document.getElementById('today-sales-date');
+  if (!el) return;
+  try {
+    const mecId = ev.mec_id || ev.id;
+    const r = await fetch(`${cfg.u}/wp-json/fd2/v1/today-sales?event_id=${mecId}`);
+    if (!r.ok) throw new Error('today-sales failed: ' + r.status);
+    const d = await r.json();
+    const dateStr = d.date ? d.date.slice(0,4)+'-'+d.date.slice(4,6)+'-'+d.date.slice(6,8) : '';
+    if (dateEl) dateEl.textContent = dateStr;
+    const total = d.bookings_today || 0;
+    const seated = d.seated_today || 0;
+    const ge = d.ge_today || 0;
+    if (total === 0) {
+      el.innerHTML = '<div class="empty" style="padding:8px 0;color:var(--muted);font-size:13px;">No tickets sold today</div>';
+    } else {
+      el.innerHTML =
+        '<div class="trow">' +
+          '<div class="trow-key" style="font-weight:800;">Total</div>' +
+          '<div class="trow-bar"></div>' +
+          '<div class="trow-val" style="font-weight:800;">' + total + '</div>' +
+        '</div>' +
+        '<div class="trow">' +
+          '<div class="trow-key" style="padding-left:12px;font-size:12px;color:var(--muted);">Seated</div>' +
+          '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + (total > 0 ? Math.round(seated/total*100) : 0) + '%"></div></div>' +
+          '<div class="trow-val" style="font-size:12px;">' + seated + '</div>' +
+        '</div>' +
+        '<div class="trow">' +
+          '<div class="trow-key" style="padding-left:12px;font-size:12px;color:var(--muted);">General Entry</div>' +
+          '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + (total > 0 ? Math.round(ge/total*100) : 0) + '%"></div></div>' +
+          '<div class="trow-val" style="font-size:12px;">' + ge + '</div>' +
+        '</div>';
+    }
+  } catch(e) {
+    if (el) el.innerHTML = '<div class="empty" style="color:var(--muted);font-size:12px;">Sales data unavailable</div>';
+    console.warn('Today sales failed:', e.message);
+  }
+}
+
 function renderStats() {
   // Count at TICKET level not booking level
   const allBookings = Object.values(bookingMap);
