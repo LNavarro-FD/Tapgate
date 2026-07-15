@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.24';
+const APP_VERSION = '2.5.25';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -1674,6 +1674,12 @@ async function loadGuestList() {
           delete bookingMap[existingWcKey];
           const wcGuestKey = `wc-${data.inv}`;
           if (guestMap[wcGuestKey]) delete guestMap[wcGuestKey];
+        }
+        // Remove any dummy MEC scan booking stored under invoice ID if different from booking ID
+        if (data.inv && data.inv !== bid && bookingMap[data.inv]) {
+          console.log('bulk2: removing dummy scan booking', data.inv, 'replaced by real booking', bid);
+          delete bookingMap[data.inv];
+          delete invoiceMap[data.inv];
         }
         const leadName = data.attendees[0]?.name || '';
         const eventDay = detectDay('', data.eventId);
@@ -2684,7 +2690,7 @@ function renderGuestList() {
               </button>`
             : `<button onclick="event.stopPropagation();admitAllBooking('${b.bookingId}')"
                 style="width:100%;box-sizing:border-box;background:var(--ok);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;box-shadow:0 3px 12px rgba(0,168,90,.3);">
-                ✓ Check In All ${total} Ticket${total>1?'s':''}
+                ✓ Check In ${someIn ? 'Remaining ' + (total - admitted) : 'All ' + total} Ticket${(someIn ? total-admitted : total)>1?'s':''}
               </button>`
           }
         </div>
