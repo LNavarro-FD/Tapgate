@@ -132,7 +132,7 @@ async function fbSet(path, data) {
     <div class="topbar-line1">
       <div style="display:flex;align-items:baseline;gap:6px;">
         <div class="brand-name">Tapgate Stats</div>
-        <div class="brand-sub">v1.3.9</div>
+        <div class="brand-sub">v1.3.10</div>
       </div>
       <a class="topbar-back" href="#" onclick="event.preventDefault();history.back();">← Scanner</a>
     </div>
@@ -509,18 +509,57 @@ function renderStats() {
     });
   });
   const maxTicket = Math.max(...Object.values(ticketCounts), 1);
-  document.getElementById('ticket-type-rows').innerHTML = Object.entries(ticketCounts)
-    .sort((a,b) => b[1]-a[1])
-    .map(([k,v]) => {
-      const admIn = ticketIn[k] || 0;
-      const pctT  = Math.round(admIn/v*100);
-      return `
-    <div class="trow">
-      <div class="trow-key">${k}</div>
-      <div class="trow-bar"><div class="trow-bar-inner" style="width:${Math.round(v/maxTicket*100)}%"></div></div>
-      <div class="trow-val">${admIn}/${v} (${pctT}%)</div>
-    </div>`;
-    }).join('') || '<div class="empty">No data yet</div>';
+
+  // Group tickets into Seated and General Entry
+  const groups = { 'Seated': {}, 'General Entry': {} };
+  Object.entries(ticketCounts).forEach(([k, v]) => {
+    if (/seated/i.test(k)) groups['Seated'][k] = v;
+    else groups['General Entry'][k] = v;
+  });
+
+  let groupHTML = '';
+  Object.entries(groups).forEach(function(entry) {
+    const groupName = entry[0];
+    const items = entry[1];
+    const groupTotal = Object.values(items).reduce(function(s,v){ return s+v; }, 0);
+    const groupIn    = Object.keys(items).reduce(function(s,k){ return s+(ticketIn[k]||0); }, 0);
+    const groupPct   = groupTotal > 0 ? Math.round(groupIn/groupTotal*100) : 0;
+    const groupId    = 'grp-' + groupName.replace(/\s+/g,'-').toLowerCase();
+
+    const subRows = Object.entries(items)
+      .sort(function(a,b){ return b[1]-a[1]; })
+      .map(function(e2) {
+        const k = e2[0]; const v = e2[1];
+        const admIn = ticketIn[k] || 0;
+        const pctT  = Math.round(admIn/v*100);
+        return '<div class="trow trow-sub" style="padding-left:12px;background:#FAFAFA;">' +
+          '<div class="trow-key" style="font-size:11px;color:var(--muted);">' + k + '</div>' +
+          '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + Math.round(v/maxTicket*100) + '%"></div></div>' +
+          '<div class="trow-val" style="font-size:11px;">' + admIn + '/' + v + ' (' + pctT + '%)</div>' +
+          '</div>';
+      }).join('');
+
+    groupHTML += '<div class="trow trow-group" data-target="' + groupId + '" style="cursor:pointer;font-weight:800;border-bottom:1px solid var(--border);">' +
+      '<div class="trow-key">' + groupName + ' <span class="grp-chevron" style="font-size:10px;opacity:.5;">▶</span></div>' +
+      '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + Math.round(groupTotal/maxTicket*100) + '%"></div></div>' +
+      '<div class="trow-val">' + groupIn + '/' + groupTotal + ' (' + groupPct + '%)</div>' +
+      '</div>' +
+      '<div id="' + groupId + '" style="display:none;">' + subRows + '</div>';
+  });
+
+  document.getElementById('ticket-type-rows').innerHTML = groupHTML || '<div class="empty">No data yet</div>';
+
+  // Toggle expand/collapse
+  document.getElementById('ticket-type-rows').querySelectorAll('.trow-group').forEach(function(row) {
+    row.addEventListener('click', function() {
+      const target = document.getElementById(row.dataset.target);
+      if (!target) return;
+      const open = target.style.display !== 'none';
+      target.style.display = open ? 'none' : 'block';
+      const chev = row.querySelector('.grp-chevron');
+      if (chev) chev.textContent = open ? '▶' : '▼';
+    });
+  });
 
   // By guest type (sheet guests only)
   const guestTypeCounts = {};
