@@ -132,7 +132,7 @@ async function fbSet(path, data) {
     <div class="topbar-line1">
       <div style="display:flex;align-items:baseline;gap:6px;">
         <div class="brand-name">Tapgate Stats</div>
-        <div class="brand-sub">v1.3.10</div>
+        <div class="brand-sub">v1.3.11</div>
       </div>
       <a class="topbar-back" href="#" onclick="event.preventDefault();history.back();">← Scanner</a>
     </div>
@@ -378,11 +378,22 @@ async function loadStats(ev) {
         if (!r.ok) return;
         const rows = parseCSV(await r.text());
         if (!rows.length) return;
-        const h = rows[0].map(x => (x||'').trim().toLowerCase());
-        const col = name => h.findIndex(x => x.includes(name));
-        const nameI = col('name'), entryI = col('entry'), guestTypeI = col('guest type'), guestOfI = col('guest of'), eventI = col('event');
+        // Find actual header row — look for row where a cell exactly matches 'name' or 'performer name'
+        const hdrIdx = rows.findIndex(r => r.some(c => {
+          const v = (c||'').trim().toLowerCase();
+          return v === 'name' || v === 'performer name' || v === 'first name';
+        }));
+        if (hdrIdx < 0) return;
+        const dataRows = rows.slice(hdrIdx);
+        const h = dataRows[0].map(x => (x||'').trim().toLowerCase());
+        const col = name => h.findIndex(x => x === name || x.includes(name));
+        const nameI = col('name') > -1 ? col('name') : (col('performer') > -1 ? col('performer') : -1);
+        const entryI = col('entry code') > -1 ? col('entry code') : col('entry');
+        const guestTypeI = col('guest type') > -1 ? col('guest type') : col('type');
+        const guestOfI = col('guest of');
+        const eventI = col('event id') > -1 ? col('event id') : col('event');
         if (nameI === -1) return;
-        rows.slice(1).forEach((r, i) => {
+        dataRows.slice(1).forEach((r, i) => {
           const name = (r[nameI]||'').trim(); if (!name) return;
           const evId = eventI > -1 ? (r[eventI]||'').trim() : '';
           if (evId && ev.id && evId !== ev.id && evId !== ev.mec_id) return;
@@ -476,7 +487,7 @@ function renderStats() {
   // By entry type — count all tickets (in and not in)
   const typeCounts = {};
   const typeIn     = {};
-  allBookings.forEach(b => {
+  allBookings.filter(b => b.source !== 'sheet').forEach(b => {
     const tickets = b.tickets || [{ checkedIn: b.checkedIn, entryType: b.entryType }];
     tickets.forEach(t => {
       const et = b.entryType || t.entryType || 'GE';
@@ -501,7 +512,7 @@ function renderStats() {
   // By ticket release tier
   const ticketCounts = {};
   const ticketIn     = {};
-  allBookings.forEach(b => {
+  allBookings.filter(b => b.source !== 'sheet').forEach(b => {
     (b.tickets || []).forEach(t => {
       const tn = t.ticketName || 'Unknown';
       ticketCounts[tn] = (ticketCounts[tn]||0) + 1;
