@@ -1068,7 +1068,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.27';
+const APP_VERSION = '2.5.28';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -1497,9 +1497,11 @@ async function loadGuestList() {
       });
       // Rebuild index maps
       Object.values(bookingMap).forEach(b => {
-        if (b._mecInvoice) invoiceMap[b._mecInvoice] = b;
-        if (b.email)       emailMap[b.email.toLowerCase()] = b;
-        if (b.key)         idMap[b.key] = b;
+        if (b.mecInvoiceID) invoiceMap[String(b.mecInvoiceID)] = b;
+        if (b.invoiceID)    invoiceMap[String(b.invoiceID)]    = b;
+        if (b._mecInvoice)  invoiceMap[String(b._mecInvoice)]  = b;
+        if (b.email)        emailMap[b.email.toLowerCase()]    = b;
+        if (b.key)          idMap[b.key]                       = b;
       });
       window._guestListLoading = false;
       window._bulk2Loaded = true;
