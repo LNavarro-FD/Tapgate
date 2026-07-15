@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.23';
+const APP_VERSION = '2.5.24';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -1109,6 +1109,24 @@ const mecAttendeeCache = {};
 window.mecAttendeeCache = mecAttendeeCache;
 // Pending checkins to apply when bulk2 loads: key = 'invoiceID:place', value = {name, ticketName, isVip}
 const pendingCheckins = {};
+const wpWriteRetryQueue = []; // failed WP writes to retry
+
+// Retry failed WP checkin writes every 30 seconds
+setInterval(function() {
+  if (!wpWriteRetryQueue.length) return;
+  const item = wpWriteRetryQueue[0];
+  mecWriteCheckin(item.code, item.mecGuest).then(() => {
+    wpWriteRetryQueue.shift();
+    console.log('WP retry succeeded for', item.mecGuest.name);
+  }).catch(e => {
+    console.warn('WP retry still failing for', item.mecGuest.name, e.message);
+    item.attempts = (item.attempts || 0) + 1;
+    if (item.attempts >= 10) {
+      console.error('WP write giving up after 10 attempts for', item.mecGuest.name);
+      wpWriteRetryQueue.shift();
+    }
+  });
+}, 30000);
 const SYNC_INTERVAL = 15000; // 15 seconds — only syncs when app is visible
 const META_KEY = '_fd_checked_in';
 const TICKET_META_KEY = '_fd_checked_in_tickets';
@@ -3083,7 +3101,7 @@ async function lookupTicket(code) {
                 { label: lateBlock.upgradePrice ? `Upgrade: ${lateBlock.upgradePrice}` : 'Upgrade required', cls:'hi' }
               ]);
               // Still write check-in in background — don't await, show result immediately
-              mecWriteCheckin(code, mecGuest).catch(e => console.warn('MEC late checkin write failed:', e));
+              mecWriteCheckin(code, mecGuest).catch(e => { console.warn('MEC late checkin write failed — queued for retry:', e.message); wpWriteRetryQueue.push({code, mecGuest, attempts:0}); });
               addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} — LATE (past ${lateBlock.validBefore})`, status:'warn', code });
               stats.admitted++; stats.total++;
               updateStats();
@@ -3145,7 +3163,7 @@ async function lookupTicket(code) {
             console.timeEnd('SCAN_TOTAL');
 
             // 3. Write to WordPress and Firebase in background
-            mecWriteCheckin(code, mecGuest).catch(e => console.warn('MEC checkin write failed:', e));
+            mecWriteCheckin(code, mecGuest).catch(e => { console.warn('MEC checkin write failed — queued for retry:', e.message); wpWriteRetryQueue.push({code, mecGuest, attempts:0}); });
             if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(mecGuest._bookingId || invId, mecGuest._attendeeKey || placeNo, true);
           } // end lateBlock else
           } // end timeBlock else
