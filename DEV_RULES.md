@@ -104,7 +104,7 @@ Dev (local /home/claude/) → Syntax check → GitHub main → GitHub Pages (liv
 
 | File | Version | Last updated |
 |------|---------|-------------|
-| index.html | v2.5.14 | 2026-07-14 |
+| index.html | v2.5.22 | 2026-07-15 |
 | stats.html | v1.3.9 | 2026-07-14 |
 | FD Checkin Proxy | v2.8 | 2026-07-10 |
 | setup.html | v1.1.0 | 2026-07-14 |
