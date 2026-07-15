@@ -1064,7 +1064,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.25';
+const APP_VERSION = '2.5.26';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -1666,6 +1666,10 @@ async function loadGuestList() {
     console.log('bulk2 bookings found:', Object.keys(bulkByBooking).length);
     let bulk2Changed = false;
     Object.entries(bulkByBooking).forEach(([bid, data]) => {
+      // Always rebuild from bulk2 — preserve checkedIn state from any existing entry
+      const existingEntry = bookingMap[bid];
+      const existingCheckedIn = existingEntry ? existingEntry.tickets.map(t => t.checkedIn) : [];
+
       if (!bookingMap[bid]) {
         // Remove any existing WC entry with the same invoice ID
         const existingWcKey = `wc-${data.inv}`;
@@ -1732,19 +1736,37 @@ async function loadGuestList() {
         }
         bulk2Changed = true;
       } else {
-        data.attendees.forEach((a, idx) => {
-          const t = bookingMap[bid].tickets[idx];
-          if (t && a.checked_in) t.checkedIn = true;
-          if (t && a.name && !t.name) t.name = a.name;
-          // Update ticket name if it was previously MEC Ticket and we now have a real name
-          if (t && a.ticket_name && (!t.ticketName || t.ticketName === 'MEC Ticket')) {
-            t.ticketName = a.ticket_name;
+        // If existing booking has wrong ticket count (dummy from scan), rebuild it
+        if (bookingMap[bid].tickets.length !== data.attendees.length) {
+          console.log('bulk2: rebuilding booking', bid, 'ticket count mismatch', bookingMap[bid].tickets.length, 'vs', data.attendees.length);
+          // Preserve checkedIn state
+          const prevCheckedIn = {};
+          bookingMap[bid].tickets.forEach(t => { if (t.checkedIn) prevCheckedIn[t.attendeeKey] = true; });
+          bookingMap[bid].tickets = [];
+          data.attendees.forEach((a, idx) => {
+            const aKey = String(a.attendee_key || idx+1);
+            const ticketName = a.ticket_name || bookingMap[bid].eventTitle || 'MEC Ticket';
+            bookingMap[bid].tickets.push({
+              key: `${bid}-${aKey}`, attendeeKey: aKey,
+              name: a.name || '', ticketName: ticketName,
+              isVip: /vip/i.test(ticketName),
+              checkedIn: !!a.checked_in || !!prevCheckedIn[aKey],
+              _mecTicketId: null
+            });
+          });
+        } else {
+          data.attendees.forEach((a, idx) => {
+            const t = bookingMap[bid].tickets[idx];
+            if (t && a.checked_in) t.checkedIn = true;
+            if (t && a.name && !t.name) t.name = a.name;
+            if (t && a.ticket_name && (!t.ticketName || t.ticketName === 'MEC Ticket')) {
+              t.ticketName = a.ticket_name;
+            }
+          });
+          if (guestMap[bid] && (!guestMap[bid].ticketName || guestMap[bid].ticketName === 'MEC Ticket')) {
+            const firstTicketName = data.attendees[0]?.ticket_name || '';
+            if (firstTicketName) guestMap[bid].ticketName = firstTicketName;
           }
-        });
-        // Also update guestMap ticket name
-        if (guestMap[bid] && (!guestMap[bid].ticketName || guestMap[bid].ticketName === 'MEC Ticket')) {
-          const firstTicketName = data.attendees[0]?.ticket_name || '';
-          if (firstTicketName) guestMap[bid].ticketName = firstTicketName;
         }
       }
     });
