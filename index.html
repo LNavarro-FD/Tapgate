@@ -1068,7 +1068,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.28';
+const APP_VERSION = '2.5.29';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2999,8 +2999,8 @@ async function lookupTicket(code) {
       isScanning = false; return;
     }
 
-    // 1. Try MEC API first — covers all native MEC/WooCommerce tickets
-    if (cfg.m && !cfg.demo) {
+    // 1. Try MEC bulk2 path — covers all native MEC/WooCommerce tickets
+    {
       // Clear any stale result before API call
       setResult('', '⏳', 'Checking ticket…', code);
       document.getElementById('ent-banner').classList.add('hidden');
