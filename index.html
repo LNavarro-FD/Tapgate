@@ -1068,7 +1068,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.29';
+const APP_VERSION = '2.5.30';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -4498,7 +4498,7 @@ function startQrLogin() {
           const decoded = JSON.parse(atob(fdMatch[1]));
           if (decoded.u && decoded.k && decoded.s) {
             stopQrLogin();
-            cfg = { u: decoded.u, k: decoded.k, s: decoded.s, m: decoded.m || '', events: decoded.events||[], sheet: decoded.sheet||'', demo: false };
+            cfg = { u: decoded.u, k: decoded.k, s: decoded.s, m: decoded.m || '', events: decoded.events||[], sheet: decoded.sheet||'', entry_labels: decoded.entry_labels||[], admins: decoded.admins||[], demo: false };
             saveConfig();
             ['site-url','s-url'].forEach(id => { const el = document.getElementById(id); if(el) el.value = cfg.u; });
             ['wc-key','s-key'].forEach(id => { const el = document.getElementById(id); if(el) el.value = cfg.k; });
@@ -4622,7 +4622,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const padded = b64 + '=='.slice(0, (4 - b64.length % 4) % 4);
       const decoded = JSON.parse(atob(padded));
       if (decoded.u && decoded.k && decoded.s) {
-        cfg = { u: decoded.u, k: decoded.k, s: decoded.s, m: decoded.m || '', events: decoded.events||[], sheet: decoded.sheet||'', demo: false };
+        cfg = { u: decoded.u, k: decoded.k, s: decoded.s, m: decoded.m || '', events: decoded.events||[], sheet: decoded.sheet||'', entry_labels: decoded.entry_labels||[], admins: decoded.admins||[], demo: false };
         saveConfig();
         // Populate all settings fields
         ['site-url','s-url'].forEach(id => { const el = document.getElementById(id); if(el) el.value = cfg.u; });
@@ -4643,7 +4643,7 @@ window.addEventListener('DOMContentLoaded', () => {
     try {
       const c = JSON.parse(saved);
       if ((c.u||c.siteUrl) && (c.k||c.wcKey)) {
-        cfg = { u:c.u||c.siteUrl||'', k:c.k||c.wcKey||'', s:c.s||c.wcSecret||'', m:c.m||c.mecKey||'', events:c.events||[], sheet:c.sheet||'', demo:false };
+        cfg = { u:c.u||c.siteUrl||'', k:c.k||c.wcKey||'', s:c.s||c.wcSecret||'', m:c.m||c.mecKey||'', events:c.events||[], sheet:c.sheet||'', entry_labels:c.entry_labels||[], admins:c.admins||[], demo:false };
         ['site-url','s-url'].forEach(id => document.getElementById(id).value = c.siteUrl);
         ['wc-key','s-key'].forEach(id => document.getElementById(id).value = c.wcKey);
         ['wc-secret','s-secret'].forEach(id => document.getElementById(id).value = c.wcSecret);
