@@ -132,7 +132,7 @@ async function fbSet(path, data) {
     <div class="topbar-line1">
       <div style="display:flex;align-items:baseline;gap:6px;">
         <div class="brand-name">Tapgate Stats</div>
-        <div class="brand-sub">v1.3.15</div>
+        <div class="brand-sub">v1.3.16</div>
       </div>
       <a class="topbar-back" href="#" onclick="event.preventDefault();history.back();">← Scanner</a>
     </div>
@@ -190,14 +190,8 @@ async function fbSet(path, data) {
 
     <!-- Today's Sales -->
     <div class="stat-card" id="card-today-sales">
-      <div class="stat-card-title">Today's Sales <span id="today-sales-date" style="font-weight:400;opacity:.6;"></span></div>
+      <div class="stat-card-title">Ticket Sales</div>
       <div id="today-sales-rows"><div class="empty">Loading...</div></div>
-    </div>
-
-    <!-- By entry type -->
-    <div class="stat-card" id="card-types">
-      <div class="stat-card-title">By Entry Type (GE / VIP)</div>
-      <div id="type-rows"></div>
     </div>
 
     <!-- By ticket type -->
@@ -468,38 +462,50 @@ async function loadEventConfig(ev) {
 // ── RENDER STATS ──
 async function fetchTodaySales(ev) {
   const el = document.getElementById('today-sales-rows');
-  const dateEl = document.getElementById('today-sales-date');
   if (!el) return;
   try {
     const mecId = ev.mec_id || ev.id;
     const r = await fetch(`${cfg.u}/wp-json/fd2/v1/today-sales?event_id=${mecId}`);
     if (!r.ok) throw new Error('today-sales failed: ' + r.status);
     const d = await r.json();
-    const dateStr = d.date ? d.date.slice(0,4)+'-'+d.date.slice(4,6)+'-'+d.date.slice(6,8) : '';
-    if (dateEl) dateEl.textContent = dateStr;
-    const total = d.bookings_today || 0;
-    const seated = d.seated_today || 0;
-    const ge = d.ge_today || 0;
-    if (total === 0) {
-      el.innerHTML = '<div class="empty" style="padding:8px 0;color:var(--muted);font-size:13px;">No tickets sold today</div>';
-    } else {
-      el.innerHTML =
-        '<div class="trow">' +
-          '<div class="trow-key" style="font-weight:800;">Total</div>' +
-          '<div class="trow-bar"></div>' +
-          '<div class="trow-val" style="font-weight:800;">' + total + '</div>' +
+
+    function fmtDate(s) { return s ? s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8) : ''; }
+    function salesRow(label, data, maxTotal) {
+      const t = data.total || 0;
+      const s = data.seated || 0;
+      const g = data.ge || 0;
+      const barW = maxTotal > 0 ? Math.min(Math.round(t/maxTotal*100), 100) : 0;
+      const sBarW = t > 0 ? Math.min(Math.round(s/t*100), 100) : 0;
+      const gBarW = t > 0 ? Math.min(Math.round(g/t*100), 100) : 0;
+      return '<div class="trow" style="border-top:2px solid var(--border);margin-top:4px;">' +
+          '<div class="trow-key" style="font-weight:800;">' + label + '</div>' +
+          '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + barW + '%"></div></div>' +
+          '<div class="trow-val" style="font-weight:800;">' + t + '</div>' +
         '</div>' +
-        '<div class="trow">' +
-          '<div class="trow-key" style="padding-left:12px;font-size:12px;color:var(--muted);">Seated</div>' +
-          '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + (total > 0 ? Math.round(seated/total*100) : 0) + '%"></div></div>' +
-          '<div class="trow-val" style="font-size:12px;">' + seated + '</div>' +
-        '</div>' +
-        '<div class="trow">' +
-          '<div class="trow-key" style="padding-left:12px;font-size:12px;color:var(--muted);">General Entry</div>' +
-          '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + (total > 0 ? Math.round(ge/total*100) : 0) + '%"></div></div>' +
-          '<div class="trow-val" style="font-size:12px;">' + ge + '</div>' +
-        '</div>';
+        (t > 0 ? (
+          '<div class="trow">' +
+            '<div class="trow-key" style="padding-left:12px;font-size:11px;color:var(--muted);">Seated</div>' +
+            '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + sBarW + '%"></div></div>' +
+            '<div class="trow-val" style="font-size:11px;">' + s + '</div>' +
+          '</div>' +
+          '<div class="trow">' +
+            '<div class="trow-key" style="padding-left:12px;font-size:11px;color:var(--muted);">General Entry</div>' +
+            '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + gBarW + '%"></div></div>' +
+            '<div class="trow-val" style="font-size:11px;">' + g + '</div>' +
+          '</div>'
+        ) : '<div class="trow"><div class="trow-key" style="padding-left:12px;font-size:11px;color:var(--muted);">No sales</div><div class="trow-bar"></div><div class="trow-val" style="font-size:11px;">0</div></div>');
     }
+
+    const today = d.today || {};
+    const yesterday = d.yesterday || {};
+    const maxTotal = Math.max(today.total || 0, yesterday.total || 0, 1);
+
+    el.innerHTML =
+      '<div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:4px 0 2px;">Today — ' + fmtDate(today.date) + '</div>' +
+      salesRow('Today', today, maxTotal) +
+      '<div style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 0 2px;">Yesterday — ' + fmtDate(yesterday.date) + '</div>' +
+      salesRow('Yesterday', yesterday, maxTotal);
+
   } catch(e) {
     if (el) el.innerHTML = '<div class="empty" style="color:var(--muted);font-size:12px;">Sales data unavailable</div>';
     console.warn('Today sales failed:', e.message);
