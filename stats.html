@@ -69,7 +69,7 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:var(
 
 /* Action buttons */
 .action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.btn-action{padding:13px;border-radius:var(--r);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:opacity .15s}
+.btn-action{padding:13px;border-radius:var(--r);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:opacity .15s;width:100%;display:block;text-align:center;box-sizing:border-box;margin-bottom:8px}
 .btn-action:active{opacity:.8}
 .btn-dl{background:#22224C;color:#ffffff}
 .btn-arch{background:#FFF0F0;color:#D0000A}
@@ -132,7 +132,7 @@ async function fbSet(path, data) {
     <div class="topbar-line1">
       <div style="display:flex;align-items:baseline;gap:6px;">
         <div class="brand-name">Tapgate Stats</div>
-        <div class="brand-sub">v1.3.18</div>
+        <div class="brand-sub">v1.3.19</div>
       </div>
       <a class="topbar-back" href="#" onclick="event.preventDefault();history.back();">← Scanner</a>
     </div>
@@ -231,7 +231,7 @@ async function fbSet(path, data) {
         <button class="btn-action" onclick="downloadExcel()" style="flex:1;background:#1D6F42;color:#fff;">⬇ Download</button>
       </div>
       <div id="gl-view" style="display:none;max-height:400px;overflow-y:auto;margin-top:12px;border:1px solid var(--border);border-radius:8px;font-size:13px;"></div>
-      <button class="btn-action" onclick="exportAttendanceReport()" style="background:#22224C;color:#fff;margin-top:8px;">📊 Export Attendance Report</button>
+      <button class="btn-action" onclick="exportAttendanceReport()" style="background:#22224C;color:#fff;">📊 Export Attendance Report</button>
       <button class="btn-action btn-arch" onclick="archiveEvent()">📦 Archive Event</button>
     </div>
     <div style="margin-top:14px;padding:12px 14px;background:#FFF8E1;border-radius:8px;border-left:4px solid #FF9500;">
