@@ -1070,7 +1070,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.34';
+const APP_VERSION = '2.5.35';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2227,7 +2227,7 @@ function admitSpecific(bookingId, attendeeKey) {
 
   if (b.source === 'mec') {
     // Use our FD Checkin Proxy which writes to mec_attendees directly
-    const invoiceId = b.mecInvoiceID || b.invoiceID;
+    const invoiceId = b.invoiceID || b.mecInvoiceID;
     fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
       method: 'POST'
     }).catch(e => console.warn('MEC checkin failed:', e));
@@ -2265,7 +2265,7 @@ function undoSpecific(bookingId, attendeeKey) {
 
   // Write back to source
   if (b.source === 'mec') {
-    const invoiceId = b.mecInvoiceID || b.invoiceID;
+    const invoiceId = b.invoiceID || b.mecInvoiceID;
     // DELETE on the checkin proxy to un-check in MEC
     fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
       method: 'DELETE'
@@ -2301,7 +2301,7 @@ function undoAllBooking(bookingId) {
   b.tickets.forEach(t => { t.checkedIn = false; });
 
   if (b.source === 'mec') {
-    const invoiceId = b.mecInvoiceID || b.invoiceID;
+    const invoiceId = b.invoiceID || b.mecInvoiceID;
     b.tickets.forEach(t => {
       fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(t.attendeeKey)}`, {
         method: 'DELETE'
@@ -3433,8 +3433,8 @@ async function resolveShortUrl(shortUrl) {
       if (res.ok) {
         const data = await res.json();
         if (data.found && data.mec_invoice_id) {
-          console.log('Short URL resolved:', data.mec_invoice_id, 'place:', data.place || '1');
-          const result = { invoiceID: data.mec_invoice_id, place: data.place || '1', hash: null, email: null, shortUrl: null };
+          console.log('Short URL resolved:', data.mec_invoice_id, 'book_id:', data.book_id, 'place:', data.place || '1');
+          const result = { invoiceID: data.mec_invoice_id, bookId: data.book_id || '', place: data.place || '1', hash: null, email: null, shortUrl: null };
           window._shortUrlCache[shortUrl] = result;
           // Persist to localStorage — next session instant for same ticket
           try { localStorage.setItem('tg_short_url_cache', JSON.stringify(window._shortUrlCache)); } catch(e) {}
@@ -3518,6 +3518,7 @@ async function mecLookupAndCheckin(code) {
     _mecTicket: true,
     _mecCode: code,
     _invoiceID: invoiceID,
+    _bookId: parsed.bookId || '',
     _bookingId: realBookingId,
     _attendeeKey: bookingMapTicket?.attendeeKey || place,
     _place: place,
@@ -3530,7 +3531,8 @@ async function mecLookupAndCheckin(code) {
 async function mecWriteCheckin(code, mecGuest) {
   if (!cfg.u) return null;
   try {
-    const invoiceID = mecGuest._invoiceID || mecGuest.orderNumber;
+    // Use book_id (WC order ID) if available — checkin proxy looks up by invoiceID meta = WC order ID
+    const invoiceID = mecGuest._bookId || mecGuest._invoiceID || mecGuest.orderNumber;
     const place     = mecGuest._place;
     if (!invoiceID || !place) { console.warn('MEC checkin: missing invoiceID or place'); return null; }
     const ticketNameParam = mecGuest?.ticketName && mecGuest.ticketName !== 'MEC Ticket' ? `&ticket_name=${encodeURIComponent(mecGuest.ticketName)}` : '';
