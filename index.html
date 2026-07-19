@@ -1070,7 +1070,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.32';
+const APP_VERSION = '2.5.33';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -3224,8 +3224,16 @@ async function lookupTicket(code) {
         isScanning = false;
         return;
       }
-      // MEC returned nothing — don't fall back to stale local data
-      // Continue to WC lookup below
+      // MEC returned nothing
+      // If this was a short URL (MEC invoice link) that failed to resolve, stop here — don't fall through to WC
+      if (code.includes('/invoice/')) {
+        vibrate([200]);
+        setResult('err', '❓', 'QR Not Recognised', 'This ticket could not be found. Please search by name.');
+        addLog({ name: 'Unknown', ticket: code, status: 'err', code });
+        isScanning = false;
+        return;
+      }
+      // Continue to WC lookup below for non-MEC codes
     }
 
     // 2. Try local guest map (WC orders already loaded)
