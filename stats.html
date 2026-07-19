@@ -132,7 +132,7 @@ async function fbSet(path, data) {
     <div class="topbar-line1">
       <div style="display:flex;align-items:baseline;gap:6px;">
         <div class="brand-name">Tapgate Stats</div>
-        <div class="brand-sub">v1.3.19</div>
+        <div class="brand-sub">v1.3.20</div>
       </div>
       <a class="topbar-back" href="#" onclick="event.preventDefault();history.back();">← Scanner</a>
     </div>
@@ -678,7 +678,7 @@ function resolveET(c) {
 }
 
 // ── DOWNLOAD CSV ──
-function exportAttendanceReport() {
+async function exportAttendanceReport() {
   // Admin check
   const admins = cfg.admins || [];
   if (admins.length > 0) {
@@ -701,7 +701,25 @@ function exportAttendanceReport() {
     return;
   }
 
-  const headers = ['Name', 'Ticket Type', 'Email', 'Booking ID', 'Early Entry', 'VIP', 'Comp'];
+  // Fetch Firebase checkin timestamps
+  const fbUrl = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app/mecCheckins.json';
+  const tsMap = {}; // key: bookingId-attendeeKey → timestamp string
+  try {
+    const fbResp = await fetch(fbUrl);
+    if (fbResp.ok) {
+      const fbData = await fbResp.json();
+      if (fbData) {
+        Object.values(fbData).forEach(function(entry) {
+          if (entry && entry.bookingId && entry.attendeeKey && entry.ts) {
+            const key = String(entry.bookingId) + '-' + String(entry.attendeeKey);
+            tsMap[key] = entry.ts;
+          }
+        });
+      }
+    }
+  } catch(e) { console.warn('Firebase timestamp fetch failed:', e.message); }
+
+  const headers = ['Name', 'Ticket Type', 'Email', 'Booking ID', 'Time Checked In', 'Early Entry', 'VIP', 'Comp'];
   const attended = [headers.slice()];
   const notAttended = [headers.slice()];
 
@@ -714,17 +732,20 @@ function exportAttendanceReport() {
   Object.values(bm).forEach(function(b) {
     if (b.source === 'sheet') {
       const checkedIn = b.tickets && b.tickets.some(function(t) { return t.checkedIn; });
-      const row = [b.name, b.guestType || 'Comp Guest', b.email || '', '', '', 'No', 'Yes'];
+      const row = [b.name, b.guestType || 'Comp Guest', b.email || '', '', '', '', 'No', 'Yes'];
       if (checkedIn) attended.push(row); else notAttended.push(row);
       return;
     }
     (b.tickets || []).forEach(function(t) {
       const early = isEarlyEntry(t.ticketName);
+      const fbKey = String(b.bookingId || '') + '-' + String(t.attendeeKey || '');
+      const ts = tsMap[fbKey] || '';
       const row = [
         t.name || b.name,
         early ? '⚠️ ' + (t.ticketName || '') : (t.ticketName || ''),
         b.email || '',
         b.bookingId || '',
+        ts,
         early ? 'YES' : '',
         t.isVip ? 'Yes' : 'No',
         b.isComp ? 'Yes' : 'No'
@@ -737,7 +758,7 @@ function exportAttendanceReport() {
 
   function makeWs(XLSX, data) {
     var ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{wch:25},{wch:40},{wch:28},{wch:10},{wch:12},{wch:6},{wch:6}];
+    ws['!cols'] = [{wch:25},{wch:40},{wch:28},{wch:10},{wch:16},{wch:12},{wch:6},{wch:6}];
     for (var c = 0; c < data[0].length; c++) {
       var addr = XLSX.utils.encode_cell({r:0,c:c});
       if (!ws[addr]) ws[addr] = {v:'',t:'s'};
