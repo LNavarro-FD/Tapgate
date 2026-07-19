@@ -1070,7 +1070,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.33';
+const APP_VERSION = '2.5.34';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -1121,14 +1121,18 @@ const wpWriteRetryQueue = []; // failed WP writes to retry
 setInterval(function() {
   if (!wpWriteRetryQueue.length) return;
   const item = wpWriteRetryQueue[0];
-  mecWriteCheckin(item.code, item.mecGuest).then(() => {
+  const isUndo = item.mecGuest && item.mecGuest._isUndo;
+  const method = isUndo ? 'DELETE' : 'POST';
+  const url = `${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(item.mecGuest._invoiceID)}&place=${encodeURIComponent(item.mecGuest._place)}`;
+  fetch(url, { method: method }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     wpWriteRetryQueue.shift();
-    console.log('WP retry succeeded for', item.mecGuest.name);
-  }).catch(e => {
-    console.warn('WP retry still failing for', item.mecGuest.name, e.message);
+    console.log('WP retry succeeded for', item.mecGuest._invoiceID);
+  }).catch(function(e) {
+    console.warn('WP retry still failing:', e.message);
     item.attempts = (item.attempts || 0) + 1;
     if (item.attempts >= 10) {
-      console.error('WP write giving up after 10 attempts for', item.mecGuest.name);
+      console.error('WP write giving up after 10 attempts');
       wpWriteRetryQueue.shift();
     }
   });
@@ -2265,7 +2269,10 @@ function undoSpecific(bookingId, attendeeKey) {
     // DELETE on the checkin proxy to un-check in MEC
     fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
       method: 'DELETE'
-    }).catch(e => console.warn('MEC undo failed:', e.message));
+    }).catch(e => {
+      console.warn('MEC undo failed — queuing retry:', e.message);
+      wpWriteRetryQueue.push({ code: invoiceId, mecGuest: { _invoiceID: invoiceId, _place: attendeeKey, _isUndo: true }, attempts: 0 });
+    });
     // Write undo to Firebase for cross-device sync
     if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(b.bookingId, attendeeKey, false);
   } else {
