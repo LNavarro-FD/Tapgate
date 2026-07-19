@@ -132,7 +132,7 @@ async function fbSet(path, data) {
     <div class="topbar-line1">
       <div style="display:flex;align-items:baseline;gap:6px;">
         <div class="brand-name">Tapgate Stats</div>
-        <div class="brand-sub">v1.3.22</div>
+        <div class="brand-sub">v1.3.23</div>
       </div>
       <a class="topbar-back" href="#" onclick="event.preventDefault();history.back();">← Scanner</a>
     </div>
@@ -421,9 +421,56 @@ async function loadStats(ev) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('stats-content').style.display = 'block';
 
+    // 5. Start auto-refresh
+    startAutoRefresh(ev);
+
   } catch(e) {
     document.getElementById('loading').innerHTML = `<div class="empty">⚠️ Could not load stats: ${e.message}<br><br><button onclick="loadStats(activeEvent)" style="margin-top:12px;padding:8px 16px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Tap to retry</button></div>`;
   }
+}
+
+let _autoRefreshTimers = [];
+function startAutoRefresh(ev) {
+  // Clear any existing timers
+  _autoRefreshTimers.forEach(function(t) { clearInterval(t); });
+  _autoRefreshTimers = [];
+
+  const FIREBASE_URL = 'https://funky-dory-fdscan-default-rtdb.europe-west1.firebasedatabase.app';
+
+  // Every 30s — fetch Firebase checkins and update counts
+  const fbTimer = setInterval(async function() {
+    try {
+      const r = await fetch(FIREBASE_URL + '/mecCheckins.json?shallow=false', { cache: 'no-store' });
+      if (!r.ok) return;
+      const data = await r.json();
+      if (!data) return;
+      // Apply checkins to bookingMap
+      let changed = false;
+      Object.values(data).forEach(function(entry) {
+        if (!entry || !entry.bookingId || !entry.attendeeKey) return;
+        const bid = String(entry.bookingId);
+        const bm = bookingMap[bid];
+        if (!bm) return;
+        const ticket = bm.tickets.find(function(t) { return String(t.attendeeKey) === String(entry.attendeeKey); });
+        if (ticket && !ticket.checkedIn) {
+          ticket.checkedIn = true;
+          changed = true;
+        }
+      });
+      if (changed) {
+        renderStats();
+        console.log('Stats auto-refreshed from Firebase');
+      }
+    } catch(e) { console.warn('Stats Firebase poll failed:', e.message); }
+  }, 30000);
+  _autoRefreshTimers.push(fbTimer);
+
+  // Every 5min — full bulk2 reload
+  const bulk2Timer = setInterval(function() {
+    console.log('Stats full reload from bulk2');
+    loadStats(ev);
+  }, 5 * 60 * 1000);
+  _autoRefreshTimers.push(bulk2Timer);
 }
 
 
