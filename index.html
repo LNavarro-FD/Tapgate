@@ -978,9 +978,6 @@ input::placeholder { color: #999; }
     <button class="btn-secondary" onclick="exportAttendanceReport()" style="background:#22224C;color:#fff;border-color:#22224C;font-weight:800;">📊 Export Attendance Report (Post-Event)</button>
     <button class="btn-secondary" onclick="resetAllCheckins()" style="background:#FF4B7B;color:#fff;border-color:#FF4B7B;font-weight:800;">🔄 Reset ALL Check-ins (Admin)</button>
 
-    <div class="setup-title" style="margin-top:8px;color:#D0000A;">Admin Tools</div>
-    <button class="btn-secondary" onclick="resetAllCheckins()" style="background:#D0000A;color:#fff;border-color:#D0000A;font-weight:800;">🔄 Reset All Check-ins</button>
-
     <div class="setup-title" style="margin-top:8px;">Reporting</div>
     <label style="display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:10px;padding:14px 16px;border:2px solid var(--border);margin-bottom:10px;">
       <div>
@@ -1070,7 +1067,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.35';
+const APP_VERSION = '2.5.36';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -3829,128 +3826,6 @@ async function resetAllCheckins() {
     location.reload();
   } catch(e) {
     alert('Reset failed: ' + e.message);
-  }
-}
-
-async function resetAllCheckins() {
-  // Admin check
-  const admins = cfg.admins || [];
-  if (admins.length > 0) {
-    const email = prompt('Enter your email address to reset all check-ins:');
-    if (!email || !admins.map(e => e.toLowerCase()).includes(email.toLowerCase().trim())) {
-      alert('Sorry, you are not authorised to reset check-ins.');
-      return;
-    }
-  }
-  if (!confirm('Reset ALL check-ins for this event? This cannot be undone.')) return;
-
-  const eventId = window.activeEvent ? window.activeEvent.mec_id : null;
-  if (!eventId) { alert('No active event found.'); return; }
-
-  try {
-    // 1. Reset WP/MEC
-    const wpRes = await fetch(`${cfg.u}/wp-json/fd2/v1/reset?event_id=${eventId}&all=1&secret=fdresettest2026`);
-    const wpData = await wpRes.json();
-    if (!wpData.success) throw new Error('WP reset failed');
-
-    // 2. Clear Firebase
-    await fetch(`${FIREBASE_URL}mecCheckins.json`, { method: 'DELETE' });
-
-    // 3. Clear local cache
-    localStorage.removeItem('tg_bookingmap');
-    localStorage.removeItem('tg_bookingmap_ts');
-    localStorage.removeItem('tg_bookingmap_ver');
-
-    // 4. Reload guest list
-    Object.keys(bookingMap).forEach(k => {
-      if (bookingMap[k].tickets) bookingMap[k].tickets.forEach(t => t.checkedIn = false);
-      bookingMap[k].checkedIn = false;
-    });
-    renderGuestList(); updateGLStats(); updateStats();
-
-    alert(`✓ Reset complete — ${wpData.reset_count} bookings cleared.`);
-  } catch(e) {
-    alert('Reset failed: ' + e.message);
-  }
-}
-
-function exportAttendanceReport() {
-  // Admin check
-  const admins = cfg.admins || [];
-  if (admins.length > 0) {
-    const email = prompt('Enter your email address to download:');
-    if (!email || !admins.map(e => e.toLowerCase()).includes(email.toLowerCase().trim())) {
-      alert('Sorry, you are not authorised to download this data.');
-      return;
-    }
-  }
-
-  if (!Object.keys(bookingMap).length) {
-    alert('No booking data loaded yet.');
-    return;
-  }
-
-  const headers = ['Name', 'Ticket Type', 'Email', 'Booking ID', 'Early Entry', 'VIP', 'Comp'];
-  const attended = [headers.slice()];
-  const notAttended = [headers.slice()];
-
-  const isEarlyEntry = function(ticketName) {
-    const t = (ticketName || '').toUpperCase();
-    if (t.includes('BEFORE') && t.includes('PM')) return true;
-    return (cfg.entry_labels || []).some(function(l) { return l.valid_before && t.includes((l.match||'').toUpperCase()); });
-  };
-
-  Object.values(bookingMap).forEach(function(b) {
-    if (b.source === 'sheet') {
-      const checkedIn = b.tickets && b.tickets.some(function(t) { return t.checkedIn; });
-      const row = [b.name, b.guestType || 'Comp Guest', b.email || '', '', '', 'No', 'Yes'];
-      if (checkedIn) attended.push(row);
-      else notAttended.push(row);
-      return;
-    }
-    (b.tickets || []).forEach(function(t) {
-      const early = isEarlyEntry(t.ticketName);
-      const row = [
-        t.name || b.name,
-        early ? '⚠️ ' + (t.ticketName || '') : (t.ticketName || ''),
-        b.email || '',
-        b.bookingId || '',
-        early ? 'YES' : '',
-        t.isVip ? 'Yes' : 'No',
-        b.isComp ? 'Yes' : 'No'
-      ];
-      if (t.checkedIn) attended.push(row);
-      else notAttended.push(row);
-    });
-  });
-
-  const date = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
-
-  function makeSheet(XLSX, data) {
-    var ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = [{wch:25},{wch:40},{wch:28},{wch:10},{wch:12},{wch:6},{wch:6}];
-    for (var c = 0; c < data[0].length; c++) {
-      var addr = XLSX.utils.encode_cell({r:0, c:c});
-      if (!ws[addr]) ws[addr] = {v:'',t:'s'};
-      ws[addr].s = {fill:{fgColor:{rgb:'22224C'}},font:{bold:true,color:{rgb:'FFFFFF'}}};
-    }
-    return ws;
-  }
-
-  function doExport(XLSX) {
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, attended), 'Attended (' + (attended.length-1) + ')');
-    XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, notAttended), 'Did Not Attend (' + (notAttended.length-1) + ')');
-    XLSX.writeFile(wb, 'TG-attendance-' + date + '.xlsx');
-  }
-
-  if (window.XLSX) {
-    doExport(window.XLSX);
-  } else {
-    var s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-    s.onload = function() { doExport(window.XLSX); };
-    document.head.appendChild(s);
   }
 }
 
