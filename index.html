@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#22224C">
 <title>FD Scanner</title>
-<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<script src="https://unpkg.com/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
 <style>
 :root {
   --pink:  #FF4B7B;
@@ -1067,7 +1067,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.36';
+const APP_VERSION = '2.5.36-nimiq';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2895,32 +2895,30 @@ function initCamera() {
     return;
   }
   const videoEl = document.getElementById('qr-video');
-  const codeReader = new ZXing.BrowserMultiFormatReader(null, 500);
-  scanner = codeReader;
 
-  const hints = new Map();
-  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE]);
-  codeReader.hints = hints;
-
-  const onDecode = (result, err) => {
-    if (result) {
-      if (result.getBarcodeFormat && result.getBarcodeFormat() !== ZXing.BarcodeFormat.QR_CODE) return;
-      const code = result.getText();
+  const qrScanner = new QrScanner(
+    videoEl,
+    function(result) {
+      const code = result.data || result;
       const now = Date.now();
       if (isScanning) return;
       if (code === lastCode && now - lastAt < 8000) return;
       lastCode = code; lastAt = now;
       lookupTicket(code);
+    },
+    {
+      preferredCamera: 'environment',
+      highlightScanRegion: false,
+      highlightCodeOutline: false,
+      maxScansPerSecond: 5,
     }
-  };
-  // Store callback and a restart function for when switching back to scan tab
-  scanner._onResult = onDecode;
+  );
 
-  codeReader.listVideoInputDevices().then(devices => {
-    const backCam = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
-    scanner._deviceId = backCam ? backCam.deviceId : undefined;
-    codeReader.decodeFromVideoDevice(scanner._deviceId, 'qr-video', onDecode);
-  }).catch(e => console.warn('Camera error:', e));
+  scanner = qrScanner;
+  scanner._onResult = null; // not used but kept for compatibility
+  scanner._restart = function() { qrScanner.start(); };
+
+  qrScanner.start().catch(e => console.warn('Camera error:', e));
 }
 
 // ═══════════════════════════════════════════
@@ -3990,12 +3988,12 @@ function showTab(tab) {
 
   const video = document.getElementById('qr-video');
   if (tab === 'scan') {
-    // Always reinit — clean slate every time scan tab is shown
-    if (scanner) { try { scanner.reset(); } catch(e) {} scanner = null; }
+    // Reinit scanner — clean slate every time scan tab is shown
+    if (scanner) { try { scanner.stop(); scanner.destroy(); } catch(e) {} scanner = null; }
     initCamera();
   } else {
-    // Stop ZXing decode loop
-    if (scanner) { try { scanner.stopContinuousDecode(); } catch(e) {} }
+    // Stop Nimiq scanner
+    if (scanner) { try { scanner.stop(); } catch(e) {} }
     // Fully release camera stream — stops iOS camera indicator and saves battery
     if (video?.srcObject) {
       video.srcObject.getTracks().forEach(t => t.stop());
@@ -4473,16 +4471,12 @@ let qrLoginReader = null;
 function startQrLogin() {
   const wrap = document.getElementById('qr-login-wrap');
   wrap.style.display = 'block';
-  const reader = new ZXing.BrowserMultiFormatReader(null, 500);
-  qrLoginReader = reader;
-  const hints = new Map();
-  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE]);
-  reader.hints = hints;
-  reader.listVideoInputDevices().then(devices => {
-    const back = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
-    reader.decodeFromVideoDevice(back?.deviceId, 'qr-login-video', (result, err) => {
-      if (!result) return;
-      const text = result.getText();
+
+  const loginVideo = document.getElementById('qr-login-video');
+  qrLoginReader = new QrScanner(
+    loginVideo,
+    function(result) {
+      const text = result.data || result;
       const fdMatch = text.match(/[?&]fd=([^&]+)/);
       if (fdMatch) {
         try {
@@ -4502,15 +4496,17 @@ function startQrLogin() {
       }
       stopQrLogin();
       alert("That doesn't look like a login QR. Please scan the QR from the team guide.");
-    });
-  }).catch(() => {
+    },
+    { preferredCamera: 'environment', highlightScanRegion: false }
+  );
+  qrLoginReader.start().catch(function() {
     wrap.style.display = 'none';
     alert('Camera not available. Please enter credentials manually.');
   });
 }
 
 function stopQrLogin() {
-  if (qrLoginReader) { qrLoginReader.reset(); qrLoginReader = null; }
+  if (qrLoginReader) { qrLoginReader.stop(); qrLoginReader.destroy(); qrLoginReader = null; }
   document.getElementById('qr-login-wrap').style.display = 'none';
 }
 
