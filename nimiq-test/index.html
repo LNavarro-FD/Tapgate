@@ -3153,9 +3153,24 @@ async function lookupTicket(code) {
               return l.action === 'warn' && (mecGuest.ticketName||'').toUpperCase().includes((l.match||'').toUpperCase());
             });
             if (earlyWarnLabel) {
-              vibrate([100, 50, 100]);
-              setResult('early', earlyWarnLabel.icon || '🌅', mecGuest.name,
-                `${earlyWarnLabel.label} ticket — must arrive by ${earlyWarnLabel.valid_before || '3PM'}`);
+              // Check UK time against cutoff
+              const nowUK = new Date(new Date().toLocaleString('en-GB', {timeZone: 'Europe/London'}));
+              const cutoffParts = (earlyWarnLabel.valid_before || '15:00').split(':');
+              const cutoffMins = parseInt(cutoffParts[0]) * 60 + parseInt(cutoffParts[1] || 0);
+              const nowMins = nowUK.getHours() * 60 + nowUK.getMinutes();
+              const isPastCutoff = nowMins >= cutoffMins;
+
+              if (isPastCutoff) {
+                // After 3pm — amber warning, payment required
+                vibrate([200, 100, 200]);
+                setResult('warn', '⚠️', mecGuest.name,
+                  `Early entry ticket — it is past ${earlyWarnLabel.valid_before || '15:00'}. Additional payment required to stay.`);
+              } else {
+                // Before 3pm — pink, valid but flag for staff
+                vibrate([100, 50, 100]);
+                setResult('early', earlyWarnLabel.icon || '🌅', mecGuest.name,
+                  `${earlyWarnLabel.label} ticket — valid until ${earlyWarnLabel.valid_before || '15:00'}`);
+              }
               mecWriteCheckin(code, mecGuest).catch(e => { console.warn('MEC checkin write failed — queued for retry:', e.message); wpWriteRetryQueue.push({code, mecGuest, attempts:0}); });
               addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} (${code})`, status:'warn', code });
               stats.admitted++; stats.total++;
