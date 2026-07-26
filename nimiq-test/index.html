@@ -843,7 +843,7 @@ input::placeholder { color: #999; }
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="showTab('scan')"><span class="nav-icon">📷</span>Scan</button>
     <button class="nav-btn" onclick="showTab('guests')"><span class="nav-icon">👥</span>Check In</button>
-    <button class="nav-btn" onclick="window.location.href='../stats.html'"><span class="nav-icon">📊</span>Stats</button>
+    <button class="nav-btn" onclick="window.location.href='../stats.html?fd=' + btoa(JSON.stringify(cfg))"><span class="nav-icon">📊</span>Stats</button>
     <button class="nav-btn" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>Settings</button>
   </nav>
 </div>
@@ -882,7 +882,7 @@ input::placeholder { color: #999; }
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="showTab('scan')"><span class="nav-icon">📷</span>Scan</button>
     <button class="nav-btn active" onclick="showTab('guests')"><span class="nav-icon">👥</span>Check In</button>
-    <button class="nav-btn" onclick="window.location.href='../stats.html'"><span class="nav-icon">📊</span>Stats</button>
+    <button class="nav-btn" onclick="window.location.href='../stats.html?fd=' + btoa(JSON.stringify(cfg))"><span class="nav-icon">📊</span>Stats</button>
     <button class="nav-btn" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>Settings</button>
   </nav>
 </div>
@@ -959,7 +959,7 @@ input::placeholder { color: #999; }
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="showTab('scan')"><span class="nav-icon">📷</span>Scan</button>
     <button class="nav-btn" onclick="showTab('guests')"><span class="nav-icon">👥</span>Check In</button>
-    <button class="nav-btn active" onclick="window.location.href='../stats.html'"><span class="nav-icon">📊</span>Stats</button>
+    <button class="nav-btn active" onclick="window.location.href='../stats.html?fd=' + btoa(JSON.stringify(cfg))"><span class="nav-icon">📊</span>Stats</button>
     <button class="nav-btn" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>Settings</button>
   </nav>
 </div>
@@ -1058,7 +1058,7 @@ input::placeholder { color: #999; }
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="showTab('scan')"><span class="nav-icon">📷</span>Scan</button>
     <button class="nav-btn" onclick="showTab('guests')"><span class="nav-icon">👥</span>Check In</button>
-    <button class="nav-btn" onclick="window.location.href='../stats.html'"><span class="nav-icon">📊</span>Stats</button>
+    <button class="nav-btn" onclick="window.location.href='../stats.html?fd=' + btoa(JSON.stringify(cfg))"><span class="nav-icon">📊</span>Stats</button>
     <button class="nav-btn active" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>Settings</button>
   </nav>
 </div>
@@ -1068,7 +1068,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.38-nimiq-fix';
+const APP_VERSION = '2.5.38-nimiq';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
