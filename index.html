@@ -850,7 +850,6 @@ input::placeholder { color: #999; }
 
 <!-- GUEST LIST TAB -->
 <div id="guests-screen" class="screen hidden">
-  <div id="wristband-toast" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#22224C;color:#fff;border-radius:12px;padding:12px 20px;font-size:14px;font-weight:700;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);min-width:200px;"></div>
   <div class="gl-toolbar">
     <div style="position:relative;flex:1;">
       <input class="gl-search" type="text" id="gl-search" placeholder="Search by name…" oninput="debouncedSearch()" autocomplete="off" autocorrect="off" autocapitalize="none" style="width:100%;padding-right:36px;box-sizing:border-box;">
@@ -1068,7 +1067,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.39';
+const APP_VERSION = '2.5.37';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -1877,9 +1876,7 @@ function sectionToEntry(section) {
 
 async function fetchSheetTab(gid, startRow) {
   // startRow: 1-based row number to start from (1 = first row, 3 = skip 2 title rows)
-  const sheetId = (cfg && cfg.sheet) || SHEET_ID;
-  if (!sheetId) throw new Error('No sheet ID configured');
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(`Sheet fetch failed gid=${gid}: ${r.status}`);
   const rows = parseCSV(await r.text());
@@ -2205,23 +2202,6 @@ let showAll = false;
 function showWristbandToast() {} // removed
 
 
-function showWristbandToast(b, ticket) {
-  if (!b || !ticket) return;
-  const name = ticket.name || b.name || '';
-  const ticketName = ticket.ticketName || '';
-  const isSeated = /seated/i.test(ticketName);
-  const isEarly = (cfg.entry_labels||[]).some(function(l) {
-    return l.action === 'warn' && ticketName.toUpperCase().includes((l.match||'').toUpperCase());
-  });
-  const entryType = isSeated ? '🪑 Seated' : isEarly ? '🌅 Early Entry' : '👕 General Entry';
-  const el = document.getElementById('wristband-toast');
-  if (!el) return;
-  el.innerHTML = '<strong>' + name + '</strong><br>' + entryType;
-  el.style.display = 'block';
-  clearTimeout(el._timer);
-  el._timer = setTimeout(function() { el.style.display = 'none'; }, 3000);
-}
-
 function admitSpecific(bookingId, attendeeKey) {
   const b = bookingMap[bookingId];
   if (!b) return;
@@ -2240,23 +2220,6 @@ function admitSpecific(bookingId, attendeeKey) {
     gmGuest.checkedIn = gmGuest.checkedInTickets.length >= gmGuest.qty;
   }
   showWristbandToast(b, ticket);
-
-  // Show early entry warning if applicable
-  const earlyLabel = (cfg.entry_labels||[]).find(function(l) {
-    return l.action === 'warn' && (ticket.ticketName||'').toUpperCase().includes((l.match||'').toUpperCase());
-  });
-  if (earlyLabel) {
-    const nowUK = new Date(new Date().toLocaleString('en-GB', {timeZone: 'Europe/London'}));
-    const cutoffParts = (earlyLabel.valid_before || '15:00').split(':');
-    const cutoffMins = parseInt(cutoffParts[0]) * 60 + parseInt(cutoffParts[1] || 0);
-    const nowMins = nowUK.getHours() * 60 + nowUK.getMinutes();
-    if (nowMins >= cutoffMins) {
-      alert('⚠️ ' + (ticket.name || b.name) + '\nAdditional payment required');
-    } else {
-      alert('🌅 ' + (ticket.name || b.name) + '\nEarly entry — OK to enter');
-    }
-  }
-
   const admitted = getBookingAdmittedCount(b);
 
   if (b.source === 'mec') {
