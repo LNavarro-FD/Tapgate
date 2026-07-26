@@ -1067,7 +1067,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.36';
+const APP_VERSION = '2.5.37';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -3155,9 +3155,19 @@ async function lookupTicket(code) {
               return l.action === 'warn' && (mecGuest.ticketName||'').toUpperCase().includes((l.match||'').toUpperCase());
             });
             if (earlyWarnLabel) {
-              vibrate([100, 50, 100]);
-              setResult('early', earlyWarnLabel.icon || '🌅', mecGuest.name,
-                `${earlyWarnLabel.label} ticket — must arrive by ${earlyWarnLabel.valid_before || '3PM'}`);
+              const nowUK = new Date(new Date().toLocaleString('en-GB', {timeZone: 'Europe/London'}));
+              const cutoffParts = (earlyWarnLabel.valid_before || '15:00').split(':');
+              const cutoffMins = parseInt(cutoffParts[0]) * 60 + parseInt(cutoffParts[1] || 0);
+              const nowMins = nowUK.getHours() * 60 + nowUK.getMinutes();
+              const isPastCutoff = nowMins >= cutoffMins;
+
+              if (isPastCutoff) {
+                vibrate([200, 100, 200]);
+                setResult('warn', '⚠️', mecGuest.name, 'Additional payment required');
+              } else {
+                vibrate([100, 50, 100]);
+                setResult('early', earlyWarnLabel.icon || '🌅', mecGuest.name, 'OK to enter');
+              }
               mecWriteCheckin(code, mecGuest).catch(e => { console.warn('MEC checkin write failed — queued for retry:', e.message); wpWriteRetryQueue.push({code, mecGuest, attempts:0}); });
               addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} (${code})`, status:'warn', code });
               stats.admitted++; stats.total++;
