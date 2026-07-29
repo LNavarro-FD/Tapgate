@@ -2241,7 +2241,7 @@ function admitSpecific(bookingId, attendeeKey) {
 
   if (b.source === 'mec') {
     // Use our FD Checkin Proxy which writes to mec_attendees directly
-    const invoiceId = b.invoiceID || b.mecInvoiceID;
+    const invoiceId = b.mecInvoiceID || b.invoiceID;
     fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
       method: 'POST'
     }).catch(e => console.warn('MEC checkin failed:', e));
@@ -2279,7 +2279,7 @@ function undoSpecific(bookingId, attendeeKey) {
 
   // Write back to source
   if (b.source === 'mec') {
-    const invoiceId = b.invoiceID || b.mecInvoiceID;
+    const invoiceId = b.mecInvoiceID || b.invoiceID;
     // DELETE on the checkin proxy to un-check in MEC
     fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
       method: 'DELETE'
@@ -2315,7 +2315,7 @@ function undoAllBooking(bookingId) {
   b.tickets.forEach(t => { t.checkedIn = false; });
 
   if (b.source === 'mec') {
-    const invoiceId = b.invoiceID || b.mecInvoiceID;
+    const invoiceId = b.mecInvoiceID || b.invoiceID;
     b.tickets.forEach(t => {
       fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(t.attendeeKey)}`, {
         method: 'DELETE'
@@ -3553,8 +3553,8 @@ async function mecLookupAndCheckin(code) {
 async function mecWriteCheckin(code, mecGuest) {
   if (!cfg.u) return null;
   try {
-    // Use book_id (WC order ID) if available — checkin proxy looks up by invoiceID meta = WC order ID
-    const invoiceID = mecGuest._bookId || mecGuest._invoiceID || mecGuest.orderNumber;
+    // Use _invoiceID (mec_invoice_id) — this matches the invoiceID meta on the booking post
+    const invoiceID = mecGuest._invoiceID || mecGuest.orderNumber;
     const place     = mecGuest._place;
     if (!invoiceID || !place) { console.warn('MEC checkin: missing invoiceID or place'); return null; }
     const ticketNameParam = mecGuest?.ticketName && mecGuest.ticketName !== 'MEC Ticket' ? `&ticket_name=${encodeURIComponent(mecGuest.ticketName)}` : '';
