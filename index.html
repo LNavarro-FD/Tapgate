@@ -1070,7 +1070,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.34';
+const APP_VERSION = '2.5.35';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -3700,7 +3700,7 @@ function setResult(state, icon, name, detail, pulse) {
   el.querySelector('.rc-icon').textContent   = icon;
   el.querySelector('.rc-status').textContent = state==='ok'?'Admitted':state==='err'?'Rejected':state==='warn'?'Already In':state==='tm'?'Ticketmaster':'';
   el.querySelector('.rc-name').textContent   = name;
-  const cleanDetail = (detail || '').replace(/&#8211;/g,'–').replace(/&#8212;/g,'—').replace(/&amp;/g,'&').replace(/&ndash;/g,'–').replace(/\(SCAN TEST[^)]*\)/g,'').trim();
+  const cleanDetail = (String(detail || '')).replace(/&#8211;/g,'–').replace(/&#8212;/g,'—').replace(/&amp;/g,'&').replace(/&ndash;/g,'–').replace(/\(SCAN TEST[^)]*\)/g,'').trim();
   el.querySelector('.rc-detail').textContent = cleanDetail;
   // Vibrate on every result — distinct patterns per outcome
   if (state === 'ok')   vibrate([50, 30, 80]);        // success: double pulse
@@ -3822,51 +3822,10 @@ async function resetAllCheckins() {
     localStorage.removeItem('tg_bookingmap');
     localStorage.removeItem('tg_bookingmap_ts');
     localStorage.removeItem('tg_bookingmap_ver');
+    sessionStorage.clear();
 
     alert(`✅ Reset complete — ${d.reset_count} bookings cleared. Reloading...`);
     location.reload();
-  } catch(e) {
-    alert('Reset failed: ' + e.message);
-  }
-}
-
-async function resetAllCheckins() {
-  // Admin check
-  const admins = cfg.admins || [];
-  if (admins.length > 0) {
-    const email = prompt('Enter your email address to reset all check-ins:');
-    if (!email || !admins.map(e => e.toLowerCase()).includes(email.toLowerCase().trim())) {
-      alert('Sorry, you are not authorised to reset check-ins.');
-      return;
-    }
-  }
-  if (!confirm('Reset ALL check-ins for this event? This cannot be undone.')) return;
-
-  const eventId = window.activeEvent ? window.activeEvent.mec_id : null;
-  if (!eventId) { alert('No active event found.'); return; }
-
-  try {
-    // 1. Reset WP/MEC
-    const wpRes = await fetch(`${cfg.u}/wp-json/fd2/v1/reset?event_id=${eventId}&all=1&secret=fdresettest2026`);
-    const wpData = await wpRes.json();
-    if (!wpData.success) throw new Error('WP reset failed');
-
-    // 2. Clear Firebase
-    await fetch(`${FIREBASE_URL}mecCheckins.json`, { method: 'DELETE' });
-
-    // 3. Clear local cache
-    localStorage.removeItem('tg_bookingmap');
-    localStorage.removeItem('tg_bookingmap_ts');
-    localStorage.removeItem('tg_bookingmap_ver');
-
-    // 4. Reload guest list
-    Object.keys(bookingMap).forEach(k => {
-      if (bookingMap[k].tickets) bookingMap[k].tickets.forEach(t => t.checkedIn = false);
-      bookingMap[k].checkedIn = false;
-    });
-    renderGuestList(); updateGLStats(); updateStats();
-
-    alert(`✓ Reset complete — ${wpData.reset_count} bookings cleared.`);
   } catch(e) {
     alert('Reset failed: ' + e.message);
   }
