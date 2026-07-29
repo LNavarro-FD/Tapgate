@@ -850,7 +850,6 @@ input::placeholder { color: #999; }
 
 <!-- GUEST LIST TAB -->
 <div id="guests-screen" class="screen hidden">
-  <div id="wristband-toast" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#22224C;color:#fff;border-radius:12px;padding:12px 20px;font-size:14px;font-weight:700;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);min-width:200px;"></div>
   <div class="gl-toolbar">
     <div style="position:relative;flex:1;">
       <input class="gl-search" type="text" id="gl-search" placeholder="Search by name…" oninput="debouncedSearch()" autocomplete="off" autocorrect="off" autocapitalize="none" style="width:100%;padding-right:36px;box-sizing:border-box;">
@@ -4673,5 +4672,6 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<div id="wristband-toast" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#22224C;color:#fff;border-radius:12px;padding:12px 20px;font-size:14px;font-weight:700;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);min-width:200px;"></div>
 </body>
 </html>
