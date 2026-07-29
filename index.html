@@ -1068,7 +1068,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.40';
+const APP_VERSION = '2.5.41';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -3713,6 +3713,9 @@ function setResult(state, icon, name, detail, pulse) {
   clearTimeout(window._resultTimer);
   window._resultTimer = setTimeout(() => {
     el.className = 'result-card';
+    el.style.background = '';
+    el.style.borderColor = '';
+    el.style.color = '';
     el.querySelector('.rc-status').textContent = '';
     el.querySelector('.rc-name').textContent = 'Ready';
     el.querySelector('.rc-detail').textContent = 'Scan a ticket or search below';
