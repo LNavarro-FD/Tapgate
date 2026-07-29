@@ -1068,7 +1068,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.38';
+const APP_VERSION = '2.5.39';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -3711,15 +3711,13 @@ function setResult(state, icon, name, detail, pulse) {
   const el = document.getElementById('result-card');
   el.className = 'result-card' + (state==='ok'?' ok':state==='err'?' err':state==='warn'?' warn':state==='early'?' early':state==='tm'?' tm':'');
   clearTimeout(window._resultTimer);
-  if (state === 'ok' || state === 'warn') {
-    window._resultTimer = setTimeout(() => {
-      el.className = 'result-card';
-      el.querySelector('.rc-status').textContent = '';
-      el.querySelector('.rc-name').textContent = 'Ready';
-      el.querySelector('.rc-detail').textContent = 'Scan a ticket or search below';
-      document.getElementById('ent-banner').classList.add('hidden');
-    }, 5000);
-  }
+  window._resultTimer = setTimeout(() => {
+    el.className = 'result-card';
+    el.querySelector('.rc-status').textContent = '';
+    el.querySelector('.rc-name').textContent = 'Ready';
+    el.querySelector('.rc-detail').textContent = 'Scan a ticket or search below';
+    document.getElementById('ent-banner').classList.add('hidden');
+  }, 5000);
   if (pulse) {
     el.classList.add('pulse-ok');
     setTimeout(() => el.classList.remove('pulse-ok'), 700);
