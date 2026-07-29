@@ -843,7 +843,7 @@ input::placeholder { color: #999; }
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="showTab('scan')"><span class="nav-icon">📷</span>Scan</button>
     <button class="nav-btn" onclick="showTab('guests')"><span class="nav-icon">👥</span>Check In</button>
-    <button class="nav-btn" onclick="window.location.href='../stats.html?fd=' + btoa(JSON.stringify(cfg))"><span class="nav-icon">📊</span>Stats</button>
+    <button class="nav-btn" onclick="window.location.href='../stats.html'"><span class="nav-icon">📊</span>Stats</button>
     <button class="nav-btn" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>Settings</button>
   </nav>
 </div>
@@ -881,7 +881,7 @@ input::placeholder { color: #999; }
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="showTab('scan')"><span class="nav-icon">📷</span>Scan</button>
     <button class="nav-btn active" onclick="showTab('guests')"><span class="nav-icon">👥</span>Check In</button>
-    <button class="nav-btn" onclick="window.location.href='../stats.html?fd=' + btoa(JSON.stringify(cfg))"><span class="nav-icon">📊</span>Stats</button>
+    <button class="nav-btn" onclick="window.location.href='../stats.html'"><span class="nav-icon">📊</span>Stats</button>
     <button class="nav-btn" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>Settings</button>
   </nav>
 </div>
@@ -958,7 +958,7 @@ input::placeholder { color: #999; }
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="showTab('scan')"><span class="nav-icon">📷</span>Scan</button>
     <button class="nav-btn" onclick="showTab('guests')"><span class="nav-icon">👥</span>Check In</button>
-    <button class="nav-btn active" onclick="window.location.href='../stats.html?fd=' + btoa(JSON.stringify(cfg))"><span class="nav-icon">📊</span>Stats</button>
+    <button class="nav-btn active" onclick="window.location.href='../stats.html'"><span class="nav-icon">📊</span>Stats</button>
     <button class="nav-btn" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>Settings</button>
   </nav>
 </div>
@@ -1057,7 +1057,7 @@ input::placeholder { color: #999; }
   <nav class="bottom-nav">
     <button class="nav-btn" onclick="showTab('scan')"><span class="nav-icon">📷</span>Scan</button>
     <button class="nav-btn" onclick="showTab('guests')"><span class="nav-icon">👥</span>Check In</button>
-    <button class="nav-btn" onclick="window.location.href='../stats.html?fd=' + btoa(JSON.stringify(cfg))"><span class="nav-icon">📊</span>Stats</button>
+    <button class="nav-btn" onclick="window.location.href='../stats.html'"><span class="nav-icon">📊</span>Stats</button>
     <button class="nav-btn active" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>Settings</button>
   </nav>
 </div>
@@ -1067,7 +1067,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.43-nimiq';
+const APP_VERSION = '2.5.36-nimiq';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2220,27 +2220,11 @@ function admitSpecific(bookingId, attendeeKey) {
     gmGuest.checkedIn = gmGuest.checkedInTickets.length >= gmGuest.qty;
   }
   showWristbandToast(b, ticket);
-
-  const earlyLabel = (cfg.entry_labels||[]).find(function(l) {
-    return l.action === 'warn' && (ticket.ticketName||'').toUpperCase().includes((l.match||'').toUpperCase());
-  });
-  if (earlyLabel) {
-    const nowUK = new Date(new Date().toLocaleString('en-GB', {timeZone: 'Europe/London'}));
-    const cutoffParts = (earlyLabel.valid_before || '15:00').split(':');
-    const cutoffMins = parseInt(cutoffParts[0]) * 60 + parseInt(cutoffParts[1] || 0);
-    const nowMins = nowUK.getHours() * 60 + nowUK.getMinutes();
-    if (nowMins >= cutoffMins) {
-      alert('⚠️ ' + (ticket.name || b.name) + '\nAdditional payment required');
-    } else {
-      alert('🌅 ' + (ticket.name || b.name) + '\nEarly entry — OK to enter');
-    }
-  }
-
   const admitted = getBookingAdmittedCount(b);
 
   if (b.source === 'mec') {
     // Use our FD Checkin Proxy which writes to mec_attendees directly
-    const invoiceId = b.mecInvoiceID || b.invoiceID;
+    const invoiceId = b.invoiceID || b.mecInvoiceID;
     fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
       method: 'POST'
     }).catch(e => console.warn('MEC checkin failed:', e));
@@ -2278,7 +2262,7 @@ function undoSpecific(bookingId, attendeeKey) {
 
   // Write back to source
   if (b.source === 'mec') {
-    const invoiceId = b.mecInvoiceID || b.invoiceID;
+    const invoiceId = b.invoiceID || b.mecInvoiceID;
     // DELETE on the checkin proxy to un-check in MEC
     fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(attendeeKey)}`, {
       method: 'DELETE'
@@ -2314,7 +2298,7 @@ function undoAllBooking(bookingId) {
   b.tickets.forEach(t => { t.checkedIn = false; });
 
   if (b.source === 'mec') {
-    const invoiceId = b.mecInvoiceID || b.invoiceID;
+    const invoiceId = b.invoiceID || b.mecInvoiceID;
     b.tickets.forEach(t => {
       fetch(`${cfg.u}/wp-json/fd2/v1/checkin?invoice_id=${encodeURIComponent(invoiceId)}&place=${encodeURIComponent(t.attendeeKey)}`, {
         method: 'DELETE'
@@ -2570,7 +2554,7 @@ function renderGuestList() {
     const nWords = name.split(/\s+/);
     return qWords.every(qw => nWords.some(nw => nw.startsWith(qw)));
   }
-  const all = Object.values(bookingMap).filter(b => b.name && b.name.trim() !== '');
+  const all = Object.values(bookingMap);
   const filtered = all.filter(b => {
     const mq = !q || nameMatch(b.name, q) || 
                 String(b.bookingId).includes(q) || 
@@ -2931,7 +2915,7 @@ function initCamera() {
   );
 
   scanner = qrScanner;
-  scanner._onResult = null; // not used but kept for compatibility
+  scanner._onResult = null;
   scanner._restart = function() { qrScanner.start(); };
 
   qrScanner.start().catch(e => console.warn('Camera error:', e));
@@ -3169,19 +3153,9 @@ async function lookupTicket(code) {
               return l.action === 'warn' && (mecGuest.ticketName||'').toUpperCase().includes((l.match||'').toUpperCase());
             });
             if (earlyWarnLabel) {
-              const nowUK = new Date(new Date().toLocaleString('en-GB', {timeZone: 'Europe/London'}));
-              const cutoffParts = (earlyWarnLabel.valid_before || '15:00').split(':');
-              const cutoffMins = parseInt(cutoffParts[0]) * 60 + parseInt(cutoffParts[1] || 0);
-              const nowMins = nowUK.getHours() * 60 + nowUK.getMinutes();
-              const isPastCutoff = nowMins >= cutoffMins;
-
-              if (isPastCutoff) {
-                vibrate([200, 100, 200]);
-                setResult('warn', '⚠️', mecGuest.name, 'Additional payment required');
-              } else {
-                vibrate([100, 50, 100]);
-                setResult('early', earlyWarnLabel.icon || '🌅', mecGuest.name, 'OK to enter');
-              }
+              vibrate([100, 50, 100]);
+              setResult('early', earlyWarnLabel.icon || '🌅', mecGuest.name,
+                `${earlyWarnLabel.label} ticket — must arrive by ${earlyWarnLabel.valid_before || '3PM'}`);
               mecWriteCheckin(code, mecGuest).catch(e => { console.warn('MEC checkin write failed — queued for retry:', e.message); wpWriteRetryQueue.push({code, mecGuest, attempts:0}); });
               addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} (${code})`, status:'warn', code });
               stats.admitted++; stats.total++;
@@ -3552,8 +3526,8 @@ async function mecLookupAndCheckin(code) {
 async function mecWriteCheckin(code, mecGuest) {
   if (!cfg.u) return null;
   try {
-    // Use _invoiceID (mec_invoice_id) — this matches the invoiceID meta on the booking post
-    const invoiceID = mecGuest._invoiceID || mecGuest.orderNumber;
+    // Use book_id (WC order ID) if available — checkin proxy looks up by invoiceID meta = WC order ID
+    const invoiceID = mecGuest._bookId || mecGuest._invoiceID || mecGuest.orderNumber;
     const place     = mecGuest._place;
     if (!invoiceID || !place) { console.warn('MEC checkin: missing invoiceID or place'); return null; }
     const ticketNameParam = mecGuest?.ticketName && mecGuest.ticketName !== 'MEC Ticket' ? `&ticket_name=${encodeURIComponent(mecGuest.ticketName)}` : '';
@@ -3707,16 +3681,15 @@ function setResult(state, icon, name, detail, pulse) {
   const el = document.getElementById('result-card');
   el.className = 'result-card' + (state==='ok'?' ok':state==='err'?' err':state==='warn'?' warn':state==='early'?' early':state==='tm'?' tm':'');
   clearTimeout(window._resultTimer);
-  window._resultTimer = setTimeout(() => {
-    el.className = 'result-card';
-    el.style.background = '';
-    el.style.borderColor = '';
-    el.style.color = '';
-    el.querySelector('.rc-status').textContent = '';
-    el.querySelector('.rc-name').textContent = 'Ready';
-    el.querySelector('.rc-detail').textContent = 'Scan a ticket or search below';
-    document.getElementById('ent-banner').classList.add('hidden');
-  }, 5000);
+  if (state === 'ok' || state === 'warn') {
+    window._resultTimer = setTimeout(() => {
+      el.className = 'result-card';
+      el.querySelector('.rc-status').textContent = '';
+      el.querySelector('.rc-name').textContent = 'Ready';
+      el.querySelector('.rc-detail').textContent = 'Scan a ticket or search below';
+      document.getElementById('ent-banner').classList.add('hidden');
+    }, 5000);
+  }
   if (pulse) {
     el.classList.add('pulse-ok');
     setTimeout(() => el.classList.remove('pulse-ok'), 700);
@@ -3724,7 +3697,7 @@ function setResult(state, icon, name, detail, pulse) {
   el.querySelector('.rc-icon').textContent   = icon;
   el.querySelector('.rc-status').textContent = state==='ok'?'Admitted':state==='err'?'Rejected':state==='warn'?'Already In':state==='tm'?'Ticketmaster':'';
   el.querySelector('.rc-name').textContent   = name;
-  const cleanDetail = (String(detail || '')).replace(/&#8211;/g,'–').replace(/&#8212;/g,'—').replace(/&amp;/g,'&').replace(/&ndash;/g,'–').replace(/\(SCAN TEST[^)]*\)/g,'').trim();
+  const cleanDetail = (detail || '').replace(/&#8211;/g,'–').replace(/&#8212;/g,'—').replace(/&amp;/g,'&').replace(/&ndash;/g,'–').replace(/\(SCAN TEST[^)]*\)/g,'').trim();
   el.querySelector('.rc-detail').textContent = cleanDetail;
   // Vibrate on every result — distinct patterns per outcome
   if (state === 'ok')   vibrate([50, 30, 80]);        // success: double pulse
@@ -4015,13 +3988,10 @@ function showTab(tab) {
 
   const video = document.getElementById('qr-video');
   if (tab === 'scan') {
-    // Reinit scanner — clean slate every time scan tab is shown
     if (scanner) { try { scanner.stop(); scanner.destroy(); } catch(e) {} scanner = null; }
     initCamera();
   } else {
-    // Stop Nimiq scanner
     if (scanner) { try { scanner.stop(); } catch(e) {} }
-    // Fully release camera stream — stops iOS camera indicator and saves battery
     if (video?.srcObject) {
       video.srcObject.getTracks().forEach(t => t.stop());
       video.srcObject = null;
@@ -4498,10 +4468,8 @@ let qrLoginReader = null;
 function startQrLogin() {
   const wrap = document.getElementById('qr-login-wrap');
   wrap.style.display = 'block';
-
-  const loginVideo = document.getElementById('qr-login-video');
   qrLoginReader = new QrScanner(
-    loginVideo,
+    document.getElementById('qr-login-video'),
     function(result) {
       const text = result.data || result;
       const fdMatch = text.match(/[?&]fd=([^&]+)/);
@@ -4672,6 +4640,5 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<div id="wristband-toast" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#22224C;color:#fff;border-radius:12px;padding:12px 20px;font-size:14px;font-weight:700;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);min-width:200px;"></div>
 </body>
 </html>
