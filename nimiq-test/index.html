@@ -3819,6 +3819,7 @@ async function resetAllCheckins() {
     localStorage.removeItem('tg_bookingmap');
     localStorage.removeItem('tg_bookingmap_ts');
     localStorage.removeItem('tg_bookingmap_ver');
+    sessionStorage.clear();
 
     alert(`✅ Reset complete — ${d.reset_count} bookings cleared. Reloading...`);
     location.reload();
