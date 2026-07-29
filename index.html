@@ -1068,7 +1068,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.39';
+const APP_VERSION = '2.5.40';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2572,7 +2572,7 @@ function renderGuestList() {
     const nWords = name.split(/\s+/);
     return qWords.every(qw => nWords.some(nw => nw.startsWith(qw)));
   }
-  const all = Object.values(bookingMap);
+  const all = Object.values(bookingMap).filter(b => b.name && b.name.trim() !== '');
   const filtered = all.filter(b => {
     const mq = !q || nameMatch(b.name, q) || 
                 String(b.bookingId).includes(q) || 
@@ -3725,7 +3725,7 @@ function setResult(state, icon, name, detail, pulse) {
   el.querySelector('.rc-icon').textContent   = icon;
   el.querySelector('.rc-status').textContent = state==='ok'?'Admitted':state==='err'?'Rejected':state==='warn'?'Already In':state==='tm'?'Ticketmaster':'';
   el.querySelector('.rc-name').textContent   = name;
-  const cleanDetail = (detail || '').replace(/&#8211;/g,'–').replace(/&#8212;/g,'—').replace(/&amp;/g,'&').replace(/&ndash;/g,'–').replace(/\(SCAN TEST[^)]*\)/g,'').trim();
+  const cleanDetail = (String(detail || '')).replace(/&#8211;/g,'–').replace(/&#8212;/g,'—').replace(/&amp;/g,'&').replace(/&ndash;/g,'–').replace(/\(SCAN TEST[^)]*\)/g,'').trim();
   el.querySelector('.rc-detail').textContent = cleanDetail;
   // Vibrate on every result — distinct patterns per outcome
   if (state === 'ok')   vibrate([50, 30, 80]);        // success: double pulse
