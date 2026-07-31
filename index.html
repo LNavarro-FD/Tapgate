@@ -186,7 +186,7 @@ input::placeholder { color: #999; }
 .result-card.ok   { background: #E6F9EF; border-color: var(--ok); }
 .result-card.err  { background: #FDE8E8; border-color: var(--err); }
 .result-card.warn { background: #FF9500; border-color: #cc7700; border-width: 4px; }
-.result-card.early { background: #FF4B7B; border-color: #cc2255; border-width: 4px; color: #fff; }
+.result-card.early { background: #CC0066; border-color: #990044; border-width: 4px; color: #fff; }
 .result-card.tm   { background: #E6F0FF; border-color: var(--tm); }
 
 .rc-icon   { font-size: 36px; line-height: 1; flex-shrink: 0; }
@@ -277,9 +277,11 @@ input::placeholder { color: #999; }
 @keyframes flash-ok   { 0%{opacity:.85} 100%{opacity:0} }
 @keyframes flash-err  { 0%{opacity:.85} 100%{opacity:0} }
 @keyframes flash-warn { 0%{opacity:1} 60%{opacity:.9} 100%{opacity:0} }
-#scan-flash.flash-ok   { background: #00C875; animation: flash-ok  .45s ease-out forwards; }
-#scan-flash.flash-err  { background: #D0000A; animation: flash-err .45s ease-out forwards; }
+@keyframes flash-early{ 0%{opacity:1} 60%{opacity:.9} 100%{opacity:0} }
+#scan-flash.flash-ok   { background: #00C875; animation: flash-ok   .45s ease-out forwards; }
+#scan-flash.flash-err  { background: #D0000A; animation: flash-err  .45s ease-out forwards; }
 #scan-flash.flash-warn { background: #FF9500; animation: flash-warn 1.2s ease-out forwards; }
+#scan-flash.flash-early{ background: #CC0066; animation: flash-early 1.2s ease-out forwards; }
 
 /* ── Guest list ── */
 #guests-screen { display: flex; flex-direction: column; overflow: hidden; width: 100%; }
@@ -1070,7 +1072,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.35';
+const APP_VERSION = '2.5.36';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2202,7 +2204,48 @@ async function refreshGuests() {
 // ═══════════════════════════════════════════
 let showAll = false;
 
-function showWristbandToast() {} // removed
+function showWristbandToast(booking, ticket) {
+  const toast = document.getElementById('wristband-toast');
+  if (!toast) return;
+  clearTimeout(window._toastTimer);
+
+  const ticketName = (ticket && (ticket.ticketName || ticket.name || '')) || '';
+  const entryType  = (ticket && ticket.entryType) || (booking && booking.entryType) || 'GE';
+  const upper      = ticketName.toUpperCase();
+
+  // Determine wristband colour and instruction from ticket type
+  var bg = '#22224C'; // default navy
+  var colour = '#FFFFFF';
+  var instruction = '';
+  var border = '';
+
+  if (entryType === 'AAA' || upper.includes('AAA')) {
+    bg = '#D0000A'; colour = '#FFFFFF';
+    instruction = '🎫 Issue white wristband — full access';
+  } else if (entryType === 'STAFF' || upper.includes('STAFF')) {
+    bg = '#FF6036'; colour = '#FFFFFF';
+    instruction = '👷 Issue orange wristband — staff entrance';
+  } else if (entryType === 'SEATED' || upper.includes('SEATED')) {
+    bg = '#FFC107'; colour = '#22224C'; border = '2px solid #FF9500';
+    instruction = '🪑 Issue green wristband — direct to seat';
+  } else {
+    // GE including BEFORE 3PM
+    bg = '#FF4B7B'; colour = '#FFFFFF';
+    instruction = '🎽 Issue blue wristband — General Entry';
+  }
+
+  toast.style.background    = bg;
+  toast.style.color         = colour;
+  toast.style.border        = border || 'none';
+  toast.style.display       = 'block';
+  toast.style.opacity       = '1';
+  toast.textContent         = instruction;
+
+  window._toastTimer = setTimeout(function() {
+    toast.style.opacity = '0';
+    setTimeout(function() { toast.style.display = 'none'; }, 400);
+  }, 4000);
+}
 
 
 function admitSpecific(bookingId, attendeeKey) {
@@ -3167,6 +3210,7 @@ async function lookupTicket(code) {
               updateStats();
               if (window.fbWriteMECCheckin) window.fbWriteMECCheckin(mecGuest._bookingId || mecGuest.orderNumber, mecGuest._place || mecGuest._attendeeKey, true);
               showEnt(mecGuest);
+              showWristbandToast(mecGuest, mecGuest.tickets ? mecGuest.tickets[mecGuest._admitIdx || 0] : mecGuest);
               isScanning = false;
             } else {
             // Valid MEC ticket — update UI immediately, write to server in background
@@ -3214,6 +3258,7 @@ async function lookupTicket(code) {
             ].filter(Boolean).join('  ·  ');
             setResult('ok','✓', mecGuest.name, detail, true);
             showEnt(mecGuest);
+            showWristbandToast(mecGuest, mecGuest.tickets ? mecGuest.tickets[mecGuest._admitIdx || 0] : mecGuest);
             addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} (${code})`, status:'ok', code });
             stats.admitted++; stats.total++;
             updateStats();
@@ -3713,10 +3758,11 @@ function setResult(state, icon, name, detail, pulse) {
   if (flash && state) {
     flash.className = '';
     void flash.offsetWidth; // force reflow to restart animation
-    if (state === 'ok')   flash.className = 'flash-ok';
-    if (state === 'err')  flash.className = 'flash-err';
-    if (state === 'warn') flash.className = 'flash-warn';
-    if (state === 'tm')   flash.className = 'flash-warn';
+    if (state === 'ok')    flash.className = 'flash-ok';
+    if (state === 'err')   flash.className = 'flash-err';
+    if (state === 'warn')  flash.className = 'flash-warn';
+    if (state === 'tm')    flash.className = 'flash-warn';
+    if (state === 'early') flash.className = 'flash-early';
   }
 }
 
@@ -3886,10 +3932,18 @@ function exportAttendanceReport() {
   function makeSheet(XLSX, data) {
     var ws = XLSX.utils.aoa_to_sheet(data);
     ws['!cols'] = [{wch:25},{wch:40},{wch:28},{wch:10},{wch:12},{wch:6},{wch:6}];
-    for (var c = 0; c < data[0].length; c++) {
-      var addr = XLSX.utils.encode_cell({r:0, c:c});
-      if (!ws[addr]) ws[addr] = {v:'',t:'s'};
-      ws[addr].s = {fill:{fgColor:{rgb:'22224C'}},font:{bold:true,color:{rgb:'FFFFFF'}}};
+    ws['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+    ws['!headerFooter'] = { oddFooter: '&CPage &P of &N' };
+    for (var r = 0; r < data.length; r++) {
+      for (var c = 0; c < data[0].length; c++) {
+        var addr = XLSX.utils.encode_cell({r:r, c:c});
+        if (!ws[addr]) ws[addr] = {v:'',t:'s'};
+        if (r === 0) {
+          ws[addr].s = {fill:{fgColor:{rgb:'22224C'}},font:{bold:true,color:{rgb:'FFFFFF'},sz:18}};
+        } else {
+          ws[addr].s = {font:{sz:18}};
+        }
+      }
     }
     return ws;
   }
@@ -3898,14 +3952,14 @@ function exportAttendanceReport() {
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, attended), 'Attended (' + (attended.length-1) + ')');
     XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, notAttended), 'Did Not Attend (' + (notAttended.length-1) + ')');
-    XLSX.writeFile(wb, 'TG-attendance-' + date + '.xlsx');
+    XLSX.writeFile(wb, 'TG-attendance-' + date + '.xlsx', {cellStyles: true});
   }
 
   if (window.XLSX) {
     doExport(window.XLSX);
   } else {
     var s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
     s.onload = function() { doExport(window.XLSX); };
     document.head.appendChild(s);
   }
@@ -4006,27 +4060,30 @@ function exportCSV() {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = [{wch:8},{wch:25},{wch:20},{wch:40},{wch:12},{wch:6},{wch:6},{wch:10},{wch:10},{wch:20}];
-    earlyEntryRows.forEach(function(rowIdx) {
-      for (var c = 0; c < rows[rowIdx].length; c++) {
-        var addr = XLSX.utils.encode_cell({r: rowIdx, c: c});
+    ws['!pageSetup'] = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+    ws['!headerFooter'] = { oddFooter: '&CPage &P of &N' };
+    for (var r = 0; r < rows.length; r++) {
+      for (var c = 0; c < rows[0].length; c++) {
+        var addr = XLSX.utils.encode_cell({r: r, c: c});
         if (!ws[addr]) ws[addr] = { v: '', t: 's' };
-        ws[addr].s = { fill: { fgColor: { rgb: 'FFF3CD' } }, font: { bold: true } };
+        if (r === 0) {
+          ws[addr].s = { fill: { fgColor: { rgb: '22224C' } }, font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 18 } };
+        } else if (earlyEntryRows.indexOf(r) !== -1) {
+          ws[addr].s = { fill: { fgColor: { rgb: 'FFF3CD' } }, font: { bold: true, sz: 18 } };
+        } else {
+          ws[addr].s = { font: { sz: 18 } };
+        }
       }
-    });
-    for (var c = 0; c < rows[0].length; c++) {
-      var addr = XLSX.utils.encode_cell({r: 0, c: c});
-      if (!ws[addr]) ws[addr] = { v: '', t: 's' };
-      ws[addr].s = { fill: { fgColor: { rgb: '22224C' } }, font: { bold: true, color: { rgb: 'FFFFFF' } } };
     }
     XLSX.utils.book_append_sheet(wb, ws, 'Check-ins');
-    XLSX.writeFile(wb, 'TG-checkins-' + date + '.xlsx');
+    XLSX.writeFile(wb, 'TG-checkins-' + date + '.xlsx', {cellStyles: true});
   }
 
   if (window.XLSX) {
     doExport(window.XLSX);
   } else {
     var s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
     s.onload = function() { doExport(window.XLSX); };
     document.head.appendChild(s);
   }
@@ -4731,5 +4788,6 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<div id="wristband-toast" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);border-radius:12px;padding:14px 22px;font-size:15px;font-weight:800;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.35);min-width:220px;max-width:80vw;transition:opacity .4s;pointer-events:none;letter-spacing:.02em;"></div>
 </body>
 </html>
