@@ -1072,7 +1072,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.43';
+const APP_VERSION = '2.5.44';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -4591,7 +4591,10 @@ function debouncedSearch() {
   const clr = document.getElementById('gl-search-clear');
   if (clr) clr.style.display = inp.value ? 'block' : 'none';
   clearTimeout(_searchTimer);
-  _searchTimer = setTimeout(() => renderGuestList(), 50);
+  _searchTimer = setTimeout(function() {
+    renderGuestList();
+    if (inp && inp.value) inp.blur();
+  }, 300);
 }
 // ═══════════════════════════════════════════
 // ── Pull to refresh ──
