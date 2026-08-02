@@ -1072,7 +1072,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.44';
+const APP_VERSION = '2.5.45';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -4586,15 +4586,17 @@ let wakeLockObj = null;
 
 // Debounced search — waits 200ms after typing stops
 let _searchTimer = null;
+let _searchBlurTimer = null;
 function debouncedSearch() {
   const inp = document.getElementById('gl-search');
   const clr = document.getElementById('gl-search-clear');
   if (clr) clr.style.display = inp.value ? 'block' : 'none';
   clearTimeout(_searchTimer);
-  _searchTimer = setTimeout(function() {
-    renderGuestList();
-    if (inp && inp.value) inp.blur();
-  }, 300);
+  clearTimeout(_searchBlurTimer);
+  _searchTimer = setTimeout(function() { renderGuestList(); }, 50);
+  if (inp && inp.value) {
+    _searchBlurTimer = setTimeout(function() { inp.blur(); }, 2000);
+  }
 }
 // ═══════════════════════════════════════════
 // ── Pull to refresh ──
