@@ -1072,7 +1072,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.39';
+const APP_VERSION = '2.5.40';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2716,11 +2716,14 @@ function renderGuestList() {
           }</div>
           <div style="font-size:12px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${num === 1 && t.name === b.name ? '' : `Ticket ${num} · `}${t.ticketName}${(function(){
             const tn = (t.ticketName || '').toUpperCase();
-            if (!tn.includes('BEFORE') && !tn.includes('3PM') && !tn.includes('EARLY')) return '';
+            const isEarly = tn.includes('BEFORE') || tn.includes('3PM') || tn.includes('EARLY') ||
+              (cfg.entry_labels || []).some(function(el){ return el.action === 'warn' && tn.includes((el.match||'').toUpperCase()); });
+            if (!isEarly) return '';
             const now = new Date();
-            const londonTime = new Date(now.toLocaleString('en-GB', {timeZone:'Europe/London'}));
-            const isPM3 = londonTime.getHours() > 14 || (londonTime.getHours() === 14 && londonTime.getMinutes() >= 59);
-            return isPM3
+            const h = now.toLocaleString('en-GB', {timeZone:'Europe/London', hour:'numeric', hour12:false});
+            const m = now.toLocaleString('en-GB', {timeZone:'Europe/London', minute:'numeric'});
+            const isPast3pm = parseInt(h, 10) > 14 || (parseInt(h, 10) === 14 && parseInt(m, 10) >= 60);
+            return isPast3pm
               ? ' <span style="background:#D0000A;color:#fff;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">+£10</span>'
               : ' <span style="background:#CC0066;color:#fff;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">🌅 Before 3PM</span>';
           })()}</div>
@@ -3211,8 +3214,13 @@ async function lookupTicket(code) {
             });
             if (earlyWarnLabel) {
               vibrate([100, 50, 100]);
-              setResult('early', earlyWarnLabel.icon || '🌅', mecGuest.name,
-                `${earlyWarnLabel.label} ticket — must arrive by ${earlyWarnLabel.valid_before || '3PM'}`);
+              var _nowH = parseInt(new Date().toLocaleString('en-GB', {timeZone:'Europe/London', hour:'numeric', hour12:false}), 10);
+              var _nowM = parseInt(new Date().toLocaleString('en-GB', {timeZone:'Europe/London', minute:'numeric'}), 10);
+              var _isPast3 = _nowH > 14 || (_nowH === 14 && _nowM >= 60);
+              var _earlyMsg = _isPast3
+                ? 'After 3PM — additional £10 required'
+                : earlyWarnLabel.label + ' ticket — must arrive by ' + (earlyWarnLabel.valid_before || '3PM');
+              setResult('early', earlyWarnLabel.icon || '🌅', mecGuest.name, _earlyMsg);
               mecWriteCheckin(code, mecGuest).catch(e => { console.warn('MEC checkin write failed — queued for retry:', e.message); wpWriteRetryQueue.push({code, mecGuest, attempts:0}); });
               addLog({ name:mecGuest.name, ticket:`${mecGuest.ticketName} (${code})`, status:'warn', code });
               stats.admitted++; stats.total++;
