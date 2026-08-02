@@ -1072,7 +1072,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.42';
+const APP_VERSION = '2.5.43';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2689,7 +2689,7 @@ function renderGuestList() {
     const evCol    = getEventColourById(b._eventId);
     const avStyle  = allIn ? '' : b.isTM ? '' : hasVip ? '' :
       `background:${evCol.bg};color:${evCol.text};`;
-    const hasEarly = b.tickets.some(function(t){ return (t.ticketName||'').toUpperCase().includes('BEFORE') || (t.ticketName||'').toUpperCase().includes('3PM') || (t.ticketName||'').toUpperCase().includes('EARLY'); });
+    const hasEarly = b.tickets.some(function(t){ return (t.ticketName||'').toUpperCase().includes('BEFORE') || (t.ticketName||'').toUpperCase().includes('3PM'); });
     const _h = parseInt(new Date().toLocaleString('en-GB', {timeZone:'Europe/London', hour:'numeric', hour12:false}), 10);
     const earlyBadge = hasEarly ? (_h >= 15 ? '<span class="badge" style="background:#D0000A;color:#fff;">+£10</span>' : '<span class="badge" style="background:#CC0066;color:#fff;">🌅 Before 3PM</span>') : '';
     const badges   = [
@@ -2720,7 +2720,7 @@ function renderGuestList() {
           }</div>
           <div style="font-size:12px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${num === 1 && t.name === b.name ? '' : `Ticket ${num} · `}${t.ticketName}${(function(){
             const tn = (t.ticketName || '').toUpperCase();
-            const isEarly = tn.includes('BEFORE') || tn.includes('3PM') || tn.includes('EARLY') ||
+            const isEarly = tn.includes('BEFORE') || tn.includes('3PM') ||
               (cfg.entry_labels || []).some(function(el){ return el.action === 'warn' && tn.includes((el.match||'').toUpperCase()); });
             if (!isEarly) return '';
             const now = new Date();
