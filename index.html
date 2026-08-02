@@ -855,9 +855,9 @@ input::placeholder { color: #999; }
   <div class="gl-toolbar">
     <div style="position:relative;flex:1;">
       <input class="gl-search" type="text" id="gl-search" placeholder="Search by name…" oninput="debouncedSearch()" autocomplete="off" autocorrect="off" autocapitalize="none" style="width:100%;padding-right:36px;box-sizing:border-box;">
-      <button id="gl-search-clear" onclick="document.getElementById('gl-search').value='';debouncedSearch();" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;">✕</button>
+      <button id="gl-search-clear" onclick="var inp=document.getElementById('gl-search');inp.value='';inp.blur();document.getElementById('gl-search-clear').style.display='none';clearTimeout(_searchBlurTimer);clearTimeout(_searchTimer);setTimeout(function(){renderGuestList();},10);" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;color:var(--muted);cursor:pointer;padding:0;line-height:1;-webkit-tap-highlight-color:transparent;">✕</button>
     </div>
-    <button onclick="var p=document.getElementById('gl-pills');var f=document.getElementById('gl-filter-bar');var show=p.style.display==='none';p.style.display=show?'flex':'none';f.style.display=show?'flex':'none'" style="flex-shrink:0;background:none;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:16px;cursor:pointer;" title="Filters">⚙️</button>
+    <button onclick="var p=document.getElementById('gl-pills');var f=document.getElementById('gl-filter-bar');var show=p.style.display==='none';p.style.display=show?'flex':'none';f.style.display=show?'flex':'none'" style="flex-shrink:0;background:none;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text);" title="Filters">Filter</button>
     <button class="gl-refresh" onclick="refreshGuests()" title="Refresh">↻</button>
   </div>
   <!-- event-bar removed — replaced by dynamic event filter pills -->
@@ -1072,7 +1072,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.45';
+const APP_VERSION = '2.5.46';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
