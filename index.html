@@ -1072,7 +1072,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.36';
+const APP_VERSION = '2.5.37';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2212,34 +2212,34 @@ function showWristbandToast(booking, ticket) {
   const ticketName = (ticket && (ticket.ticketName || ticket.name || '')) || '';
   const entryType  = (ticket && ticket.entryType) || (booking && booking.entryType) || 'GE';
   const upper      = ticketName.toUpperCase();
+  const ticketId   = String((ticket && ticket.id) || (ticket && ticket.ticket_id) || '');
 
-  // Determine wristband colour and instruction from ticket type
-  var bg = '#22224C'; // default navy
-  var colour = '#FFFFFF';
-  var instruction = '';
-  var border = '';
+  var bg = '#FF4B7B'; var colour = '#FFFFFF'; var border = ''; var instruction = '';
 
   if (entryType === 'AAA' || upper.includes('AAA')) {
-    bg = '#D0000A'; colour = '#FFFFFF';
-    instruction = '🎫 Issue white wristband — full access';
+    bg = '#D0000A'; colour = '#FFFFFF'; border = '';
+    instruction = '🔴 Issue RED wristband';
   } else if (entryType === 'STAFF' || upper.includes('STAFF')) {
-    bg = '#FF6036'; colour = '#FFFFFF';
-    instruction = '👷 Issue orange wristband — staff entrance';
-  } else if (entryType === 'SEATED' || upper.includes('SEATED')) {
+    bg = 'linear-gradient(135deg,#4B7BFF,#FF4B7B)'; colour = '#FFFFFF'; border = '';
+    instruction = '💙 Issue BLUE & PINK wristband';
+  } else if (upper.includes('PREMIUM') || ticketId === '28') {
     bg = '#FFC107'; colour = '#22224C'; border = '2px solid #FF9500';
-    instruction = '🪑 Issue green wristband — direct to seat';
+    instruction = '⭐ Issue YELLOW wristband — Premium Seated';
+  } else if (entryType === 'SEATED' || upper.includes('SEATED')) {
+    bg = '#FFFFFF'; colour = '#FF4B7B'; border = '3px solid #FF4B7B';
+    instruction = '🪑 Issue WHITE & PINK wristband — Seated';
   } else {
-    // GE including BEFORE 3PM
-    bg = '#FF4B7B'; colour = '#FFFFFF';
-    instruction = '🎽 Issue blue wristband — General Entry';
+    // GE including BEFORE 3PM — festival gradient
+    bg = 'linear-gradient(135deg,#FF6036,#FF4B7B)'; colour = '#FFFFFF'; border = '';
+    instruction = '🎪 Issue FESTIVAL wristband — General Entry';
   }
 
-  toast.style.background    = bg;
-  toast.style.color         = colour;
-  toast.style.border        = border || 'none';
-  toast.style.display       = 'block';
-  toast.style.opacity       = '1';
-  toast.textContent         = instruction;
+  toast.style.background = bg;
+  toast.style.color       = colour;
+  toast.style.border      = border || 'none';
+  toast.style.display     = 'block';
+  toast.style.opacity     = '1';
+  toast.textContent       = instruction;
 
   window._toastTimer = setTimeout(function() {
     toast.style.opacity = '0';
