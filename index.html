@@ -1072,7 +1072,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.40';
+const APP_VERSION = '2.5.41';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2722,7 +2722,7 @@ function renderGuestList() {
             const now = new Date();
             const h = now.toLocaleString('en-GB', {timeZone:'Europe/London', hour:'numeric', hour12:false});
             const m = now.toLocaleString('en-GB', {timeZone:'Europe/London', minute:'numeric'});
-            const isPast3pm = parseInt(h, 10) > 14 || (parseInt(h, 10) === 14 && parseInt(m, 10) >= 60);
+            const isPast3pm = parseInt(h, 10) >= 15;
             return isPast3pm
               ? ' <span style="background:#D0000A;color:#fff;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">+£10</span>'
               : ' <span style="background:#CC0066;color:#fff;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">🌅 Before 3PM</span>';
@@ -3216,7 +3216,7 @@ async function lookupTicket(code) {
               vibrate([100, 50, 100]);
               var _nowH = parseInt(new Date().toLocaleString('en-GB', {timeZone:'Europe/London', hour:'numeric', hour12:false}), 10);
               var _nowM = parseInt(new Date().toLocaleString('en-GB', {timeZone:'Europe/London', minute:'numeric'}), 10);
-              var _isPast3 = _nowH > 14 || (_nowH === 14 && _nowM >= 60);
+              var _isPast3 = _nowH >= 15;
               var _earlyMsg = _isPast3
                 ? 'After 3PM — additional £10 required'
                 : earlyWarnLabel.label + ' ticket — must arrive by ' + (earlyWarnLabel.valid_before || '3PM');
