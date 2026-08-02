@@ -1072,7 +1072,7 @@ input::placeholder { color: #999; }
 // ═══════════════════════════════════════════
 //  AUTO-UPDATE CHECK
 // ═══════════════════════════════════════════
-const APP_VERSION = '2.5.41';
+const APP_VERSION = '2.5.42';
 const CACHE_VERSION = '2'; // bump when bulk2 schema changes requiring fresh load
 // auto-update removed;
 
@@ -2689,7 +2689,11 @@ function renderGuestList() {
     const evCol    = getEventColourById(b._eventId);
     const avStyle  = allIn ? '' : b.isTM ? '' : hasVip ? '' :
       `background:${evCol.bg};color:${evCol.text};`;
+    const hasEarly = b.tickets.some(function(t){ return (t.ticketName||'').toUpperCase().includes('BEFORE') || (t.ticketName||'').toUpperCase().includes('3PM') || (t.ticketName||'').toUpperCase().includes('EARLY'); });
+    const _h = parseInt(new Date().toLocaleString('en-GB', {timeZone:'Europe/London', hour:'numeric', hour12:false}), 10);
+    const earlyBadge = hasEarly ? (_h >= 15 ? '<span class="badge" style="background:#D0000A;color:#fff;">+£10</span>' : '<span class="badge" style="background:#CC0066;color:#fff;">🌅 Before 3PM</span>') : '';
     const badges   = [
+      earlyBadge,
       hasVip        ? '<span class="badge vip">⭐ VIP</span>' : '',
       b.isTM        ? '<span class="badge tm">🎫 TM</span>'  : '',
       b.isComp      ? '<span class="badge comp">Comp</span>' : '',
