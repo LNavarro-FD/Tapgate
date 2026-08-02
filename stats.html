@@ -132,7 +132,7 @@ async function fbSet(path, data) {
     <div class="topbar-line1">
       <div style="display:flex;align-items:baseline;gap:6px;">
         <div class="brand-name">Tapgate Stats</div>
-        <div class="brand-sub">v1.3.23</div>
+        <div class="brand-sub">v1.3.24</div>
       </div>
       <a class="topbar-back" href="#" onclick="event.preventDefault();history.back();">← Scanner</a>
     </div>
@@ -522,9 +522,11 @@ async function fetchTodaySales(ev) {
     function salesRow(label, data, maxTotal) {
       const t = data.total || 0;
       const s = data.seated || 0;
+      const p = data.premium || 0;
       const g = data.ge || 0;
       const barW = maxTotal > 0 ? Math.min(Math.round(t/maxTotal*100), 100) : 0;
       const sBarW = t > 0 ? Math.min(Math.round(s/t*100), 100) : 0;
+      const pBarW = t > 0 ? Math.min(Math.round(p/t*100), 100) : 0;
       const gBarW = t > 0 ? Math.min(Math.round(g/t*100), 100) : 0;
       const id = 'sales-detail-' + (salesIdCounter++);
       return '<div class="trow" style="border-top:2px solid var(--border);margin-top:4px;cursor:pointer;" onclick="var d=document.getElementById(\'' + id + '\');d.style.display=d.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.grp-chevron\').textContent=d.style.display===\'none\'?\'\u25B6\':\'\u25BC\';">' +
@@ -535,14 +537,19 @@ async function fetchTodaySales(ev) {
         '<div id="' + id + '" style="display:none;">' +
         (t > 0 ? (
           '<div class="trow">' +
+            '<div class="trow-key" style="padding-left:12px;font-size:11px;color:var(--muted);">General Entry</div>' +
+            '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + gBarW + '%"></div></div>' +
+            '<div class="trow-val" style="font-size:11px;">' + g + '</div>' +
+          '</div>' +
+          '<div class="trow">' +
             '<div class="trow-key" style="padding-left:12px;font-size:11px;color:var(--muted);">Seated</div>' +
             '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + sBarW + '%"></div></div>' +
             '<div class="trow-val" style="font-size:11px;">' + s + '</div>' +
           '</div>' +
           '<div class="trow">' +
-            '<div class="trow-key" style="padding-left:12px;font-size:11px;color:var(--muted);">General Entry</div>' +
-            '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + gBarW + '%"></div></div>' +
-            '<div class="trow-val" style="font-size:11px;">' + g + '</div>' +
+            '<div class="trow-key" style="padding-left:12px;font-size:11px;color:var(--muted);">Premium Seated</div>' +
+            '<div class="trow-bar"><div class="trow-bar-inner" style="width:' + pBarW + '%"></div></div>' +
+            '<div class="trow-val" style="font-size:11px;">' + p + '</div>' +
           '</div>'
         ) : '<div class="trow"><div class="trow-key" style="padding-left:12px;font-size:11px;color:var(--muted);">No sales</div><div class="trow-bar"></div><div class="trow-val" style="font-size:11px;">0</div></div>') +
         '</div>';
@@ -604,10 +611,11 @@ function renderStats() {
   });
   const maxTicket = Math.max(...Object.values(ticketCounts), 1);
 
-  // Group tickets into Seated and General Entry
-  const groups = { 'Seated': {}, 'General Entry': {} };
+  // Group tickets into Premium Seated, Seated and General Entry
+  const groups = { 'Premium Seated': {}, 'Seated': {}, 'General Entry': {} };
   Object.entries(ticketCounts).forEach(([k, v]) => {
-    if (/seated/i.test(k)) groups['Seated'][k] = v;
+    if (/premium/i.test(k)) groups['Premium Seated'][k] = v;
+    else if (/seated/i.test(k)) groups['Seated'][k] = v;
     else groups['General Entry'][k] = v;
   });
 
